@@ -1,0 +1,271 @@
+{
+  "investigation_id": "inv-f760687ee9",
+  "system": "multi_agent",
+  "incident_id": "INC-009",
+  "title": "User API errors during morning peak",
+  "severity": "SEV2",
+  "affected_services": [
+    "api-gateway",
+    "user-service"
+  ],
+  "start_time": "2026-09-26T08:00:00+00:00",
+  "executive_summary": "Stub narrative summary.",
+  "timeline": [
+    {
+      "time": "2026-09-26T07:10:14Z",
+      "label": "OBSERVED EVIDENCE",
+      "event": "First log: 5x WARN on api-gateway: 'Slow client upload from 10.4.18.12 (1.9MB)' (first 2026-09-26T07:10:14Z, last 2026-09-26T08:28:20Z)",
+      "evidence_id": "logpat-api-gateway-88b04940"
+    },
+    {
+      "time": "2026-09-26T07:19:22Z",
+      "label": "OBSERVED EVIDENCE",
+      "event": "First log: 4x WARN on user-service: 'Deprecated API /v1/users/legacy called by client web-90' (first 2026-09-26T07:19:22Z, last 2026-09-26T08:16:20Z)",
+      "evidence_id": "logpat-user-service-742b555e"
+    },
+    {
+      "time": "2026-09-26T07:56:00Z",
+      "label": "CONFIRMED FACT",
+      "event": "Deployment of user-service 7.1.3->7.2.0 at 2026-09-26T07:56:00Z (SUCCEEDED): Switch ORM to batch loader",
+      "evidence_id": "dep-c02e51b7"
+    },
+    {
+      "time": "2026-09-26T07:57:00Z",
+      "label": "OBSERVED EVIDENCE",
+      "event": "Anomaly onset: api-gateway error_rate: baseline 0.5 -> window mean 4.25 (max 8.65, change 747.7%), onset 2026-09-26T07:57:00Z",
+      "evidence_id": "met-api-gateway-error_rate-0730-0825"
+    },
+    {
+      "time": "2026-09-26T07:57:00Z",
+      "label": "OBSERVED EVIDENCE",
+      "event": "Anomaly onset: user-service error_rate: baseline 0.41 -> window mean 12.5 (max 26.11, change 2984.9%), onset 2026-09-26T07:57:00Z",
+      "evidence_id": "met-user-service-error_rate-0730-0825"
+    },
+    {
+      "time": "2026-09-26T07:57:00Z",
+      "label": "OBSERVED EVIDENCE",
+      "event": "Anomaly onset: user-service p95_latency_ms: baseline 80.09 -> window mean 383.28 (max 748.48, change 378.5%), onset 2026-09-26T07:57:00Z",
+      "evidence_id": "met-user-service-p95_latency_ms-0730-0825"
+    },
+    {
+      "time": "2026-09-26T07:57:17Z",
+      "label": "OBSERVED EVIDENCE",
+      "event": "First log: 10x ERROR on user-service: 'NullPointerException in ProfileBatchLoader.load (user-service v7.2.0) req 18' (first 2026-09-26T07:57:17Z, last 2026-09-26T08:22:46Z)",
+      "evidence_id": "logpat-user-service-2347725d"
+    },
+    {
+      "time": "2026-09-26T08:00:00Z",
+      "label": "CONFIRMED FACT",
+      "event": "Reported symptom start",
+      "evidence_id": null
+    },
+    {
+      "time": "2026-09-26T08:06:00Z",
+      "label": "CONFIRMED FACT",
+      "event": "Incident reported",
+      "evidence_id": null
+    },
+    {
+      "time": "2026-09-26T08:06:34Z",
+      "label": "OBSERVED EVIDENCE",
+      "event": "First log: 4x WARN on api-gateway: 'user-service returned 500 for GET /v1/users/62' (first 2026-09-26T08:06:34Z, last 2026-09-26T08:22:09Z)",
+      "evidence_id": "logpat-api-gateway-c1d874f7"
+    }
+  ],
+  "observed_symptoms": [
+    {
+      "label": "OBSERVED EVIDENCE",
+      "statement": "api-gateway error_rate: baseline 0.5 -> window mean 4.25 (max 8.65, change 747.7%), onset 2026-09-26T07:57:00Z",
+      "evidence_ids": [
+        "met-api-gateway-error_rate-0730-0825"
+      ]
+    },
+    {
+      "label": "OBSERVED EVIDENCE",
+      "statement": "user-service error_rate: baseline 0.41 -> window mean 12.5 (max 26.11, change 2984.9%), onset 2026-09-26T07:57:00Z",
+      "evidence_ids": [
+        "met-user-service-error_rate-0730-0825"
+      ]
+    },
+    {
+      "label": "OBSERVED EVIDENCE",
+      "statement": "user-service p95_latency_ms: baseline 80.09 -> window mean 383.28 (max 748.48, change 378.5%), onset 2026-09-26T07:57:00Z",
+      "evidence_ids": [
+        "met-user-service-p95_latency_ms-0730-0825"
+      ]
+    },
+    {
+      "label": "OBSERVED EVIDENCE",
+      "statement": "[dependency] deployment user-service 7.2.0 at 2026-09-26T07:56:00Z",
+      "evidence_ids": [
+        "dep-c02e51b7"
+      ]
+    },
+    {
+      "label": "OBSERVED EVIDENCE",
+      "statement": "[observability] error_rate changed 747.7% (onset 2026-09-26T07:57:00Z)",
+      "evidence_ids": [
+        "met-api-gateway-error_rate-0730-0825"
+      ]
+    },
+    {
+      "label": "OBSERVED EVIDENCE",
+      "statement": "[observability] error_rate changed 2984.9% (onset 2026-09-26T07:57:00Z)",
+      "evidence_ids": [
+        "met-user-service-error_rate-0730-0825"
+      ]
+    },
+    {
+      "label": "OBSERVED EVIDENCE",
+      "statement": "[observability] p95_latency_ms changed 378.5% (onset 2026-09-26T07:57:00Z)",
+      "evidence_ids": [
+        "met-user-service-p95_latency_ms-0730-0825"
+      ]
+    },
+    {
+      "label": "OBSERVED EVIDENCE",
+      "statement": "[observability] 10x NullPointerException in ProfileBatchLoader.load (user-service v<n>.<n>.<n>) req <n>",
+      "evidence_ids": [
+        "logpat-user-service-2347725d"
+      ]
+    },
+    {
+      "label": "OBSERVED EVIDENCE",
+      "statement": "[observability] error_rate changed 747.7% (onset 2026-09-26T07:57:00Z)",
+      "evidence_ids": [
+        "met-api-gateway-error_rate-0730-0825"
+      ]
+    },
+    {
+      "label": "OBSERVED EVIDENCE",
+      "statement": "[observability] error_rate changed 747.7% (onset 2026-09-26T07:57:00Z)",
+      "evidence_ids": [
+        "met-api-gateway-error_rate-0730-0825"
+      ]
+    }
+  ],
+  "investigation_performed": [
+    "Round 1 | observability | completed | attempts 1 | 4 tool calls | Compare logs/metrics of affected services vs baseline",
+    "Round 1 | dependency | completed | attempts 1 | 3 tool calls | Review deployments, config changes and dependencies",
+    "Round 1 | reasoning | completed | attempts 1 | 0 tool calls | Develop and rank competing hypotheses",
+    "Round 1 | critic | completed | attempts 1 | 0 tool calls | Independently review hypotheses",
+    "Round 2 | observability | completed | attempts 1 | 2 tool calls | FOLLOW-UP requested by critic: verify timing of earliest anomaly",
+    "Round 2 | reasoning | completed | attempts 1 | 0 tool calls | Develop and rank competing hypotheses",
+    "Round 2 | critic | completed | attempts 1 | 0 tool calls | Independently review hypotheses",
+    "Round 3 | observability | completed | attempts 1 | 2 tool calls | FOLLOW-UP requested by critic: verify timing of earliest anomaly",
+    "Round 3 | reasoning | completed | attempts 1 | 0 tool calls | Develop and rank competing hypotheses",
+    "Round 3 | critic | completed | attempts 1 | 0 tool calls | Independently review hypotheses",
+    "Round 3 | reporting | completed | attempts 1 | 0 tool calls | Write final report"
+  ],
+  "hypotheses": [
+    {
+      "rank": 1,
+      "hypothesis_id": "H1",
+      "category": "deployment_regression",
+      "culprit_service": "user-service",
+      "description": "deployment regression in user-service Mechanism: stub heuristic",
+      "confidence": 0.12,
+      "confidence_explanation": [
+        "base 0.10",
+        "+0.12 supporting evidence (1 refs, reliability-weighted, capped)",
+        "+0.00 no cause time given; temporal precedence unverified",
+        "-0.05 tool failures/partial data for user-service",
+        "-0.05 critic review adjustment",
+        "= 0.12 (evidence-strength score, not a calibrated probability)"
+      ],
+      "supporting_evidence": [
+        {
+          "evidence_id": "dep-c02e51b7",
+          "strength": "moderate",
+          "note": "",
+          "exists": true,
+          "label": "CONFIRMED FACT",
+          "description": "Deployment of user-service 7.1.3->7.2.0 at 2026-09-26T07:56:00Z (SUCCEEDED): Switch ORM to batch loader"
+        }
+      ],
+      "contradicting_evidence": [],
+      "missing_evidence": [],
+      "critic_decision": "needs_evidence"
+    }
+  ],
+  "critic_review": {
+    "verdict": "INCONCLUSIVE",
+    "summary": "stub critic",
+    "assessments": [
+      {
+        "hypothesis_id": "H1",
+        "decision": "needs_evidence",
+        "reasoning": "stub review"
+      }
+    ],
+    "precheck_issues": [
+      {
+        "hypothesis_id": "H1",
+        "check": "correlation_only",
+        "severity": "blocking",
+        "detail": "change hypothesis supported only by the change record itself (temporal correlation); no log/metric evidence of the changed behaviour"
+      },
+      {
+        "hypothesis_id": "H1",
+        "check": "cause_time",
+        "severity": "warning",
+        "detail": "no cause time given; temporal precedence cannot be verified"
+      },
+      {
+        "hypothesis_id": "H1",
+        "check": "culprit_symptom",
+        "severity": "warning",
+        "detail": "no log/metric evidence cited for culprit user-service"
+      },
+      {
+        "hypothesis_id": "H1",
+        "check": "single_source",
+        "severity": "warning",
+        "detail": "all support comes from one source type (deployment)"
+      }
+    ],
+    "unsupported_assumptions": [],
+    "alternative_explanations": [],
+    "evidence_requests": [],
+    "round": 3,
+    "rounds_reviewed": 3
+  },
+  "evidence_gaps": [
+    "[UNKNOWN] query_logs returned incomplete data for service=api-gateway (PARTIAL_DATA)",
+    "[UNKNOWN] query_logs returned incomplete data for service=user-service (PARTIAL_DATA)"
+  ],
+  "probable_root_cause": null,
+  "root_cause_statement": "Root cause could not be conclusively established with the available evidence.",
+  "corrective_actions": [
+    "Mitigate impact"
+  ],
+  "preventive_actions": [
+    "Add tests"
+  ],
+  "monitoring_recommendations": [
+    "Alert on p95 latency"
+  ],
+  "limitations": [
+    "Generated by stub LLM",
+    "0 tool calls failed and 4 returned partial data; affected areas are treated as unknown, not healthy.",
+    "Confidence values are rule-based evidence-strength scores, not calibrated probabilities.",
+    "Investigation terminated because: critic verdict INCONCLUSIVE"
+  ],
+  "final_status": "INCONCLUSIVE",
+  "conclusion": "Root cause could not be conclusively established with the available evidence. See status.",
+  "statistics": {
+    "rounds": 3,
+    "tool_calls": 14,
+    "tool_failures": 3,
+    "tool_retries": 3,
+    "partial_results": 4,
+    "agent_failures": 0,
+    "agent_retries": 0,
+    "invalid_llm_outputs": 0,
+    "messages_exchanged": 34,
+    "evidence_records": 35,
+    "duration_s": 2.19,
+    "tokens": "unavailable (stub LLM: no real token usage)",
+    "tokens_by_agent": null
+  }
+}

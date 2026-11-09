@@ -1,0 +1,263 @@
+# Production Incident Investigation Report
+
+## Incident Information
+- **Incident ID:** INC-005
+- **Title:** Payments slow right after release
+- **Severity:** SEV1
+- **Affected services:** order-service, payment-service
+- **Start time:** 2026-09-14T11:40:00+00:00
+- **Investigation ID:** inv-d21567dc49 (multi_agent)
+- **Final status:** `ROOT_CAUSE_IDENTIFIED`
+
+## Executive Summary
+INC-005 (SEV1): Payment and order latency and errors degraded from about 11:40Z on 2026-09-14, shortly after the payment-service 5.8.0 release was reported. The investigation status is ROOT_CAUSE_IDENTIFIED. The leading hypothesis (H1, confidence 0.9) is storage degradation on the postgres volume vol-0a3f, which slowed writes and checkpoints, held database connections, and caused statement timeouts on charges.insert (payment) and orders.update (order). The earliest anomaly is the vol-0a3f write-latency WARN at 11:21:06Z (logpat-postgres-d629c24d), followed by disk_io_wait rising from a 2.0 ms baseline to a 107 ms window mean from 11:22Z (met-postgres-disk_io_wait_ms-1110-1205), postgres p95 latency rising from 12 ms to a 668 ms mean from 11:23Z (met-postgres-p95_latency_ms-1110-1205), and slow checkpoints and WAL writes from 11:24Z (logpat-postgres-7ce84fae). Connection utilisation rose from 40% to 74% mean from 11:26Z. Statement timeouts appeared in order-service from 11:28:12Z and payment-service from 11:28:17Z. Payment error rate rose to a window mean of 8.8% from 11:30Z (met-payment-service-error_rate-1130-1200).
+
+The 5.8.0 release was not the cause. H2 (deployment regression) is rejected: the first timeouts precede the 11:32Z deployment, payment p99 is flat through the release, and the postgres degradation predates it (dep-31448d11, logpat-payment-service-e14637d4). H3 (report_rollup() saturation) is rejected as the root cause because report_rollup() started at 11:28:01Z, after the storage anomalies began; it may have aggravated contention but its impact is not quantified.
+
+## Incident Timeline
+| Time (UTC) | Label | Event | Evidence |
+|---|---|---|---|
+| 2026-09-14T11:11:58Z | OBSERVED EVIDENCE | First log: 7x WARN on api-gateway: 'Slow client upload from 10.4.31.12 (1.9MB)' (first 2026-09-14T11:11:58Z, last 2026-09-14T11:42:43Z) | logpat-api-gateway-88b04940 |
+| 2026-09-14T11:12:04Z | OBSERVED EVIDENCE | First log: 5x WARN on payment-service: 'Card network soft decline (code 05) for charge ch_73' (first 2026-09-14T11:12:04Z, last 2026-09-14T12:04:10Z) | logpat-payment-service-7e9bf84f |
+| 2026-09-14T11:12:29Z | OBSERVED EVIDENCE | First log: 6x WARN on order-service: 'Inventory reservation retry for sku-66' (first 2026-09-14T11:12:29Z, last 2026-09-14T12:01:12Z) | logpat-order-service-95abd1bb |
+| 2026-09-14T11:13:45Z | OBSERVED EVIDENCE | First log: 6x WARN on notification-service: 'SMTP provider throttled 1 message' (first 2026-09-14T11:13:45Z, last 2026-09-14T12:02:54Z) | logpat-notification-service-54b86179 |
+| 2026-09-14T11:17:59Z | OBSERVED EVIDENCE | First log: 6x WARN on auth-service: 'Login rate limit hit for user id u-97' (first 2026-09-14T11:17:59Z, last 2026-09-14T11:55:08Z) | logpat-auth-service-cc8d3b87 |
+| 2026-09-14T11:21:06Z | OBSERVED EVIDENCE | First log: 7x WARN on postgres: 'storage: volume vol-0a3f write latency degraded (avg 835ms)' (first 2026-09-14T11:21:06Z, last 2026-09-14T11:58:54Z) | logpat-postgres-d629c24d |
+| 2026-09-14T11:22:00Z | OBSERVED EVIDENCE | Anomaly onset: postgres disk_io_wait_ms: baseline 2.02 -> window mean 107.34 (max 161.01, change 5219.4%), onset 2026-09-14T11:22:00Z | met-postgres-disk_io_wait_ms-1110-1205 |
+| 2026-09-14T11:23:00Z | OBSERVED EVIDENCE | Anomaly onset: postgres p95_latency_ms: baseline 12.01 -> window mean 667.73 (max 960.48, change 5461.9%), onset 2026-09-14T11:23:00Z | met-postgres-p95_latency_ms-1110-1205 |
+| 2026-09-14T11:23:00Z | OBSERVED EVIDENCE | Anomaly onset: postgres p99_latency_ms: baseline 25.12 -> window mean 1338.51 (max 1953.9, change 5229.4%), onset 2026-09-14T11:23:00Z | met-postgres-p99_latency_ms-1110-1205 |
+| 2026-09-14T11:24:14Z | OBSERVED EVIDENCE | First log: 5x ERROR on postgres: 'checkpoint took 453.2 s; WAL write slow' (first 2026-09-14T11:24:14Z, last 2026-09-14T11:56:58Z) | logpat-postgres-7ce84fae |
+| 2026-09-14T11:25:45Z | OBSERVED EVIDENCE | First log: 5x WARN on user-service: 'Deprecated API /v1/users/legacy called by client web-44' (first 2026-09-14T11:25:45Z, last 2026-09-14T11:59:25Z) | logpat-user-service-742b555e |
+| 2026-09-14T11:26:00Z | OBSERVED EVIDENCE | Anomaly onset: postgres db_conn_util_pct: baseline 40.2 -> window mean 73.64 (max 96.22, change 83.2%), onset 2026-09-14T11:26:00Z | met-postgres-db_conn_util_pct-1110-1205 |
+| 2026-09-14T11:28:00Z | OBSERVED EVIDENCE | Anomaly onset: user-service p95_latency_ms: baseline 80.27 -> window mean 612.18 (max 987.25, change 662.6%), onset 2026-09-14T11:28:00Z | met-user-service-p95_latency_ms-1110-1205 |
+| 2026-09-14T11:28:01Z | OBSERVED EVIDENCE | First log: 4x WARN on postgres: 'duration: 16402 ms statement: SELECT report_rollup()' (first 2026-09-14T11:28:01Z, last 2026-09-14T11:53:40Z) | logpat-postgres-44883ca5 |
+| 2026-09-14T11:28:12Z | OBSERVED EVIDENCE | First log: 9x ERROR on order-service: 'SQL query exceeded 2000ms statement timeout (orders.update) req 44' (first 2026-09-14T11:28:12Z, last 2026-09-14T12:01:12Z) | logpat-order-service-22402aae |
+| 2026-09-14T11:28:17Z | OBSERVED EVIDENCE | First log: 17x ERROR on payment-service: 'SQL query exceeded 2000ms statement timeout (charges.insert) req 25' (first 2026-09-14T11:28:17Z, last 2026-09-14T12:02:55Z) | logpat-payment-service-c828e437 |
+| 2026-09-14T11:30:00Z | OBSERVED EVIDENCE | Anomaly onset: payment-service error_rate: baseline 0.8 -> window mean 8.76 (max 9.65, change 997.9%), onset 2026-09-14T11:30:00Z | met-payment-service-error_rate-1130-1200 |
+| 2026-09-14T11:32:00Z | CONFIRMED FACT | Deployment of payment-service 5.7.3->5.8.0 at 2026-09-14T11:32:00Z (SUCCEEDED): Add idempotency-key header logging | dep-31448d11 |
+| 2026-09-14T11:40:00Z | CONFIRMED FACT | Reported symptom start |  |
+| 2026-09-14T11:46:00Z | CONFIRMED FACT | Incident reported |  |
+
+## Observed Symptoms
+- **OBSERVED EVIDENCE:** payment-service error_rate: baseline 0.8 -> window mean 8.76 (max 9.65, change 997.9%), onset 2026-09-14T11:30:00Z (met-payment-service-error_rate-1130-1200)
+- **OBSERVED EVIDENCE:** postgres db_conn_util_pct: baseline 40.2 -> window mean 73.64 (max 96.22, change 83.2%), onset 2026-09-14T11:26:00Z (met-postgres-db_conn_util_pct-1110-1205)
+- **OBSERVED EVIDENCE:** postgres p95_latency_ms: baseline 12.01 -> window mean 667.73 (max 960.48, change 5461.9%), onset 2026-09-14T11:23:00Z (met-postgres-p95_latency_ms-1110-1205)
+- **OBSERVED EVIDENCE:** postgres p99_latency_ms: baseline 25.12 -> window mean 1338.51 (max 1953.9, change 5229.4%), onset 2026-09-14T11:23:00Z (met-postgres-p99_latency_ms-1110-1205)
+- **OBSERVED EVIDENCE:** postgres disk_io_wait_ms: baseline 2.02 -> window mean 107.34 (max 161.01, change 5219.4%), onset 2026-09-14T11:22:00Z (met-postgres-disk_io_wait_ms-1110-1205)
+- **OBSERVED EVIDENCE:** user-service p95_latency_ms: baseline 80.27 -> window mean 612.18 (max 987.25, change 662.6%), onset 2026-09-14T11:28:00Z (met-user-service-p95_latency_ms-1110-1205)
+- **OBSERVED EVIDENCE:** [dependency] Deployment dep-31448d11 moved payment-service from 5.7.3 to 5.8.0 at 11:32Z (status SUCCEEDED, deployed by ci-pipeline). Recorded change content: 'Add idempotency-key header logging'. This is 8 minutes before T0 (11:40Z). (dep-31448d11)
+- **OBSERVED EVIDENCE:** [dependency] No other deployments were recorded for any service between 11:00Z and 11:50Z; order-service, auth-service and api-gateway have no deployment in this window. (dep-31448d11)
+- **OBSERVED EVIDENCE:** [dependency] Dependency graph: payment-service upstream = auth-service, postgres, redis (auth-service -> postgres, redis); downstream = api-gateway, order-service. No topology changes recorded. Blast radius of payment-service includes api-gateway and order-service. (topo-payment-service-both-d2)
+- **INFERENCE:** [dependency] The 5.8.0 release (11:32Z, 8 min before T0) could plausibly add per-request logging overhead on the payment path, consistent with the team's suspicion; this is a correlation only and is not confirmed. Metric onset of payment and order latency relative to 11:32Z must be checked to confirm or refute. (dep-31448d11)
+- **OBSERVED EVIDENCE:** [observability] Postgres p95 latency rose from baseline mean 12.0ms to window mean 667.7ms (max 960ms); p99 from 25.1ms to 1338.5ms. Onset detected 11:23Z. (met-postgres-p95_latency_ms-1110-1205, met-postgres-p99_latency_ms-1110-1205)
+- **OBSERVED EVIDENCE:** [observability] Postgres disk_io_wait_ms rose from 2.0ms baseline to 107.3ms mean (max 161ms); onset 11:22Z. Postgres DB connection utilisation rose from 40.2% to 73.6% mean (max 96.2%), onset 11:26Z, sustained ~82-90% from 11:30Z onward. (met-postgres-disk_io_wait_ms-1110-1205, met-postgres-db_conn_util_pct-1110-1205)
+- **OBSERVED EVIDENCE:** [observability] Postgres logs: storage volume write latency degraded (avg 835ms) first seen 11:21:06Z; checkpoints took 453-497s ('WAL write slow') from 11:24:14Z through 11:56:58Z; report_rollup() statements up to 16.4s from 11:28Z. (logpat-postgres-d629c24d, logpat-postgres-7ce84fae, logpat-postgres-44883ca5)
+- **OBSERVED EVIDENCE:** [observability] Postgres CPU fell from 35.3% baseline to 29.9% in window (-15%), i.e. not CPU-saturated; the saturation signals are I/O and connections. (met-postgres-cpu_pct-1110-1205)
+- **OBSERVED EVIDENCE:** [observability] payment-service ERROR: 17 'SQL query exceeded 2000ms statement timeout (charges.insert)' between 11:28:17Z and 12:02:55Z. order-service ERROR: 9 'statement timeout (orders.update)' from 11:28:12Z to 12:01:12Z. (logpat-payment-service-c828e437, logpat-order-service-22402aae)
+- **OBSERVED EVIDENCE:** [observability] user-service p95 latency rose from 80.3ms baseline to 612.2ms mean (max 987ms), onset 11:28Z (first elevated sample 11:30). Error rate and timeout rate unchanged (~0.4% and ~0.05%); CPU flat. (met-user-service-p95_latency_ms-1110-1205, met-user-service-error_rate-1110-1205, met-user-service-timeout_rate-1110-1205)
+- **OBSERVED EVIDENCE:** [observability] Redis cache hit rate (95.1% -> 94.9%), p95 (1.49 -> 1.50ms), p99 and memory were flat across the window. No cache-side saturation. (met-redis-cache_hit_rate-1110-1205, met-redis-p95_latency_ms-1110-1205, met-redis-p99_latency_ms-1110-1205, met-redis-memory_pct-1110-1205)
+- **OBSERVED EVIDENCE:** [observability] auth-service p95 (45.2 -> 45.1ms), p99 (90.3 -> 90.2ms), error rate (0.3%) and timeout rate (0.05%) were flat. Only WARN 'Login rate limit hit' (6 occurrences, 11:17:59Z-11:55:08Z) seen. (met-auth-service-p95_latency_ms-1110-1205, met-auth-service-p99_latency_ms-1110-1205, met-auth-service-error_rate-1110-1205, met-auth-service-timeout_rate-1110-1205, logpat-auth-service-cc8d3b87)
+- **OBSERVED EVIDENCE:** [observability] message-queue p95 (9.96 -> 10.0ms), error rate 0, request rate (400 -> 402/s) and CPU (20%) flat. No queue lag signal available in these metrics. (met-message-queue-p95_latency_ms-1110-1205, met-message-queue-error_rate-1110-1205, met-message-queue-request_rate-1110-1205, met-message-queue-cpu_pct-1110-1205)
+- **INFERENCE:** [observability] Storage volume vol-0a3f write latency likely drives slow checkpoints and WAL writes, which hold DB connections and cause charges.insert/orders.update timeouts. This is an interpretation, not a confirmed root cause; the payment-service 5.8.0 release timing (not checked here) should be compared against the 11:21-11:28Z onset. (logpat-postgres-d629c24d, logpat-postgres-7ce84fae, met-postgres-db_conn_util_pct-1110-1205)
+- **OBSERVED EVIDENCE:** [observability] payment-service error_rate rose from baseline mean 0.8% to window mean 8.76% (max 9.65%), onset detected at 11:30:00Z and stayed elevated through 12:00Z. (met-payment-service-error_rate-1130-1200)
+- **OBSERVED EVIDENCE:** [observability] payment-service p50 latency (mean 60.5 -> 60.0 ms, -0.9%) and p99 latency (mean 300.2 -> 301.2 ms, +0.3%) show no sustained change in the 11:30-12:00 window; no onset detected. (met-payment-service-p50_latency_ms-1130-1200, met-payment-service-p99_latency_ms-1130-1200)
+- **OBSERVED EVIDENCE:** [observability] payment-service request_rate (-1.1%), CPU (+0.4%) and memory (-2.0%) are essentially unchanged versus baseline. (met-payment-service-request_rate-1130-1200, met-payment-service-cpu_pct-1130-1200, met-payment-service-memory_pct-1130-1200)
+- **OBSERVED EVIDENCE:** [observability] order-service p50 (-0.6%) and p99 (+0.5%) latency, error rate (0.6% -> 0.6%), request rate, CPU and memory are all flat versus baseline in 11:30-12:00Z. (met-order-service-p50_latency_ms-1130-1200, met-order-service-p99_latency_ms-1130-1200, met-order-service-error_rate-1130-1200, met-order-service-request_rate-1130-1200)
+- **OBSERVED EVIDENCE:** [observability] api-gateway p50 (+0.4%), p99 (-0.1%), error rate (0.5%, flat), request rate (-1.5%), CPU and memory are unchanged versus baseline; no latency rise visible at the gateway. (met-api-gateway-p50_latency_ms-1130-1200, met-api-gateway-p99_latency_ms-1130-1200, met-api-gateway-error_rate-1130-1200, met-api-gateway-request_rate-1130-1200)
+- **ASSUMPTION:** [critic: unsupported assumption] That the storage degradation is independent of DB load is not verified 
+- **ASSUMPTION:** [critic: unsupported assumption] The 835ms average write latency is taken from one WARN line; the magnitude of the storage effect rests on it and on the disk_io_wait metric 
+- **ASSUMPTION:** [critic: unsupported assumption] The contribution of report_rollup() to the timeout severity is not quantified 
+
+## Investigation Performed
+- Round 1 | dependency | completed | attempts 1 | 3 tool calls | Confirm the payment-service 5.8.0 release timing and contents, and any other config/deployment changes in the window 11:00-11:50Z across payment-service and its
+- Round 1 | observability | completed | attempts 1 | 5 tool calls | Characterize latency and error rates for payment and order flows from 11:30Z to 12:00Z, and identify where latency first rises in the call chain.
+- Round 1 | observability | completed | attempts 1 | 6 tool calls | Check the upstream dependencies of payment-service for saturation or latency shifts beginning around the symptom start.
+- Round 1 | reasoning | completed | attempts 1 | 0 tool calls | Develop and rank competing hypotheses
+- Round 1 | critic | completed | attempts 1 | 2 tool calls | Independently review hypotheses
+- Round 1 | reporting | completed | attempts 1 | 0 tool calls | Write final report
+
+## Root-Cause Hypotheses (ranked by evidence strength)
+### 1. H1 - `infrastructure_degradation` in `postgres` (confidence 0.90, critic: accept)
+**INFERENCE:** Storage degradation on postgres volume vol-0a3f slowed writes and checkpoints, holding DB connections and causing payment charges.insert and order orders.update statement timeouts. Mechanism: vol-0a3f write latency degrades (WARN 11:21:06Z, avg 835ms) -> disk_io_wait rises 2ms->107ms (onset 11:22Z) and postgres p95 rises (onset 11:23Z) -> checkpoints take 453-497s and WAL writes slow from 11:24Z -> DB connections held longer, utilisation climbs to ~85-90% (onset 11:26Z) -> payment charges.insert and order orders.update exceed 2000ms statement timeout from 11:28Z -> payment error rate rises to ~8.8% from 11:30Z. Downstream user-service p95 rise at 11:28Z is consistent with shared DB contention.
+
+Confidence breakdown: base 0.10; +0.08 corroboration across >=2 independent source types; +0.78 supporting evidence (9 refs, reliability-weighted, capped); -0.05 contradicting evidence (1 refs, capped 0.45); +0.08 proposed cause (11:21) precedes/coincides with first observed anomaly (11:22); -0.06 3 acknowledged evidence gaps; +0.05 critic review adjustment; = 0.90 (evidence-strength score, not a calibrated probability)
+
+Supporting evidence:
+- [OBSERVED EVIDENCE] `logpat-postgres-d629c24d` (strong): 7x WARN on postgres: 'storage: volume vol-0a3f write latency degraded (avg 835ms)' (first 2026-09-14T11:21:06Z, last 2026-09-14T11:58:54Z)
+- [OBSERVED EVIDENCE] `met-postgres-disk_io_wait_ms-1110-1205` (strong): postgres disk_io_wait_ms: baseline 2.02 -> window mean 107.34 (max 161.01, change 5219.4%), onset 2026-09-14T11:22:00Z
+- [OBSERVED EVIDENCE] `logpat-postgres-7ce84fae` (strong): 5x ERROR on postgres: 'checkpoint took 453.2 s; WAL write slow' (first 2026-09-14T11:24:14Z, last 2026-09-14T11:56:58Z)
+- [OBSERVED EVIDENCE] `met-postgres-p95_latency_ms-1110-1205` (strong): postgres p95_latency_ms: baseline 12.01 -> window mean 667.73 (max 960.48, change 5461.9%), onset 2026-09-14T11:23:00Z
+- [OBSERVED EVIDENCE] `met-postgres-db_conn_util_pct-1110-1205` (moderate): postgres db_conn_util_pct: baseline 40.2 -> window mean 73.64 (max 96.22, change 83.2%), onset 2026-09-14T11:26:00Z
+- [OBSERVED EVIDENCE] `logpat-payment-service-c828e437` (strong): 17x ERROR on payment-service: 'SQL query exceeded 2000ms statement timeout (charges.insert) req 25' (first 2026-09-14T11:28:17Z, last 2026-09-14T12:02:55Z)
+- [OBSERVED EVIDENCE] `logpat-order-service-22402aae` (strong): 9x ERROR on order-service: 'SQL query exceeded 2000ms statement timeout (orders.update) req 44' (first 2026-09-14T11:28:12Z, last 2026-09-14T12:01:12Z)
+- [OBSERVED EVIDENCE] `met-payment-service-error_rate-1130-1200` (moderate): payment-service error_rate: baseline 0.8 -> window mean 8.76 (max 9.65, change 997.9%), onset 2026-09-14T11:30:00Z
+- [OBSERVED EVIDENCE] `met-postgres-cpu_pct-1110-1205` (moderate): postgres cpu_pct: baseline 35.25 -> window mean 29.92 (max 37.58, change -15.1%), onset none detected
+
+Contradicting evidence:
+- [OBSERVED EVIDENCE] `met-postgres-cpu_pct-1110-1205` (weak): postgres cpu_pct: baseline 35.25 -> window mean 29.92 (max 37.58, change -15.1%), onset none detected
+
+Remaining uncertainties / missing evidence:
+- [UNKNOWN] Storage-layer / cloud volume events for vol-0a3f (throttling, host, snapshot, replication)
+- [UNKNOWN] Per-table or pg_stat_activity wait-event data confirming lock/IO waits on charges and orders
+- [UNKNOWN] Whether the storage issue is independent of DB load
+
+### 2. H2 - `deployment_regression` in `payment-service` (confidence 0.00, critic: reject)
+**INFERENCE:** The payment-service 5.8.0 release (idempotency-key header logging) added synchronous per-request work causing DB timeouts. Mechanism: 5.8.0 deployed 11:32Z -> added logging adds overhead on payment path -> charges.insert timeouts. This would require timeouts to begin after 11:32Z.
+
+Confidence breakdown: base 0.10; +0.08 corroboration across >=2 independent source types; +0.24 supporting evidence (2 refs, reliability-weighted, capped); -0.45 contradicting evidence (5 refs, capped 0.45); -0.30 proposed cause (11:32) is AFTER the first observed anomaly (11:22); -0.04 2 acknowledged evidence gaps; -0.40 critic review adjustment; = 0.00 (evidence-strength score, not a calibrated probability)
+
+Supporting evidence:
+- [CONFIRMED FACT] `dep-31448d11` (moderate): Deployment of payment-service 5.7.3->5.8.0 at 2026-09-14T11:32:00Z (SUCCEEDED): Add idempotency-key header logging
+- [OBSERVED EVIDENCE] `logpat-payment-service-e14637d4` (weak): 1x INFO on payment-service: 'Starting payment-service v5.8.0 (build 9921)' (first 2026-09-14T11:32:00Z, last 2026-09-14T11:32:00Z)
+
+Contradicting evidence:
+- [OBSERVED EVIDENCE] `logpat-payment-service-c828e437` (strong): 17x ERROR on payment-service: 'SQL query exceeded 2000ms statement timeout (charges.insert) req 25' (first 2026-09-14T11:28:17Z, last 2026-09-14T12:02:55Z)
+- [OBSERVED EVIDENCE] `logpat-order-service-22402aae` (strong): 9x ERROR on order-service: 'SQL query exceeded 2000ms statement timeout (orders.update) req 44' (first 2026-09-14T11:28:12Z, last 2026-09-14T12:01:12Z)
+- [OBSERVED EVIDENCE] `logpat-postgres-d629c24d` (strong): 7x WARN on postgres: 'storage: volume vol-0a3f write latency degraded (avg 835ms)' (first 2026-09-14T11:21:06Z, last 2026-09-14T11:58:54Z)
+- [OBSERVED EVIDENCE] `met-payment-service-p99_latency_ms-1130-1200` (moderate): payment-service p99_latency_ms: baseline 300.2 -> window mean 301.21 (max 325.22, change 0.3%), onset none detected
+- [OBSERVED EVIDENCE] `met-payment-service-error_rate-1130-1200` (weak): payment-service error_rate: baseline 0.8 -> window mean 8.76 (max 9.65, change 997.9%), onset 2026-09-14T11:30:00Z
+
+Remaining uncertainties / missing evidence:
+- [UNKNOWN] Payment-service per-endpoint latency around 11:32Z
+- [UNKNOWN] 5.8.0 code diff
+
+### 3. H3 - `resource_saturation` in `postgres` (confidence 0.00, critic: reject)
+**INFERENCE:** A long-running report_rollup() workload saturated DB I/O and connections, amplifying the storage degradation into statement timeouts. Mechanism: report_rollup() starts running (16.4s, from 11:28:01Z) -> heavy read/write I/O and connection hold on the already degraded volume -> contention drives charges.insert and orders.update past the 2000ms timeout -> user-service p95 rises via shared DB.
+
+Confidence breakdown: base 0.10; +0.08 corroboration across >=2 independent source types; +0.42 supporting evidence (2 refs, reliability-weighted, capped); -0.45 contradicting evidence (2 refs, capped 0.45); -0.30 proposed cause (11:28) is AFTER the first observed anomaly (11:22); -0.04 2 acknowledged evidence gaps; -0.40 critic review adjustment; = 0.00 (evidence-strength score, not a calibrated probability)
+
+Supporting evidence:
+- [OBSERVED EVIDENCE] `logpat-postgres-44883ca5` (strong): 4x WARN on postgres: 'duration: 16402 ms statement: SELECT report_rollup()' (first 2026-09-14T11:28:01Z, last 2026-09-14T11:53:40Z)
+- [OBSERVED EVIDENCE] `met-postgres-db_conn_util_pct-1110-1205` (moderate): postgres db_conn_util_pct: baseline 40.2 -> window mean 73.64 (max 96.22, change 83.2%), onset 2026-09-14T11:26:00Z
+
+Contradicting evidence:
+- [OBSERVED EVIDENCE] `logpat-postgres-d629c24d` (strong): 7x WARN on postgres: 'storage: volume vol-0a3f write latency degraded (avg 835ms)' (first 2026-09-14T11:21:06Z, last 2026-09-14T11:58:54Z)
+- [OBSERVED EVIDENCE] `logpat-postgres-7ce84fae` (moderate): 5x ERROR on postgres: 'checkpoint took 453.2 s; WAL write slow' (first 2026-09-14T11:24:14Z, last 2026-09-14T11:56:58Z)
+
+Remaining uncertainties / missing evidence:
+- [UNKNOWN] Report job schedule/trigger and who started it
+- [UNKNOWN] I/O attribution of report_rollup() versus storage slowness
+
+## Critic Review
+- **Verdict:** `APPROVED` (rounds reviewed: 1)
+- **Reasoning:** H1 (storage degradation on postgres volume vol-0a3f) is the leading hypothesis and is well supported in time. The earliest anomaly is the vol-0a3f write-latency WARN at 11:21:06Z, followed by disk_io_wait onset at 11:22Z, p95 onset at 11:23Z, slow WAL/checkpoints from 11:24Z, connection utilisation onset at 11:26Z, and statement timeouts in payment and order services from 11:28Z. Independent sources (postgres logs, disk metrics, latency metrics, connection metrics, app logs) agree on this sequence. H2 is rejected: the first charges.insert timeout (11:28:17Z) and the order-service timeouts (11:28:12Z) both precede the 5.8.0 startup at 11:32Z, payment p99 is flat through the release, and the postgres degradation predates the release. H3 is rejected as the root cause: report_rollup() started at 11:28:01Z, after the storage and checkpoint anomalies began. It may be an aggravating load factor on an already degraded volume, but it does not explain the onset. The pre-check blockers on H2 and H3 are valid.
+- H1: **accept** - Storage write-latency WARN (11:21:06Z) precedes disk IO wait (11:22Z), p95 (11:23Z), checkpoint slowdown (11:24Z), connection saturation (11:26Z), and app timeouts (11:28Z). Consistent multi-source chain. CPU not saturated, which fits an I/O bottleneck. Storage-layer events and pg_stat wait events are not available to the team's tools, but that does not block approval of the category and culprit.
+- H2: **reject** - Timeouts start at 11:28 (payment) and 11:28:12 (order-service, not deployed) before the 11:32 release. Payment p99 shows no change. Storage degradation at 11:21 precedes the release. Timing contradicts causation.
+- H3: **reject** - report_rollup() began at 11:28:01Z, after disk IO wait (11:22Z), checkpoint slowdown (11:24Z), and connection climb (11:26Z) were already underway. It can only be a contributing load on top of the storage fault, not the root cause. Pre-check blocker confirmed.
+- pre-check blocking `temporal_precedence` on H2: proposed cause at 11:32 but anomalies already began at 11:22
+- pre-check blocking `temporal_precedence` on H3: proposed cause at 11:28 but anomalies already began at 11:22
+- alternative: report_rollup() amplified contention on the already-degraded volume (aggravating factor, not root cause; its impact is not quantified)
+- alternative: Autovacuum on public.orders (11:16 and 11:23) may add some I/O load, but it is minor and does not explain the onset
+
+## Probable Root Cause
+ROOT CAUSE IDENTIFIED (critic-approved; still an INFERENCE from evidence): infrastructure_degradation in postgres - Storage degradation on postgres volume vol-0a3f slowed writes and checkpoints, holding DB connections and causing payment charges.insert and order orders.update statement timeouts.
+
+## Corrective Actions
+- Investigate and remediate the degraded postgres volume vol-0a3f with the storage/infrastructure team; engage the cloud provider if the volume is faulty, and plan failover or migration of the database to healthy storage (logpat-postgres-d629c24d).
+- Pause or reschedule the report_rollup() workload until storage is healthy, to reduce I/O and connection contention on the already-degraded volume (logpat-postgres-44883ca5).
+- Keep payment-service 5.8.0 deployed unless storage remediation fails; do not roll back on the basis of this incident, since H2 is rejected (dep-31448d11).
+- Monitor and, if needed, temporarily raise or tune the 2000ms statement timeout and connection pool limits to reduce user-facing errors while storage is remediated; treat this as a mitigation, not a fix.
+
+## Preventive Actions
+- Add alerting on block-device write latency and disk_io_wait for database volumes, so degradation is detected before it reaches checkpoints and query latency (met-postgres-disk_io_wait_ms-1110-1205).
+- Establish capacity and I/O isolation for reporting workloads (for example, a read replica or off-peak scheduling) so batch jobs cannot amplify contention on the primary.
+- Add postgres checkpoint-duration and WAL-write-latency alerts to catch slow-checkpoint conditions early (logpat-postgres-7ce84fae).
+- Review the 835 ms average write latency figure, which rests on a single WARN line, by confirming it with direct volume metrics to strengthen future root-cause evidence.
+
+## Monitoring Recommendations
+- Alert when postgres disk_io_wait_ms exceeds a threshold (for example, 20 ms sustained over 5 minutes, baseline is about 2 ms) and when p95_latency_ms rises more than 5x baseline.
+- Alert on postgres db_conn_util_pct above 80% sustained for 5 minutes, and on any 'checkpoint took' or 'WAL write slow' log lines.
+- Alert on payment-service and order-service statement-timeout error logs (charges.insert, orders.update) and on payment error_rate above 1%, which is above the 0.8% baseline.
+- Track the vol-0a3f write-latency WARN message and alert on any occurrence, so storage issues are visible at the first WARN (11:21Z in this incident).
+- Record deployment events and their start times alongside error-rate panels, so release-timing questions can be answered quickly from dashboards.
+
+## Evidence Gaps
+- none recorded
+
+## Limitations
+- The 835 ms average write latency comes from a single WARN line; the magnitude of the storage effect relies on it and on the disk_io_wait metric.
+- It is not verified whether the storage degradation is independent of database load.
+- The contribution of report_rollup() to timeout severity is not quantified.
+- Autovacuum on public.orders (11:16Z and 11:23Z) may add some I/O load; its effect is judged minor but not measured.
+- Confidence values are rule-based evidence-strength scores, not calibrated probabilities.
+- Investigation terminated because: critic verdict APPROVED
+
+## Final Status
+`ROOT_CAUSE_IDENTIFIED`
+
+The most probable root cause of INC-005 is storage degradation on postgres volume vol-0a3f, which slowed database writes and checkpoints and led to statement timeouts and payment and order errors. The evidence from independent sources (postgres logs, disk, latency and connection metrics, and application logs) agrees on this sequence, with the storage warning preceding all user-facing impact by about seven minutes. The payment-service 5.8.0 release and the report_rollup() workload are rejected as root causes, though the rollup may have aggravated contention. Mitigation should focus on the storage volume and on pausing non-essential heavy workloads, with alerting added to catch early storage degradation.
+
+## Execution Statistics
+```json
+{
+  "rounds": 1,
+  "tool_calls": 18,
+  "tool_failures": 0,
+  "tool_retries": 0,
+  "partial_results": 0,
+  "agent_failures": 0,
+  "agent_retries": 0,
+  "invalid_llm_outputs": 0,
+  "messages_exchanged": 17,
+  "evidence_records": 114,
+  "duration_s": 54.7,
+  "tokens": {
+    "input_tokens": 40,
+    "output_tokens": 17996,
+    "cache_read_tokens": 25442,
+    "cache_write_tokens": 58758,
+    "llm_calls": 13,
+    "cost_usd": 0.016601170000000002
+  },
+  "tokens_by_agent": {
+    "orchestrator": {
+      "input_tokens": 6,
+      "output_tokens": 986,
+      "cache_read_tokens": 1323,
+      "cache_write_tokens": 2144,
+      "llm_calls": 2,
+      "cost_usd": 0.00077483
+    },
+    "dependency": {
+      "input_tokens": 6,
+      "output_tokens": 1479,
+      "cache_read_tokens": 3181,
+      "cache_write_tokens": 3984,
+      "llm_calls": 2,
+      "cost_usd": 0.00126991
+    },
+    "observability": {
+      "input_tokens": 14,
+      "output_tokens": 8131,
+      "cache_read_tokens": 13300,
+      "cache_write_tokens": 25560,
+      "llm_calls": 5,
+      "cost_usd": 0.007394899999999999
+    },
+    "reasoning": {
+      "input_tokens": 4,
+      "output_tokens": 3466,
+      "cache_read_tokens": 0,
+      "cache_write_tokens": 13033,
+      "llm_calls": 1,
+      "cost_usd": 0.003362525
+    },
+    "critic": {
+      "input_tokens": 6,
+      "output_tokens": 1913,
+      "cache_read_tokens": 7638,
+      "cache_write_tokens": 10216,
+      "llm_calls": 2,
+      "cost_usd": 0.00231048
+    },
+    "reporting": {
+      "input_tokens": 4,
+      "output_tokens": 2021,
+      "cache_read_tokens": 0,
+      "cache_write_tokens": 3821,
+      "llm_calls": 1,
+      "cost_usd": 0.001488525
+    }
+  }
+}
+```

@@ -126,3 +126,8 @@ def test_api_validation_errors(client):
 
 def test_api_evaluate_results_404_before_run(client):
     assert client.get("/evaluate/results").status_code == 404
+
+
+def test_ui_served(client):
+    r = client.get("/")
+    assert r.status_code == 200 and "Multi-Agent Incident Investigator" in r.text

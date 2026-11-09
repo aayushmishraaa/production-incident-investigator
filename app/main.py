@@ -7,6 +7,9 @@ import logging
 from typing import Any, Literal, Optional
 
 from fastapi import BackgroundTasks, FastAPI, HTTPException
+from fastapi.responses import FileResponse
+from fastapi.staticfiles import StaticFiles
+from pathlib import Path
 from pydantic import BaseModel, Field
 
 from app.config import get_settings
@@ -25,6 +28,18 @@ from app.tools.data_store import list_incident_reports, load_incident_report
 logging.basicConfig(level=get_settings().log_level)
 app = FastAPI(title="Multi-Agent Production Incident Investigator", version="1.0.0",
               description="Six cooperating agents investigate simulated production incidents.")
+
+STATIC = Path(__file__).resolve().parent / "static"
+_charts = get_settings().results_dir / "charts"
+_charts.mkdir(parents=True, exist_ok=True)
+app.mount("/charts", StaticFiles(directory=_charts), name="charts")
+
+
+@app.get("/", include_in_schema=False)
+async def ui() -> FileResponse:
+    """Web dashboard: pick an incident, watch the agents work live, read the report."""
+    return FileResponse(STATIC / "index.html")
+
 
 _live: dict[str, InvestigationState] = {}
 _tasks: set[asyncio.Task] = set()

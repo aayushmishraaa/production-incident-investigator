@@ -30,7 +30,7 @@ compares the two systems across 12 synthetic incidents.
 - `results/charts/`: accuracy, grounding, latency, tool-call and token charts, plus confusion matrices
 - `results/coverage_html/`: the test coverage report
 - `transcript/`: the coding-assistant transcript (required by the assignment)
-- `demo/walkthrough.mp4`: a 4.5-minute narrated walkthrough built from real runs (`scripts/demo_live.py`, `scripts/make_demo_video.py`)
+- `demo/walkthrough.mp4`: a narrated ~5-minute browser playthrough of the web UI. It shows real investigations of INC-005 (misleading deploy) and INC-009 (tool failures), then the evaluation tab. It is built by `scripts/record_ui_demo.py`, using slides from `scripts/make_demo_video.py`.
 
 ## Setup
 
@@ -64,6 +64,14 @@ python -m app.cli history                                     # persisted invest
 python -m app.cli spend                                       # cumulative LLM spend vs cap
 python -m app.cli serve                                       # FastAPI on :8000
 ```
+
+### Web UI
+
+Run `python -m app.cli serve` and open **http://127.0.0.1:8000/**. The dashboard lets you:
+- pick an incident and run the 6-agent investigation or the single-agent baseline
+- watch the pipeline stages, agent status, structured messages and tool calls, hypothesis scores and the Critic verdict update live
+- read the final report
+- browse the evaluation results and charts, and reopen past investigations
 
 ### API
 
@@ -119,7 +127,7 @@ code:
 ## Tests
 
 ```bash
-pytest                                     # 98 tests, offline (stub LLM), ~10 s
+pytest                                     # 99 tests, offline (stub LLM), ~10 s
 pytest --cov=app --cov-report=html:results/coverage_html
 ```
 

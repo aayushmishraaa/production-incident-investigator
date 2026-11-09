@@ -1,0 +1,345 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Incident Investigator</title>
+<style>
+:root{
+  --bg:#0b1020; --panel:#121a2e; --panel2:#18223b; --line:#25304d; --text:#e6ebf5; --muted:#8b97b3;
+  --blue:#5b9cff; --green:#3ecf8e; --amber:#f5b942; --red:#f26d6d; --violet:#a98bff; --cyan:#4fd1e8;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font:14px/1.45 -apple-system,BlinkMacSystemFont,"Inter","Segoe UI",sans-serif}
+header{display:flex;align-items:center;gap:16px;padding:14px 24px;border-bottom:1px solid var(--line);background:#0d1426}
+header h1{font-size:18px;margin:0;font-weight:650;letter-spacing:.2px}
+header .logo{width:28px;height:28px;border-radius:8px;background:linear-gradient(135deg,var(--blue),var(--violet));display:grid;place-items:center;font-weight:800}
+nav{display:flex;gap:4px;margin-left:24px}
+nav button{background:none;border:0;color:var(--muted);padding:8px 14px;border-radius:8px;font:inherit;cursor:pointer}
+nav button.active{background:var(--panel2);color:var(--text)}
+.badge{font-size:12px;padding:3px 9px;border-radius:999px;background:var(--panel2);color:var(--muted);border:1px solid var(--line)}
+.spacer{flex:1}
+main{display:grid;grid-template-columns:330px 1fr;height:calc(100vh - 57px)}
+aside{border-right:1px solid var(--line);overflow:auto;padding:14px}
+.inc{padding:11px 12px;border:1px solid var(--line);border-radius:10px;margin-bottom:8px;cursor:pointer;background:var(--panel)}
+.inc:hover{border-color:#3a4a73}
+.inc.sel{border-color:var(--blue);box-shadow:0 0 0 1px var(--blue) inset}
+.inc .id{font-weight:650;font-size:12.5px;color:var(--blue)} .inc .sev{float:right;font-size:11px;color:var(--amber)}
+.inc .t{margin-top:2px;font-weight:550}
+.inc .s{font-size:12px;color:var(--muted);margin-top:3px}
+section.view{overflow:auto;padding:18px 22px;display:none}
+section.view.on{display:block}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px 16px;margin-bottom:14px}
+.card h3{margin:0 0 10px;font-size:13px;text-transform:uppercase;letter-spacing:.7px;color:var(--muted);font-weight:600}
+.row{display:flex;gap:14px} .col{flex:1;min-width:0}
+.btn{background:var(--blue);color:#fff;border:0;border-radius:9px;padding:10px 16px;font:inherit;font-weight:600;cursor:pointer}
+.btn.alt{background:var(--panel2);border:1px solid var(--line);color:var(--text)}
+.btn:disabled{opacity:.5;cursor:default}
+.incdesc{color:var(--muted);margin:6px 0 12px}
+.stages{display:flex;gap:6px}
+.stage{flex:1;text-align:center;padding:9px 4px;border-radius:9px;background:var(--panel2);color:var(--muted);font-weight:600;font-size:12.5px;border:1px solid var(--line);position:relative}
+.stage.done{color:var(--green);border-color:#1f5f45}
+.stage.cur{color:#fff;border-color:var(--blue);background:#1b2c55;box-shadow:0 0 18px -6px var(--blue)}
+.agents{display:grid;grid-template-columns:repeat(6,1fr);gap:10px}
+.agent{background:var(--panel2);border:1px solid var(--line);border-radius:11px;padding:11px}
+.agent .n{font-weight:650;font-size:13px;text-transform:capitalize}
+.agent .st{font-size:11.5px;margin-top:4px;color:var(--muted)}
+.agent .m{font-size:11.5px;color:var(--muted);margin-top:6px}
+.agent.running{border-color:var(--blue)} .agent.running .st{color:var(--blue)}
+.agent.completed .st{color:var(--green)} .agent.failed .st{color:var(--red)}
+.dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:6px;background:var(--muted);vertical-align:1px}
+.running .dot{background:var(--blue);animation:pulse 1s infinite} .completed .dot{background:var(--green)} .failed .dot{background:var(--red)}
+@keyframes pulse{50%{opacity:.25}}
+.feed{height:330px;overflow:auto;font:12px/1.55 "SF Mono",Menlo,monospace;background:#080c18;border-radius:9px;padding:8px 10px;border:1px solid var(--line)}
+.feed div{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.feed .tm{color:#5a6684} .feed .msg{color:#9cc3ff} .feed .tool{color:#c9d3e8} .feed .bad{color:var(--red)} .feed .warn{color:var(--amber)} .feed .ok{color:var(--green)}
+.hyp{padding:9px 0;border-bottom:1px solid var(--line)} .hyp:last-child{border:0}
+.hyp .top{display:flex;justify-content:space-between;gap:10px}
+.hyp .cat{font-weight:650} .hyp .svc{color:var(--cyan)}
+.bar{height:7px;background:var(--panel2);border-radius:9px;margin-top:6px;overflow:hidden}
+.bar i{display:block;height:100%;background:linear-gradient(90deg,var(--blue),var(--violet));transition:width .6s}
+.pill{font-size:11px;padding:2px 8px;border-radius:999px;border:1px solid var(--line);color:var(--muted);white-space:nowrap}
+.pill.supported,.pill.accept,.pill.APPROVED,.pill.ROOT_CAUSE_IDENTIFIED{color:var(--green);border-color:#1f5f45}
+.pill.rejected,.pill.reject,.pill.REJECTED,.pill.INVESTIGATION_FAILED{color:var(--red);border-color:#6b2a2a}
+.pill.needs_evidence,.pill.NEEDS_MORE_EVIDENCE,.pill.PROBABLE_ROOT_CAUSE{color:var(--amber);border-color:#6b5420}
+.pill.INCONCLUSIVE{color:var(--violet);border-color:#4a3c7a}
+.pill.RUNNING{color:var(--blue);border-color:#264a8a}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.stat{background:var(--panel2);border-radius:9px;padding:9px 11px}
+.stat b{display:block;font-size:19px} .stat span{font-size:11.5px;color:var(--muted)}
+.verdict{font-size:13px;color:#cfd6e8}
+.status-big{font-size:22px;font-weight:750;margin:2px 0 8px}
+.report p{margin:6px 0}
+.report ul{margin:4px 0 8px 18px;padding:0}
+.lbl{font-size:10.5px;font-weight:700;padding:1px 6px;border-radius:5px;margin-right:6px;background:#1d2945;color:#9cc3ff}
+.lbl.FACT{background:#173b2c;color:var(--green)} .lbl.UNKNOWN{background:#3a2e14;color:var(--amber)} .lbl.INFERENCE{background:#2c2350;color:var(--violet)}
+.empty{color:var(--muted);text-align:center;padding:30px}
+table{border-collapse:collapse;width:100%;font-size:13px}
+td,th{border-bottom:1px solid var(--line);padding:7px 9px;text-align:left} th{color:var(--muted);font-weight:600}
+td.num{text-align:right;font-variant-numeric:tabular-nums}
+.charts{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.charts img{width:100%;border-radius:10px;background:#fff}
+.hist{cursor:pointer} .hist:hover{background:var(--panel2)}
+</style>
+</head>
+<body>
+<header>
+  <div class="logo">⌁</div>
+  <h1>Multi-Agent Incident Investigator</h1>
+  <nav>
+    <button data-v="investigate" class="active">Investigate</button>
+    <button data-v="evaluation">Evaluation</button>
+    <button data-v="history">History</button>
+  </nav>
+  <div class="spacer"></div>
+  <span class="badge" id="health">connecting…</span>
+</header>
+<main>
+  <aside id="incidents"></aside>
+
+  <section class="view on" id="v-investigate">
+    <div class="card">
+      <div class="row" style="align-items:center">
+        <div class="col">
+          <div style="font-size:17px;font-weight:650" id="selTitle">Select an incident</div>
+          <div class="incdesc" id="selDesc">Pick one of the synthetic production incidents on the left.</div>
+        </div>
+        <div style="display:flex;gap:8px">
+          <button class="btn" id="runMulti" disabled>Investigate · 6 agents</button>
+          <button class="btn alt" id="runSingle" disabled>Single-agent baseline</button>
+        </div>
+      </div>
+      <div class="stages" id="stages"></div>
+    </div>
+
+    <div class="card"><h3>Agents</h3><div class="agents" id="agents"></div></div>
+
+    <div class="row">
+      <div class="col">
+        <div class="card"><h3>Live activity · structured messages &amp; tool calls</h3><div class="feed" id="feed"><div class="empty">No investigation running</div></div></div>
+      </div>
+      <div class="col">
+        <div class="card"><h3>Hypotheses (evidence-strength score)</h3><div id="hyps"><div class="empty">Waiting for the Reasoning agent</div></div></div>
+        <div class="card"><h3>Critic verdict</h3><div id="verdict" class="verdict"><div class="empty">Not reviewed yet</div></div></div>
+      </div>
+    </div>
+
+    <div class="card"><h3>Execution</h3><div class="stats" id="stats"></div></div>
+    <div class="card report" id="report"><h3>Final report</h3><div class="empty">The report appears when the investigation finishes</div></div>
+  </section>
+
+  <section class="view" id="v-evaluation">
+    <div class="card"><h3>Multi-agent vs single-agent · 12 incidents × 3 runs</h3><div id="evalMeta" class="incdesc"></div><div id="evalTable"></div></div>
+    <div class="charts">
+      <img src="/charts/accuracy_comparison.png" alt="accuracy">
+      <img src="/charts/grounding_comparison.png" alt="grounding">
+      <img src="/charts/latency_comparison.png" alt="latency">
+      <img src="/charts/token_comparison.png" alt="tokens">
+      <img src="/charts/confusion_multi_agent.png" alt="confusion multi">
+      <img src="/charts/confusion_single_agent.png" alt="confusion single">
+    </div>
+  </section>
+
+  <section class="view" id="v-history">
+    <div class="card"><h3>Investigation history (SQLite)</h3><div id="history"></div></div>
+  </section>
+</main>
+
+<script>
+const $ = s => document.querySelector(s);
+const STAGES = ["Plan","Gather evidence","Reason","Critique","Decide","Report"];
+const AGENTS = ["orchestrator","observability","dependency","reasoning","critic","reporting"];
+let incidents = [], selected = null, pollTimer = null, currentId = null;
+
+const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const t = iso => iso ? new Date(iso).toISOString().slice(11,19) : "";
+
+async function api(path, opts) {
+  const r = await fetch(path, opts);
+  if (!r.ok) throw new Error(path + " " + r.status);
+  return r.json();
+}
+
+document.querySelectorAll("nav button").forEach(b => b.onclick = () => {
+  document.querySelectorAll("nav button").forEach(x => x.classList.toggle("active", x === b));
+  document.querySelectorAll("section.view").forEach(v => v.classList.toggle("on", v.id === "v-" + b.dataset.v));
+  if (b.dataset.v === "evaluation") loadEval();
+  if (b.dataset.v === "history") loadHistory();
+});
+
+function renderStages(idx, done) {
+  $("#stages").innerHTML = STAGES.map((s,i) =>
+    `<div class="stage ${done || i < idx ? "done" : i === idx ? "cur" : ""}">${done || i < idx ? "✓ " : ""}${s}</div>`).join("");
+}
+function renderAgents(state) {
+  const st = state?.agent_status || {}, usage = state?.stats?.usage_by_agent || {}, calls = state?.tool_calls || [];
+  $("#agents").innerHTML = AGENTS.map(a => {
+    const s = st[a] || "idle", n = calls.filter(c => c.agent === a).length, u = usage[a];
+    const tok = u ? (u.input_tokens + u.output_tokens + u.cache_read_tokens + u.cache_write_tokens) : 0;
+    return `<div class="agent ${s}"><div class="n">${a}</div><div class="st"><span class="dot"></span>${s}</div>
+      <div class="m">${n} tool calls${tok ? " · " + (tok/1000).toFixed(1) + "k tok" : ""}</div></div>`;
+  }).join("");
+}
+renderStages(-1); renderAgents(null);
+
+function stageOf(state, done) {
+  if (done) return 6;
+  const tasks = state.tasks || [];
+  if (!tasks.length) return 0;
+  const running = tasks.filter(x => x.status === "running").map(x => x.agent);
+  const last = running.length ? running[running.length-1] : tasks[tasks.length-1].agent;
+  return {observability:1, dependency:1, reasoning:2, critic:3, reporting:5}[last] ?? 0;
+}
+
+function renderFeed(state) {
+  const ev = [];
+  for (const m of state.messages || []) {
+    if (m.message_type === "findings" && m.recipient === "reasoning") continue;
+    const p = m.payload || {}; let x = "";
+    if (m.message_type === "task_assignment") x = `round ${p.round}: ${p.objective || ""}`;
+    else if (m.message_type === "findings") x = `${(p.findings||[]).length} findings · ${p.summary || ""}`;
+    else if (m.message_type === "hypotheses") x = (p.hypotheses||[]).map(h => `${h.hypothesis_id}=${h.category}@${h.culprit_service}`).join(", ");
+    else if (m.message_type === "critic_verdict") x = `${p.verdict}: ${p.summary || ""}`;
+    else if (m.message_type === "evidence_request") x = `→ ${p.target_agent}: ${p.request}`;
+    else if (m.message_type === "error") x = `task failed: ${p.error || ""}`;
+    const cls = m.message_type === "critic_verdict" ? "ok" : m.message_type === "error" ? "bad" : "msg";
+    ev.push([m.timestamp, `<span class="${cls}">✉ ${m.sender} → ${m.recipient} ${m.message_type.toUpperCase()}</span> ${esc(x)}`]);
+  }
+  for (const c of state.tool_calls || []) {
+    const svc = c.arguments?.service ? `(${c.arguments.service})` : "()";
+    const cls = !c.success ? "bad" : c.is_partial || c.attempts > 1 ? "warn" : "tool";
+    const st = !c.success ? `FAILED ${c.error_code}` : c.is_partial ? "PARTIAL" : "ok";
+    ev.push([c.timestamp, `<span class="${cls}">⚙ ${c.agent} ${c.tool_name}${esc(svc)} ${st}${c.attempts > 1 ? " · attempts " + c.attempts : ""} · +${c.evidence_ids.length} evidence</span>`]);
+  }
+  ev.sort((a,b) => a[0] < b[0] ? -1 : 1);
+  const f = $("#feed");
+  const stick = f.scrollTop + f.clientHeight >= f.scrollHeight - 30;
+  f.innerHTML = ev.length ? ev.map(([ts,h]) => `<div><span class="tm">${t(ts)}</span> ${h}</div>`).join("") : '<div class="empty">Starting…</div>';
+  if (stick) f.scrollTop = f.scrollHeight;
+}
+
+function renderHyps(state) {
+  const hs = [...(state.hypotheses || [])].sort((a,b) => (a.status === "rejected") - (b.status === "rejected") || b.confidence - a.confidence);
+  if (!hs.length) return;
+  $("#hyps").innerHTML = hs.map(h => `<div class="hyp"><div class="top"><div><b>${h.hypothesis_id}</b>
+    <span class="cat">${esc(h.category)}</span> in <span class="svc">${esc(h.culprit_service || "?")}</span></div>
+    <div><span class="pill ${h.status}">${h.status}</span> <b>${h.confidence.toFixed(2)}</b></div></div>
+    <div style="color:var(--muted);font-size:12.5px;margin-top:3px">${esc(h.description).slice(0,190)}</div>
+    <div class="bar"><i style="width:${Math.round(h.confidence*100)}%"></i></div></div>`).join("");
+}
+function renderVerdict(state) {
+  const vs = state.critic_verdicts || [];
+  if (!vs.length) return;
+  const v = vs[vs.length-1];
+  const block = (v.precheck_issues||[]).filter(i => i.severity === "blocking");
+  $("#verdict").innerHTML = `<div style="margin-bottom:6px"><span class="pill ${v.verdict}">${v.verdict}</span>
+    <span style="color:var(--muted)"> round ${v.round} of ${state.config.max_rounds}</span></div>
+    <div>${esc(v.summary).slice(0,420)}</div>
+    ${block.length ? `<div style="margin-top:8px;font-size:12.5px;color:var(--amber)">Blocking pre-checks: ${block.map(i => `${i.hypothesis_id} ${i.check}`).join(" · ")}</div>` : ""}
+    ${(v.evidence_requests||[]).length ? `<div style="margin-top:6px;font-size:12.5px;color:var(--cyan)">Evidence requested: ${v.evidence_requests.map(r => r.target_agent + ": " + esc(r.request)).join(" | ").slice(0,260)}</div>` : ""}`;
+}
+function renderStats(state) {
+  const s = state.stats || {}, u = s.usage_total || {};
+  const tok = s.tokens_available ? ((u.input_tokens+u.output_tokens+u.cache_read_tokens+u.cache_write_tokens)/1000).toFixed(1) + "k" : "n/a";
+  const items = [["round", state.round], ["tool calls", s.tool_calls], ["failed / retried", `${s.tool_failures} / ${s.tool_retries}`],
+    ["partial results", s.partial_results], ["messages", (state.messages||[]).length], ["evidence records", Object.keys(state.evidence||{}).length],
+    ["tokens", tok], ["cost", s.tokens_available ? "$" + (u.cost_usd||0).toFixed(3) : "n/a"]];
+  $("#stats").innerHTML = items.map(([k,v]) => `<div class="stat"><b>${v ?? 0}</b><span>${k}</span></div>`).join("");
+}
+function renderReport(r) {
+  const sec = (title, arr) => arr && arr.length ? `<p><b>${title}</b></p><ul>${arr.map(x => `<li>${esc(x)}</li>`).join("")}</ul>` : "";
+  const sym = (r.observed_symptoms||[]).slice(0,6).map(s => {
+    const k = s.label.includes("FACT") ? "FACT" : s.label.includes("UNKNOWN") ? "UNKNOWN" : s.label.includes("INFERENCE") ? "INFERENCE" : "";
+    return `<li><span class="lbl ${k}">${esc(s.label)}</span>${esc(s.statement).slice(0,200)}</li>`;}).join("");
+  $("#report").innerHTML = `<h3>Final report · ${esc(r.investigation_id)} (${esc(r.system)})</h3>
+    <div class="status-big"><span class="pill ${r.final_status}" style="font-size:15px;padding:4px 12px">${r.final_status}</span></div>
+    <p><b>${esc(r.root_cause_statement)}</b></p>
+    <p>${esc(r.executive_summary)}</p>
+    <p><b>Observed symptoms</b></p><ul>${sym}</ul>
+    <div class="row"><div class="col">${sec("Corrective actions", r.corrective_actions)}</div>
+    <div class="col">${sec("Preventive actions", r.preventive_actions)}</div>
+    <div class="col">${sec("Monitoring", r.monitoring_recommendations)}</div></div>
+    ${sec("Evidence gaps", (r.evidence_gaps||[]).slice(0,5))}
+    <p style="color:var(--muted)">${esc(r.conclusion).slice(0,500)}</p>
+    <p><a style="color:var(--blue)" href="/investigations/${r.investigation_id}/report" target="_blank">Full JSON report ↗</a></p>`;
+}
+
+async function poll() {
+  if (!currentId) return;
+  try {
+    const d = await api(`/investigations/${currentId}`);
+    const state = d.state, done = d.status !== "RUNNING";
+    renderStages(stageOf(state, done), done); renderAgents(state); renderFeed(state);
+    renderHyps(state); renderVerdict(state); renderStats(state);
+    if (done) {
+      clearInterval(pollTimer); pollTimer = null;
+      renderReport(await api(`/investigations/${currentId}/report`));
+      $("#runMulti").disabled = $("#runSingle").disabled = false;
+    }
+  } catch (e) { console.warn(e); }
+}
+
+function resetPanels() {
+  $("#feed").innerHTML = '<div class="empty">Starting…</div>';
+  $("#hyps").innerHTML = '<div class="empty">Waiting for the Reasoning agent</div>';
+  $("#verdict").innerHTML = '<div class="empty">Not reviewed yet</div>';
+  $("#report").innerHTML = '<h3>Final report</h3><div class="empty">The report appears when the investigation finishes</div>';
+  renderStages(0); renderAgents(null);
+}
+
+async function run(system) {
+  if (!selected) return;
+  $("#runMulti").disabled = $("#runSingle").disabled = true;
+  resetPanels();
+  const body = {incident_id: selected.incident_id, system, wait: system === "single_agent"};
+  const d = await api("/investigate", {method:"POST", headers:{"content-type":"application/json"}, body: JSON.stringify(body)});
+  currentId = d.investigation_id;
+  if (pollTimer) clearInterval(pollTimer);
+  pollTimer = setInterval(poll, 1000); poll();
+}
+$("#runMulti").onclick = () => run("multi_agent");
+$("#runSingle").onclick = () => run("single_agent");
+
+function select(inc) {
+  selected = inc;
+  document.querySelectorAll(".inc").forEach(el => el.classList.toggle("sel", el.dataset.id === inc.incident_id));
+  $("#selTitle").textContent = `${inc.incident_id} · ${inc.title}`;
+  $("#selDesc").textContent = `${inc.description}  Affected: ${inc.affected_services.join(", ")} · symptom start ${t(inc.symptom_start)}Z`;
+  $("#runMulti").disabled = $("#runSingle").disabled = !!pollTimer;
+}
+
+async function loadEval() {
+  try {
+    const d = await api("/evaluate/results");
+    const m = d.summary.multi_agent, s = d.summary.single_agent, c = d.conditions;
+    $("#evalMeta").textContent = `${c.model} · effort ${c.effort} · ${c.runs_per_incident} runs × ${c.incidents.length} incidents · identical tools and limits`;
+    const rows = [["Root-cause accuracy","accuracy"],["Accuracy when diagnosed","accuracy_when_diagnosed"],["Wrong diagnoses","incorrect"],
+      ["Inconclusive","inconclusive"],["Hallucinated citations","hallucinated_citations_total"],["Unsupported hypotheses rate","unsupported_hypotheses_rate"],
+      ["Key-evidence recall","key_evidence_recall"],["Decoy handled","decoy_handling_rate"],["LLM-judge score (1-5)","judge_score_mean"],
+      ["Tool calls / investigation","tool_calls_mean"],["Latency mean (s)","latency_mean_s"],["Tokens / investigation","tokens_mean"],["Cost total (USD)","cost_usd_total"]];
+    const f = v => v == null ? "n/a" : typeof v === "number" ? (Number.isInteger(v) ? v : v.toFixed(3)) : v;
+    $("#evalTable").innerHTML = `<table><tr><th>Metric</th><th>Multi-agent</th><th>Single-agent</th></tr>${rows.map(([l,k]) =>
+      `<tr><td>${l}</td><td class="num">${f(m[k])}</td><td class="num">${f(s[k])}</td></tr>`).join("")}</table>`;
+  } catch { $("#evalTable").innerHTML = '<div class="empty">No evaluation yet - run python -m app.cli evaluate</div>'; }
+}
+async function loadHistory() {
+  const h = await api("/investigations?limit=40");
+  $("#history").innerHTML = `<table><tr><th>When</th><th>Incident</th><th>System</th><th>Status</th><th>Duration</th></tr>${h.map(r =>
+    `<tr class="hist" data-id="${r.investigation_id}"><td>${esc(r.created_at).slice(0,19).replace("T"," ")}</td><td>${r.incident_id}</td><td>${r.system}</td>
+    <td><span class="pill ${r.final_status}">${r.final_status}</span></td><td class="num">${(r.duration_s||0).toFixed(0)}s</td></tr>`).join("")}</table>`;
+  document.querySelectorAll(".hist").forEach(tr => tr.onclick = async () => {
+    document.querySelector('nav button[data-v="investigate"]').click();
+    currentId = tr.dataset.id; await poll();
+  });
+}
+
+(async () => {
+  try { const h = await api("/health"); $("#health").textContent = `${h.model} · ${h.llm_provider}`; } catch { $("#health").textContent = "offline"; }
+  incidents = await api("/incidents");
+  $("#incidents").innerHTML = incidents.map(i => `<div class="inc" data-id="${i.incident_id}"><span class="sev">${i.severity}</span>
+    <div class="id">${i.incident_id}</div><div class="t">${esc(i.title)}</div><div class="s">${i.affected_services.join(", ")}</div></div>`).join("");
+  document.querySelectorAll(".inc").forEach(el => el.onclick = () => select(incidents.find(i => i.incident_id === el.dataset.id)));
+})();
+</script>
+</body>
+</html>
