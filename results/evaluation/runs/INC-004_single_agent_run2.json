@@ -1,0 +1,352 @@
+{
+  "investigation_id": "inv-cdcaeda48f",
+  "system": "single_agent",
+  "incident_id": "INC-004",
+  "title": "Order API timeouts overnight",
+  "severity": "SEV2",
+  "affected_services": [
+    "order-service"
+  ],
+  "start_time": "2026-09-11T02:15:00+00:00",
+  "executive_summary": "INC-004: Order creation latency and timeouts began at 02:15Z. Earlier signals show the sequence: the invoice-reconciliation batch job started at 02:05Z on order-7f9c; CPU rose at 02:08Z; GC pauses of 2.6-9.7 s started at 02:08Z; memory rose from 02:10Z; the order-worker pool saturated at 02:12Z; p50 latency rose at 02:13Z; and error and timeout rates rose at 02:15Z. No deployments or config changes were recorded. Request rate was flat. Database connection utilisation was flat. Postgres CPU rose modestly (about 24%) from 02:11Z, likely a secondary effect. Status is PROBABLE because per-node and batch-job metrics are unavailable.",
+  "timeline": [
+    {
+      "time": "2026-09-11T01:48:19Z",
+      "label": "OBSERVED EVIDENCE",
+      "event": "First log: 6x WARN on order-service: 'Inventory reservation retry for sku-86' (first 2026-09-11T01:48:19Z, last 2026-09-11T02:29:28Z)",
+      "evidence_id": "logpat-order-service-95abd1bb"
+    },
+    {
+      "time": "2026-09-11T02:08:00Z",
+      "label": "OBSERVED EVIDENCE",
+      "event": "Anomaly onset: order-service cpu_pct: baseline 44.17 -> window mean 73.13 (max 100.0, change 65.6%), onset 2026-09-11T02:08:00Z",
+      "evidence_id": "met-order-service-cpu_pct-0145-0240"
+    },
+    {
+      "time": "2026-09-11T02:08:13Z",
+      "label": "OBSERVED EVIDENCE",
+      "event": "First log: 13x WARN on order-service: 'GC pause 8140ms (G1 Evacuation Pause)' (first 2026-09-11T02:08:13Z, last 2026-09-11T02:37:37Z)",
+      "evidence_id": "logpat-order-service-7b888968"
+    },
+    {
+      "time": "2026-09-11T02:12:03Z",
+      "label": "OBSERVED EVIDENCE",
+      "event": "First log: 11x WARN on order-service: 'Thread pool order-worker saturated: active=200 queue=19250' (first 2026-09-11T02:12:03Z, last 2026-09-11T02:37:28Z)",
+      "evidence_id": "logpat-order-service-300bdd51"
+    },
+    {
+      "time": "2026-09-11T02:13:00Z",
+      "label": "OBSERVED EVIDENCE",
+      "event": "Anomaly onset: order-service p50_latency_ms: baseline 79.95 -> window mean 609.02 (max 1314.66, change 661.8%), onset 2026-09-11T02:13:00Z",
+      "evidence_id": "met-order-service-p50_latency_ms-0145-0240"
+    },
+    {
+      "time": "2026-09-11T02:15:00Z",
+      "label": "OBSERVED EVIDENCE",
+      "event": "Anomaly onset: order-service error_rate: baseline 0.61 -> window mean 2.1 (max 4.47, change 244.9%), onset 2026-09-11T02:15:00Z",
+      "evidence_id": "met-order-service-error_rate-0145-0240"
+    },
+    {
+      "time": "2026-09-11T02:15:00Z",
+      "label": "OBSERVED EVIDENCE",
+      "event": "Anomaly onset: order-service timeout_rate: baseline 0.1 -> window mean 2.73 (max 6.41, change 2625.3%), onset 2026-09-11T02:15:00Z",
+      "evidence_id": "met-order-service-timeout_rate-0145-0240"
+    },
+    {
+      "time": "2026-09-11T02:15:00Z",
+      "label": "CONFIRMED FACT",
+      "event": "Reported symptom start",
+      "evidence_id": null
+    },
+    {
+      "time": "2026-09-11T02:15:11Z",
+      "label": "OBSERVED EVIDENCE",
+      "event": "First log: 7x ERROR on order-service: 'Request POST /v1/orders exceeded deadline 5000ms' (first 2026-09-11T02:15:11Z, last 2026-09-11T02:36:36Z)",
+      "evidence_id": "logpat-order-service-1c82530b"
+    },
+    {
+      "time": "2026-09-11T02:21:00Z",
+      "label": "CONFIRMED FACT",
+      "event": "Incident reported",
+      "evidence_id": null
+    }
+  ],
+  "observed_symptoms": [
+    {
+      "label": "OBSERVED EVIDENCE",
+      "statement": "order-service error_rate: baseline 0.61 -> window mean 2.1 (max 4.47, change 244.9%), onset 2026-09-11T02:15:00Z",
+      "evidence_ids": [
+        "met-order-service-error_rate-0145-0240"
+      ]
+    },
+    {
+      "label": "OBSERVED EVIDENCE",
+      "statement": "order-service timeout_rate: baseline 0.1 -> window mean 2.73 (max 6.41, change 2625.3%), onset 2026-09-11T02:15:00Z",
+      "evidence_ids": [
+        "met-order-service-timeout_rate-0145-0240"
+      ]
+    },
+    {
+      "label": "OBSERVED EVIDENCE",
+      "statement": "order-service cpu_pct: baseline 44.17 -> window mean 73.13 (max 100.0, change 65.6%), onset 2026-09-11T02:08:00Z",
+      "evidence_ids": [
+        "met-order-service-cpu_pct-0145-0240"
+      ]
+    },
+    {
+      "label": "OBSERVED EVIDENCE",
+      "statement": "order-service p50_latency_ms: baseline 79.95 -> window mean 609.02 (max 1314.66, change 661.8%), onset 2026-09-11T02:13:00Z",
+      "evidence_ids": [
+        "met-order-service-p50_latency_ms-0145-0240"
+      ]
+    }
+  ],
+  "investigation_performed": [],
+  "hypotheses": [
+    {
+      "rank": 1,
+      "hypothesis_id": "H1",
+      "category": "resource_saturation",
+      "culprit_service": "order-service",
+      "description": "Invoice-reconciliation batch job (batch_size=500000) started on an order-service node at 02:05Z and saturated CPU and heap, causing GC thrash and thread-pool exhaustion. Mechanism: The batch job consumes CPU and allocates heavily on a serving node; G1 evacuation pauses of 7-10 s stall request threads; the order-worker pool fills (active=200, queue ~19k); requests exceed the 5000 ms deadline.",
+      "confidence": 0.7,
+      "confidence_explanation": [
+        "self-reported by the single agent"
+      ],
+      "supporting_evidence": [
+        {
+          "evidence_id": "log-5b27294e",
+          "strength": "strong",
+          "note": "Batch job started 02:05Z on node order-7f9c, batch_size=500000",
+          "exists": true,
+          "label": "OBSERVED EVIDENCE",
+          "description": "INFO order-service: Scheduled job invoice-reconciliation started (batch_size=500000, node=order-7f9c)"
+        },
+        {
+          "evidence_id": "met-order-service-cpu_pct-0145-0240",
+          "strength": "strong",
+          "note": "CPU onset 02:08Z, from 44% to 100%",
+          "exists": true,
+          "label": "OBSERVED EVIDENCE",
+          "description": "order-service cpu_pct: baseline 44.17 -> window mean 73.13 (max 100.0, change 65.6%), onset 2026-09-11T02:08:00Z"
+        },
+        {
+          "evidence_id": "logpat-order-service-7b888968",
+          "strength": "strong",
+          "note": "GC pauses 2.6-9.7 s from 02:08Z",
+          "exists": true,
+          "label": "OBSERVED EVIDENCE",
+          "description": "13x WARN on order-service: 'GC pause 8140ms (G1 Evacuation Pause)' (first 2026-09-11T02:08:13Z, last 2026-09-11T02:37:37Z)"
+        },
+        {
+          "evidence_id": "logpat-order-service-300bdd51",
+          "strength": "strong",
+          "note": "Thread pool saturated from 02:12Z",
+          "exists": true,
+          "label": "OBSERVED EVIDENCE",
+          "description": "11x WARN on order-service: 'Thread pool order-worker saturated: active=200 queue=19250' (first 2026-09-11T02:12:03Z, last 2026-09-11T02:37:28Z)"
+        },
+        {
+          "evidence_id": "met-order-service-memory_pct-0145-0240",
+          "strength": "moderate",
+          "note": "Memory rose from 02:10Z, max 80.8%",
+          "exists": true,
+          "label": "OBSERVED EVIDENCE",
+          "description": "order-service memory_pct: baseline 55.25 -> window mean 65.29 (max 80.83, change 18.2%), onset 2026-09-11T02:14:00Z"
+        },
+        {
+          "evidence_id": "hist-HIST-2025-040",
+          "strength": "moderate",
+          "note": "Analogous past incident: batch job on serving nodes caused CPU, GC and thread-pool saturation",
+          "exists": true,
+          "label": "INFERENCE",
+          "description": "Past incident HIST-2025-040 'Order service CPU saturation from batch job' (similarity 0.6): Reconciliation batch job scheduled on serving nodes."
+        }
+      ],
+      "contradicting_evidence": [
+        {
+          "evidence_id": "met-order-service-request_rate-0145-0240",
+          "strength": "weak",
+          "note": "Request rate flat, so the load increase is not from traffic",
+          "exists": true,
+          "label": "OBSERVED EVIDENCE",
+          "description": "order-service request_rate: baseline 250.23 -> window mean 250.72 (max 274.8, change 0.2%), onset none detected"
+        }
+      ],
+      "missing_evidence": [
+        "Per-node CPU and heap metrics for order-7f9c to confirm the batch job drove usage",
+        "Batch job start and finish logs and its resource profile",
+        "Whether the batch job runs on the same nodes that serve requests"
+      ],
+      "critic_decision": null
+    },
+    {
+      "rank": 2,
+      "hypothesis_id": "H3",
+      "category": "upstream_dependency_degradation",
+      "culprit_service": null,
+      "description": "Degradation in a downstream dependency (inventory, payment, postgres) made order threads block, which then led to saturation. Mechanism: Slow dependency calls hold worker threads; the queue builds; GC pressure follows.",
+      "confidence": 0.15,
+      "confidence_explanation": [
+        "self-reported by the single agent"
+      ],
+      "supporting_evidence": [
+        {
+          "evidence_id": "met-postgres-cpu_pct-0145-0240",
+          "strength": "weak",
+          "note": "Postgres CPU +24% from 02:11Z, after order CPU onset",
+          "exists": true,
+          "label": "OBSERVED EVIDENCE",
+          "description": "postgres cpu_pct: baseline 35.11 -> window mean 43.57 (max 54.78, change 24.1%), onset 2026-09-11T02:11:00Z"
+        },
+        {
+          "evidence_id": "logpat-order-service-95abd1bb",
+          "strength": "weak",
+          "note": "Inventory reservation retries from 01:48Z, low volume",
+          "exists": true,
+          "label": "OBSERVED EVIDENCE",
+          "description": "6x WARN on order-service: 'Inventory reservation retry for sku-86' (first 2026-09-11T01:48:19Z, last 2026-09-11T02:29:28Z)"
+        }
+      ],
+      "contradicting_evidence": [
+        {
+          "evidence_id": "met-postgres-p99_latency_ms-0145-0240",
+          "strength": "strong",
+          "note": "Postgres p99 flat (-0.6%)",
+          "exists": true,
+          "label": "OBSERVED EVIDENCE",
+          "description": "postgres p99_latency_ms: baseline 25.06 -> window mean 24.92 (max 27.38, change -0.6%), onset none detected"
+        },
+        {
+          "evidence_id": "met-order-service-db_conn_util_pct-0145-0240",
+          "strength": "moderate",
+          "note": "DB connection utilisation flat",
+          "exists": true,
+          "label": "OBSERVED EVIDENCE",
+          "description": "order-service db_conn_util_pct: baseline 30.08 -> window mean 29.97 (max 32.7, change -0.4%), onset none detected"
+        },
+        {
+          "evidence_id": "met-order-service-cpu_pct-0145-0240",
+          "strength": "moderate",
+          "note": "Order CPU rose before postgres CPU, so the order side is the earlier anomaly",
+          "exists": true,
+          "label": "OBSERVED EVIDENCE",
+          "description": "order-service cpu_pct: baseline 44.17 -> window mean 73.13 (max 100.0, change 65.6%), onset 2026-09-11T02:08:00Z"
+        }
+      ],
+      "missing_evidence": [
+        "Payment and inventory service metrics for the window (not queried)"
+      ],
+      "critic_decision": null
+    },
+    {
+      "rank": 3,
+      "hypothesis_id": "H2",
+      "category": "deployment_regression",
+      "culprit_service": null,
+      "description": "A code or runtime change introduced a memory leak or allocation regression in order-service, causing GC thrash. Mechanism: Increased heap pressure leads to long G1 pauses and thread saturation.",
+      "confidence": 0.1,
+      "confidence_explanation": [
+        "self-reported by the single agent"
+      ],
+      "supporting_evidence": [
+        {
+          "evidence_id": "met-order-service-memory_pct-0145-0240",
+          "strength": "weak",
+          "note": "Memory rose 18%",
+          "exists": true,
+          "label": "OBSERVED EVIDENCE",
+          "description": "order-service memory_pct: baseline 55.25 -> window mean 65.29 (max 80.83, change 18.2%), onset 2026-09-11T02:14:00Z"
+        }
+      ],
+      "contradicting_evidence": [
+        {
+          "evidence_id": "get_deployments-empty",
+          "strength": "strong",
+          "note": "No deployments recorded in the 00:00-02:40Z window",
+          "exists": false,
+          "label": "UNKNOWN",
+          "description": "NOT FOUND in collected evidence"
+        }
+      ],
+      "missing_evidence": [
+        "Heap dumps or allocation profiles"
+      ],
+      "critic_decision": null
+    }
+  ],
+  "critic_review": {
+    "verdict": "NOT_RUN",
+    "rounds_reviewed": 0
+  },
+  "evidence_gaps": [],
+  "probable_root_cause": {
+    "hypothesis_id": "H1",
+    "category": "resource_saturation",
+    "culprit_service": "order-service",
+    "description": "Invoice-reconciliation batch job (batch_size=500000) started on an order-service node at 02:05Z and saturated CPU and heap, causing GC thrash and thread-pool exhaustion.",
+    "confidence": 0.7,
+    "label": "MOST PROBABLE EXPLANATION (INFERENCE, not confirmed)"
+  },
+  "root_cause_statement": "MOST PROBABLE EXPLANATION (INFERENCE, not confirmed): resource_saturation in order-service - Invoice-reconciliation batch job (batch_size=500000) started on an order-service node at 02:05Z and saturated CPU and heap, causing GC thrash and thread-pool exhaustion.",
+  "corrective_actions": [
+    "Stop or throttle the invoice-reconciliation job on order-7f9c (reduce batch_size) to relieve CPU and GC pressure",
+    "Restart or drain order-service pods showing GC thrash to restore worker threads",
+    "Move the reconciliation job to dedicated batch workers"
+  ],
+  "preventive_actions": [
+    "Isolate batch and scheduled jobs from request-serving nodes",
+    "Add batch_size limits and CPU and heap guardrails to scheduled jobs",
+    "Add a runbook step to check scheduled jobs at the start of overnight incidents"
+  ],
+  "monitoring_recommendations": [
+    "Alert on per-node CPU above 85% and GC pause above 1 s for order-service",
+    "Alert on order-worker queue depth and thread-pool saturation",
+    "Track the batch job's runtime, CPU and heap usage",
+    "Collect per-node metrics for all order-service nodes; disk_io_wait is currently not collected"
+  ],
+  "limitations": [
+    "Timing correlation with the batch job start does not prove causation",
+    "Aggregate metrics may hide a single hot node",
+    "Historical match is only an analogy",
+    "[agent-reported gap] No per-node metrics for order-service (aggregate only)",
+    "[agent-reported gap] No batch job resource or completion logs",
+    "[agent-reported gap] Payment and inventory services not examined",
+    "[agent-reported gap] disk_io_wait not collected for order-service",
+    "Confidence values are rule-based evidence-strength scores, not calibrated probabilities.",
+    "Investigation terminated because: agent submitted"
+  ],
+  "final_status": "PROBABLE_ROOT_CAUSE",
+  "conclusion": "Order-service overnight timeouts were most likely caused by resource saturation on order-service nodes (CPU and heap/GC thrash) that began about 02:08Z, shortly after the scheduled invoice-reconciliation batch job (batch_size=500000) started on node order-7f9c at 02:05Z. The saturation exhausted the order-worker thread pool, producing deadline-exceeded timeouts. No deployment or configuration change was recorded. The causal link to the batch job is inferred from timing and a historical analogy; the job's own resource usage is not directly measured.",
+  "statistics": {
+    "rounds": 1,
+    "tool_calls": 11,
+    "tool_failures": 0,
+    "tool_retries": 0,
+    "partial_results": 0,
+    "agent_failures": 0,
+    "agent_retries": 0,
+    "invalid_llm_outputs": 1,
+    "messages_exchanged": 0,
+    "evidence_records": 43,
+    "duration_s": 30.71,
+    "tokens": {
+      "input_tokens": 12,
+      "output_tokens": 7751,
+      "cache_read_tokens": 41494,
+      "cache_write_tokens": 17415,
+      "llm_calls": 5,
+      "cost_usd": 0.006468514999999999
+    },
+    "tokens_by_agent": {
+      "single_agent": {
+        "input_tokens": 12,
+        "output_tokens": 7751,
+        "cache_read_tokens": 41494,
+        "cache_write_tokens": 17415,
+        "llm_calls": 5,
+        "cost_usd": 0.006468514999999999
+      }
+    }
+  }
+}

@@ -1,0 +1,439 @@
+{
+  "investigation_id": "inv-cb423b9842",
+  "system": "single_agent",
+  "incident_id": "INC-003",
+  "title": "Payment service slow responses",
+  "severity": "SEV2",
+  "affected_services": [
+    "payment-service"
+  ],
+  "start_time": "2026-09-08T18:10:00+00:00",
+  "executive_summary": "Payment-service slowness (p99 ~300ms to ~3.4s, timeouts 0.1% to ~6%) is caused by auth-service degradation. auth-service p99 rose from 86ms to ~3.3s at 18:07-18:10, its error rate rose to ~2.9%, and CPU went from 30% to ~47%, with request-queue waits of 2-10s on /v1/token/verify. Payment logs show 3000ms upstream timeouts to auth-service starting at 18:10:19. Request volume was flat, so this is not a traffic surge. The probable trigger is slow JWKS refresh from identity-provider (120-970ms, first at 18:06:12), but this is not confirmed. Payment's own resources and error rate were unchanged.",
+  "timeline": [
+    {
+      "time": "2026-09-08T17:35:00Z",
+      "label": "CONFIRMED FACT",
+      "event": "Config change on payment-service: log.level INFO -> DEBUG at 2026-09-08T17:35:00Z (OPS-2898)",
+      "evidence_id": "cfg-5c71fbd0"
+    },
+    {
+      "time": "2026-09-08T17:40:49Z",
+      "label": "OBSERVED EVIDENCE",
+      "event": "First log: 6x WARN on auth-service: 'Login rate limit hit for user id u-37' (first 2026-09-08T17:40:49Z, last 2026-09-08T18:16:34Z)",
+      "evidence_id": "logpat-auth-service-cc8d3b87"
+    },
+    {
+      "time": "2026-09-08T17:41:57Z",
+      "label": "OBSERVED EVIDENCE",
+      "event": "First log: 5x WARN on user-service: 'Deprecated API /v1/users/legacy called by client web-38' (first 2026-09-08T17:41:57Z, last 2026-09-08T18:03:53Z)",
+      "evidence_id": "logpat-user-service-742b555e"
+    },
+    {
+      "time": "2026-09-08T17:43:13Z",
+      "label": "OBSERVED EVIDENCE",
+      "event": "First log: 7x WARN on order-service: 'Inventory reservation retry for sku-47' (first 2026-09-08T17:43:13Z, last 2026-09-08T18:33:57Z)",
+      "evidence_id": "logpat-order-service-95abd1bb"
+    },
+    {
+      "time": "2026-09-08T17:43:32Z",
+      "label": "OBSERVED EVIDENCE",
+      "event": "First log: 6x WARN on postgres: 'duration: 16002 ms statement: SELECT report_rollup()' (first 2026-09-08T17:43:32Z, last 2026-09-08T18:20:00Z)",
+      "evidence_id": "logpat-postgres-44883ca5"
+    },
+    {
+      "time": "2026-09-08T17:47:23Z",
+      "label": "OBSERVED EVIDENCE",
+      "event": "First log: 6x WARN on api-gateway: 'Slow client upload from 10.4.71.12 (1.9MB)' (first 2026-09-08T17:47:23Z, last 2026-09-08T18:33:02Z)",
+      "evidence_id": "logpat-api-gateway-88b04940"
+    },
+    {
+      "time": "2026-09-08T17:49:55Z",
+      "label": "OBSERVED EVIDENCE",
+      "event": "First log: 4x WARN on notification-service: 'SMTP provider throttled 1 message' (first 2026-09-08T17:49:55Z, last 2026-09-08T18:17:11Z)",
+      "evidence_id": "logpat-notification-service-54b86179"
+    },
+    {
+      "time": "2026-09-08T18:06:12Z",
+      "label": "OBSERVED EVIDENCE",
+      "event": "First log: 11x WARN on auth-service: 'Slow JWKS refresh from identity-provider: 480 ms' (first 2026-09-08T18:06:12Z, last 2026-09-08T18:32:23Z)",
+      "evidence_id": "logpat-auth-service-171612d3"
+    },
+    {
+      "time": "2026-09-08T18:07:00Z",
+      "label": "OBSERVED EVIDENCE",
+      "event": "Anomaly onset: auth-service p99_latency_ms: baseline 90.36 -> window mean 1981.57 (max 4228.52, change 2092.9%), onset 2026-09-08T18:07:00Z",
+      "evidence_id": "met-auth-service-p99_latency_ms-1740-1835"
+    },
+    {
+      "time": "2026-09-08T18:07:11Z",
+      "label": "OBSERVED EVIDENCE",
+      "event": "First log: 9x WARN on auth-service: 'Request queue time high for /v1/token/verify: 9700ms' (first 2026-09-08T18:07:11Z, last 2026-09-08T18:31:56Z)",
+      "evidence_id": "logpat-auth-service-9246cbf2"
+    },
+    {
+      "time": "2026-09-08T18:08:00Z",
+      "label": "OBSERVED EVIDENCE",
+      "event": "Anomaly onset: auth-service error_rate: baseline 0.3 -> window mean 1.55 (max 3.29, change 416.1%), onset 2026-09-08T18:08:00Z",
+      "evidence_id": "met-auth-service-error_rate-1740-1835"
+    },
+    {
+      "time": "2026-09-08T18:09:00Z",
+      "label": "OBSERVED EVIDENCE",
+      "event": "Anomaly onset: payment-service p99_latency_ms: baseline 300.58 -> window mean 1703.85 (max 3577.47, change 466.8%), onset 2026-09-08T18:09:00Z",
+      "evidence_id": "met-payment-service-p99_latency_ms-1740-1835"
+    },
+    {
+      "time": "2026-09-08T18:09:00Z",
+      "label": "OBSERVED EVIDENCE",
+      "event": "Anomaly onset: payment-service p95_latency_ms: baseline 149.75 -> window mean 1290.1 (max 2845.09, change 761.5%), onset 2026-09-08T18:09:00Z",
+      "evidence_id": "met-payment-service-p95_latency_ms-1740-1835"
+    },
+    {
+      "time": "2026-09-08T18:09:13Z",
+      "label": "OBSERVED EVIDENCE",
+      "event": "First log: 19x WARN on payment-service: 'Call to auth-service /v1/token/verify took 2550ms' (first 2026-09-08T18:09:13Z, last 2026-09-08T18:33:42Z)",
+      "evidence_id": "logpat-payment-service-4cb3914c"
+    },
+    {
+      "time": "2026-09-08T18:10:00Z",
+      "label": "OBSERVED EVIDENCE",
+      "event": "Anomaly onset: payment-service timeout_rate: baseline 0.1 -> window mean 2.68 (max 6.26, change 2564.7%), onset 2026-09-08T18:10:00Z",
+      "evidence_id": "met-payment-service-timeout_rate-1740-1835"
+    },
+    {
+      "time": "2026-09-08T18:10:00Z",
+      "label": "CONFIRMED FACT",
+      "event": "Reported symptom start",
+      "evidence_id": null
+    },
+    {
+      "time": "2026-09-08T18:10:19Z",
+      "label": "OBSERVED EVIDENCE",
+      "event": "First log: 8x ERROR on payment-service: 'Upstream timeout calling auth-service after 3000ms (charge ch_15)' (first 2026-09-08T18:10:19Z, last 2026-09-08T18:31:52Z)",
+      "evidence_id": "logpat-payment-service-4672e5cc"
+    },
+    {
+      "time": "2026-09-08T18:16:00Z",
+      "label": "CONFIRMED FACT",
+      "event": "Incident reported",
+      "evidence_id": null
+    }
+  ],
+  "observed_symptoms": [
+    {
+      "label": "OBSERVED EVIDENCE",
+      "statement": "payment-service p99_latency_ms: baseline 300.58 -> window mean 1703.85 (max 3577.47, change 466.8%), onset 2026-09-08T18:09:00Z",
+      "evidence_ids": [
+        "met-payment-service-p99_latency_ms-1740-1835"
+      ]
+    },
+    {
+      "label": "OBSERVED EVIDENCE",
+      "statement": "payment-service p95_latency_ms: baseline 149.75 -> window mean 1290.1 (max 2845.09, change 761.5%), onset 2026-09-08T18:09:00Z",
+      "evidence_ids": [
+        "met-payment-service-p95_latency_ms-1740-1835"
+      ]
+    },
+    {
+      "label": "OBSERVED EVIDENCE",
+      "statement": "payment-service timeout_rate: baseline 0.1 -> window mean 2.68 (max 6.26, change 2564.7%), onset 2026-09-08T18:10:00Z",
+      "evidence_ids": [
+        "met-payment-service-timeout_rate-1740-1835"
+      ]
+    },
+    {
+      "label": "OBSERVED EVIDENCE",
+      "statement": "auth-service p99_latency_ms: baseline 90.36 -> window mean 1981.57 (max 4228.52, change 2092.9%), onset 2026-09-08T18:07:00Z",
+      "evidence_ids": [
+        "met-auth-service-p99_latency_ms-1740-1835"
+      ]
+    },
+    {
+      "label": "OBSERVED EVIDENCE",
+      "statement": "auth-service error_rate: baseline 0.3 -> window mean 1.55 (max 3.29, change 416.1%), onset 2026-09-08T18:08:00Z",
+      "evidence_ids": [
+        "met-auth-service-error_rate-1740-1835"
+      ]
+    }
+  ],
+  "investigation_performed": [],
+  "hypotheses": [
+    {
+      "rank": 1,
+      "hypothesis_id": "H1",
+      "category": "upstream_dependency_degradation",
+      "culprit_service": "auth-service",
+      "description": "auth-service is saturated or queueing on /v1/token/verify, and payment-service times out waiting on it. Mechanism: auth-service CPU rose ~30% to ~47% at 18:10 with flat request rate. Its request queue time reached 2-10s, so calls from payment exceed the 3000ms timeout and fail. Payment's latency and timeouts follow auth's degradation.",
+      "confidence": 0.7,
+      "confidence_explanation": [
+        "self-reported by the single agent"
+      ],
+      "supporting_evidence": [
+        {
+          "evidence_id": "met-auth-service-p99_latency_ms-1740-1835",
+          "strength": "strong",
+          "note": "p99 ~86ms baseline to ~3.3s at 18:10; onset 18:07, before payment onset 18:09",
+          "exists": true,
+          "label": "OBSERVED EVIDENCE",
+          "description": "auth-service p99_latency_ms: baseline 90.36 -> window mean 1981.57 (max 4228.52, change 2092.9%), onset 2026-09-08T18:07:00Z"
+        },
+        {
+          "evidence_id": "met-auth-service-error_rate-1740-1835",
+          "strength": "strong",
+          "note": "error rate 0.3% to ~2.9%, onset 18:08",
+          "exists": true,
+          "label": "OBSERVED EVIDENCE",
+          "description": "auth-service error_rate: baseline 0.3 -> window mean 1.55 (max 3.29, change 416.1%), onset 2026-09-08T18:08:00Z"
+        },
+        {
+          "evidence_id": "met-auth-service-cpu_pct-1740-1835",
+          "strength": "moderate",
+          "note": "CPU 30% to ~47% from 18:10",
+          "exists": true,
+          "label": "OBSERVED EVIDENCE",
+          "description": "auth-service cpu_pct: baseline 30.04 -> window mean 38.64 (max 52.26, change 28.6%), onset 2026-09-08T18:10:00Z"
+        },
+        {
+          "evidence_id": "logpat-auth-service-9246cbf2",
+          "strength": "strong",
+          "note": "Request queue time high for /v1/token/verify, 2.3-9.7s",
+          "exists": true,
+          "label": "OBSERVED EVIDENCE",
+          "description": "9x WARN on auth-service: 'Request queue time high for /v1/token/verify: 9700ms' (first 2026-09-08T18:07:11Z, last 2026-09-08T18:31:56Z)"
+        },
+        {
+          "evidence_id": "logpat-payment-service-4672e5cc",
+          "strength": "strong",
+          "note": "Upstream timeout calling auth-service after 3000ms, first 18:10:19",
+          "exists": true,
+          "label": "OBSERVED EVIDENCE",
+          "description": "8x ERROR on payment-service: 'Upstream timeout calling auth-service after 3000ms (charge ch_15)' (first 2026-09-08T18:10:19Z, last 2026-09-08T18:31:52Z)"
+        },
+        {
+          "evidence_id": "met-payment-service-timeout_rate-1740-1835",
+          "strength": "strong",
+          "note": "timeout rate 0.1% to ~6%, onset 18:10",
+          "exists": true,
+          "label": "OBSERVED EVIDENCE",
+          "description": "payment-service timeout_rate: baseline 0.1 -> window mean 2.68 (max 6.26, change 2564.7%), onset 2026-09-08T18:10:00Z"
+        },
+        {
+          "evidence_id": "topo-payment-service-upstream-d2",
+          "strength": "moderate",
+          "note": "payment depends on auth-service directly",
+          "exists": true,
+          "label": "CONFIRMED FACT",
+          "description": "payment-service depends on ['auth-service', 'postgres', 'redis']; called by ? (graph topology-v1)"
+        }
+      ],
+      "contradicting_evidence": [
+        {
+          "evidence_id": "met-auth-service-timeout_rate-1740-1835",
+          "strength": "moderate",
+          "note": "auth's own timeout rate is unchanged at ~0.05%",
+          "exists": true,
+          "label": "OBSERVED EVIDENCE",
+          "description": "auth-service timeout_rate: baseline 0.05 -> window mean 0.05 (max 0.06, change -0.3%), onset none detected"
+        },
+        {
+          "evidence_id": "met-auth-service-db_conn_util_pct-1740-1835",
+          "strength": "weak",
+          "note": "auth DB connection utilisation flat; the saturation mechanism is not identified",
+          "exists": true,
+          "label": "OBSERVED EVIDENCE",
+          "description": "auth-service db_conn_util_pct: baseline 30.29 -> window mean 30.2 (max 33.16, change -0.3%), onset none detected"
+        }
+      ],
+      "missing_evidence": [
+        "Thread pool, goroutine or event-loop metrics for auth-service",
+        "Auth per-endpoint latency breakdown and downstream call timing (auth -> redis / postgres)",
+        "Auth error logs explaining the failures themselves"
+      ],
+      "critic_decision": null
+    },
+    {
+      "rank": 2,
+      "hypothesis_id": "H2",
+      "category": "upstream_dependency_degradation",
+      "culprit_service": "identity-provider",
+      "description": "A slowdown at the external identity provider degrades auth-service JWKS refresh, which starves or stalls token verification. Mechanism: JWKS refresh calls to identity-provider slowed from 18:06 (120-970ms). Verification of tokens may block on refresh or on shared resources, and this starts auth degradation about 4 minutes before payment is affected.",
+      "confidence": 0.45,
+      "confidence_explanation": [
+        "self-reported by the single agent"
+      ],
+      "supporting_evidence": [
+        {
+          "evidence_id": "logpat-auth-service-171612d3",
+          "strength": "strong",
+          "note": "6+ slow JWKS refresh warnings from 18:06:12 to 18:19:16",
+          "exists": true,
+          "label": "OBSERVED EVIDENCE",
+          "description": "11x WARN on auth-service: 'Slow JWKS refresh from identity-provider: 480 ms' (first 2026-09-08T18:06:12Z, last 2026-09-08T18:32:23Z)"
+        },
+        {
+          "evidence_id": "hist-HIST-2025-031",
+          "strength": "moderate",
+          "note": "Historical analogy: identical symptom chain (JWKS slow -> auth degraded -> checkout slow)",
+          "exists": true,
+          "label": "INFERENCE",
+          "description": "Past incident HIST-2025-031 'Checkout slow due to slow identity calls' (similarity 0.447): auth-service degraded by slow identity-provider JWKS refresh."
+        },
+        {
+          "evidence_id": "met-auth-service-p99_latency_ms-1740-1835",
+          "strength": "moderate",
+          "note": "auth onset 18:07 follows the JWKS slowdown at 18:06",
+          "exists": true,
+          "label": "OBSERVED EVIDENCE",
+          "description": "auth-service p99_latency_ms: baseline 90.36 -> window mean 1981.57 (max 4228.52, change 2092.9%), onset 2026-09-08T18:07:00Z"
+        }
+      ],
+      "contradicting_evidence": [
+        {
+          "evidence_id": "logpat-auth-service-171612d3",
+          "strength": "moderate",
+          "note": "Refresh times are 100-970ms and intermittent, which may be too small to explain multi-second queueing alone",
+          "exists": true,
+          "label": "OBSERVED EVIDENCE",
+          "description": "11x WARN on auth-service: 'Slow JWKS refresh from identity-provider: 480 ms' (first 2026-09-08T18:06:12Z, last 2026-09-08T18:32:23Z)"
+        },
+        {
+          "evidence_id": "logpat-auth-service-dede43d7",
+          "strength": "weak",
+          "note": "JWKS cache refreshed at 18:01:53 and no later refresh success is logged, so the cache state after 18:06 is unknown",
+          "exists": true,
+          "label": "OBSERVED EVIDENCE",
+          "description": "1x INFO on auth-service: 'JWKS cache refreshed (keys=4)' (first 2026-09-08T18:01:53Z, last 2026-09-08T18:01:53Z)"
+        }
+      ],
+      "missing_evidence": [
+        "identity-provider's own health and latency metrics (no telemetry was available for it)",
+        "Whether auth verification blocks synchronously on JWKS refresh"
+      ],
+      "critic_decision": null
+    },
+    {
+      "rank": 3,
+      "hypothesis_id": "H3",
+      "category": "configuration_regression",
+      "culprit_service": "payment-service",
+      "description": "A DEBUG log-level change on payment-service adds overhead. This is a weak alternative and is ruled out as the primary cause. Mechanism: cfg-5c71fbd0 changed log.level INFO to DEBUG at 17:35, which could add logging cost on the request path.",
+      "confidence": 0.05,
+      "confidence_explanation": [
+        "self-reported by the single agent"
+      ],
+      "supporting_evidence": [
+        {
+          "evidence_id": "cfg-5c71fbd0",
+          "strength": "weak",
+          "note": "Config change 35 minutes before onset, in the same service",
+          "exists": true,
+          "label": "CONFIRMED FACT",
+          "description": "Config change on payment-service: log.level INFO -> DEBUG at 2026-09-08T17:35:00Z (OPS-2898)"
+        }
+      ],
+      "contradicting_evidence": [
+        {
+          "evidence_id": "met-payment-service-cpu_pct-1740-1835",
+          "strength": "strong",
+          "note": "payment CPU flat (40.4% vs 40.4%) after the change",
+          "exists": true,
+          "label": "OBSERVED EVIDENCE",
+          "description": "payment-service cpu_pct: baseline 40.41 -> window mean 40.36 (max 43.59, change -0.1%), onset none detected"
+        },
+        {
+          "evidence_id": "met-payment-service-p99_latency_ms-1740-1835",
+          "strength": "strong",
+          "note": "no latency change at 17:35; onset is at 18:09 and the change does not match it",
+          "exists": true,
+          "label": "OBSERVED EVIDENCE",
+          "description": "payment-service p99_latency_ms: baseline 300.58 -> window mean 1703.85 (max 3577.47, change 466.8%), onset 2026-09-08T18:09:00Z"
+        },
+        {
+          "evidence_id": "met-auth-service-p99_latency_ms-1740-1835",
+          "strength": "moderate",
+          "note": "the auth service that payment waits on shows the degradation, not payment",
+          "exists": true,
+          "label": "OBSERVED EVIDENCE",
+          "description": "auth-service p99_latency_ms: baseline 90.36 -> window mean 1981.57 (max 4228.52, change 2092.9%), onset 2026-09-08T18:07:00Z"
+        }
+      ],
+      "missing_evidence": [
+        "Payment log volume before and after 17:35"
+      ],
+      "critic_decision": null
+    }
+  ],
+  "critic_review": {
+    "verdict": "NOT_RUN",
+    "rounds_reviewed": 0
+  },
+  "evidence_gaps": [],
+  "probable_root_cause": {
+    "hypothesis_id": "H1",
+    "category": "upstream_dependency_degradation",
+    "culprit_service": "auth-service",
+    "description": "auth-service is saturated or queueing on /v1/token/verify, and payment-service times out waiting on it.",
+    "confidence": 0.7,
+    "label": "MOST PROBABLE EXPLANATION (INFERENCE, not confirmed)"
+  },
+  "root_cause_statement": "MOST PROBABLE EXPLANATION (INFERENCE, not confirmed): upstream_dependency_degradation in auth-service - auth-service is saturated or queueing on /v1/token/verify, and payment-service times out waiting on it.",
+  "corrective_actions": [
+    "Mitigate now: raise or relax the payment->auth timeout (3000ms) with a circuit breaker, or fail over token verification to a cached/local JWT validation path.",
+    "Scale auth-service or relieve its verify queue (add replicas, or shed load) to stop the queue growth.",
+    "Investigate the identity-provider JWKS slowdown and extend the JWKS cache TTL so verification stops depending on live refresh."
+  ],
+  "preventive_actions": [
+    "Add timeouts, retries budgets and circuit breakers around auth-service calls from payment-service.",
+    "Make JWKS refresh asynchronous with stale-while-revalidate, so identity-provider slowness cannot block token verification.",
+    "Alert on auth-service queue time and CPU, not only error rate."
+  ],
+  "monitoring_recommendations": [
+    "Alert on auth-service /v1/token/verify queue time > 500ms and p99 > 500ms.",
+    "Track identity-provider latency and JWKS refresh duration as a dashboard panel.",
+    "Alert on payment-service to auth-service timeout rate > 0.5%."
+  ],
+  "limitations": [
+    "The causal link from JWKS refresh to auth saturation is inferred, not proven.",
+    "Historical incident HIST-2025-031 is an analogy only.",
+    "The order of onset (JWKS 18:06, auth 18:07, payment 18:09-18:10) is based on 5-minute sampled metrics plus log timestamps.",
+    "[agent-reported gap] No telemetry for identity-provider itself.",
+    "[agent-reported gap] No thread-pool or event-loop metrics for auth-service.",
+    "[agent-reported gap] No payment log volume data around the 17:35 DEBUG change.",
+    "[agent-reported gap] Payment dashboard pods looked healthy, but the cause is in auth-service.",
+    "Confidence values are rule-based evidence-strength scores, not calibrated probabilities.",
+    "Investigation terminated because: agent submitted"
+  ],
+  "final_status": "PROBABLE_ROOT_CAUSE",
+  "conclusion": "Payment-service latency and timeouts are downstream effects of degraded auth-service. auth-service p99 and error rate rose ~7 minutes before payment-service p99 did, auth-service CPU rose at the same time, and payment's timeouts are specifically 3000ms timeouts calling auth-service /v1/token/verify. Payment's own CPU, DB connection utilisation and error rate were flat. The trigger inside auth-service is not fully confirmed: slow JWKS refreshes from identity-provider began at 18:06 and match a past incident, but the magnitudes are modest and auth CPU growth is not fully explained by them.",
+  "statistics": {
+    "rounds": 1,
+    "tool_calls": 11,
+    "tool_failures": 0,
+    "tool_retries": 0,
+    "partial_results": 0,
+    "agent_failures": 0,
+    "agent_retries": 0,
+    "invalid_llm_outputs": 0,
+    "messages_exchanged": 0,
+    "evidence_records": 76,
+    "duration_s": 25.51,
+    "tokens": {
+      "input_tokens": 10,
+      "output_tokens": 5759,
+      "cache_read_tokens": 34872,
+      "cache_write_tokens": 12953,
+      "llm_calls": 4,
+      "cost_usd": 0.004848345
+    },
+    "tokens_by_agent": {
+      "single_agent": {
+        "input_tokens": 10,
+        "output_tokens": 5759,
+        "cache_read_tokens": 34872,
+        "cache_write_tokens": 12953,
+        "llm_calls": 4,
+        "cost_usd": 0.004848345
+      }
+    }
+  }
+}

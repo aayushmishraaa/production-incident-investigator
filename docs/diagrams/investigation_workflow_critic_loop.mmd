@@ -1,0 +1,12 @@
+stateDiagram-v2
+    [*] --> plan
+    plan --> gather
+    gather --> reason
+    reason --> critique
+    critique --> decide
+    decide --> gather: NEEDS_MORE_EVIDENCE / REJECTED\nand rounds, tools, LLM calls, cost left\nand actionable requests
+    decide --> report: APPROVED / INCONCLUSIVE\nor any limit reached
+    plan --> report: budget stop
+    gather --> report: budget stop
+    reason --> report: budget stop / no hypotheses
+    report --> [*]

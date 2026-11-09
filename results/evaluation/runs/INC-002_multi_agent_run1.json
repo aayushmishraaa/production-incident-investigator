@@ -1,0 +1,702 @@
+{
+  "investigation_id": "inv-7b0acbdaf3",
+  "system": "multi_agent",
+  "incident_id": "INC-002",
+  "title": "Login and checkout failures",
+  "severity": "SEV1",
+  "affected_services": [
+    "api-gateway",
+    "auth-service",
+    "payment-service"
+  ],
+  "start_time": "2026-09-05T09:30:00+00:00",
+  "executive_summary": "INC-002 (SEV1, login and checkout failures) began at 09:30Z on 2026-09-05. The investigation status is ROOT_CAUSE_IDENTIFIED, with the most probable explanation being a deployment regression in auth-service 2.14.0 (deploy dep-cbc63772, 2.13.4 to 2.14.0, completed 09:28Z). The release migrated JWT validation to jose-4.2 and refactored the token cache. auth-service logs show \"unsupported key type 'EC' in JWKS (validator=jose-4.2, kid=k20)\" starting 09:29:00Z (logpat-auth-service-f41941c5). Its error rate rose from a 0.3% baseline to a window mean of about 12.9% (max 29.5%) starting 09:29:00Z (met-auth-service-error_rate-0900-0955). Downstream failures followed in order: api-gateway token-verify 500s from 09:29:03Z (logpat-api-gateway-7c1adbea) and payment-service auth-check 500s from 09:30:08Z (logpat-payment-service-a56d8d43). These failures explain the user logouts and checkout errors. Confidence in this hypothesis is 0.78. The critic approved the result.",
+  "timeline": [
+    {
+      "time": "2026-09-05T09:00:11Z",
+      "label": "OBSERVED EVIDENCE",
+      "event": "First log: 4x WARN on payment-service: 'Card network soft decline (code 05) for charge ch_74' (first 2026-09-05T09:00:11Z, last 2026-09-05T09:25:49Z)",
+      "evidence_id": "logpat-payment-service-7e9bf84f"
+    },
+    {
+      "time": "2026-09-05T09:01:05Z",
+      "label": "OBSERVED EVIDENCE",
+      "event": "First log: 5x WARN on api-gateway: 'Slow client upload from 10.4.90.12 (1.9MB)' (first 2026-09-05T09:01:05Z, last 2026-09-05T09:44:38Z)",
+      "evidence_id": "logpat-api-gateway-88b04940"
+    },
+    {
+      "time": "2026-09-05T09:02:03Z",
+      "label": "OBSERVED EVIDENCE",
+      "event": "First log: 8x WARN on postgres: 'duration: 14602 ms statement: SELECT report_rollup()' (first 2026-09-05T09:02:03Z, last 2026-09-05T09:54:06Z)",
+      "evidence_id": "logpat-postgres-44883ca5"
+    },
+    {
+      "time": "2026-09-05T09:10:00Z",
+      "label": "CONFIRMED FACT",
+      "event": "Config change on user-service: feature.profile_badges false -> true at 2026-09-05T09:10:00Z (OPS-2306)",
+      "evidence_id": "cfg-cc6f8080"
+    },
+    {
+      "time": "2026-09-05T09:19:21Z",
+      "label": "OBSERVED EVIDENCE",
+      "event": "First log: 4x WARN on auth-service: 'Login rate limit hit for user id u-32' (first 2026-09-05T09:19:21Z, last 2026-09-05T09:45:33Z)",
+      "evidence_id": "logpat-auth-service-cc8d3b87"
+    },
+    {
+      "time": "2026-09-05T09:25:15Z",
+      "label": "OBSERVED EVIDENCE",
+      "event": "First log: 4x WARN on order-service: 'Inventory reservation retry for sku-98' (first 2026-09-05T09:25:15Z, last 2026-09-05T09:48:05Z)",
+      "evidence_id": "logpat-order-service-95abd1bb"
+    },
+    {
+      "time": "2026-09-05T09:28:00Z",
+      "label": "CONFIRMED FACT",
+      "event": "Deployment of auth-service 2.13.4->2.14.0 at 2026-09-05T09:28:00Z (SUCCEEDED): Migrate JWT validation to jose-4.2; refactor token cache",
+      "evidence_id": "dep-cbc63772"
+    },
+    {
+      "time": "2026-09-05T09:29:00Z",
+      "label": "OBSERVED EVIDENCE",
+      "event": "Anomaly onset: api-gateway error_rate: baseline 0.5 -> window mean 9.05 (max 19.93, change 1706.9%), onset 2026-09-05T09:29:00Z",
+      "evidence_id": "met-api-gateway-error_rate-0900-0955"
+    },
+    {
+      "time": "2026-09-05T09:29:00Z",
+      "label": "OBSERVED EVIDENCE",
+      "event": "Anomaly onset: auth-service error_rate: baseline 0.3 -> window mean 12.88 (max 29.54, change 4197.5%), onset 2026-09-05T09:29:00Z",
+      "evidence_id": "met-auth-service-error_rate-0900-0955"
+    },
+    {
+      "time": "2026-09-05T09:29:00Z",
+      "label": "OBSERVED EVIDENCE",
+      "event": "First log: 27x ERROR on auth-service: 'TokenValidationException: unsupported key type 'EC' in JWKS (validator=jose-4.2, kid=k20)' (first 2026-09-05T09:29:00Z, last 2026-09-05T09:54:18Z)",
+      "evidence_id": "logpat-auth-service-f41941c5"
+    },
+    {
+      "time": "2026-09-05T09:29:03Z",
+      "label": "OBSERVED EVIDENCE",
+      "event": "First log: 14x WARN on api-gateway: 'auth-service returned 500 for /v1/token/verify (req 63)' (first 2026-09-05T09:29:03Z, last 2026-09-05T09:53:26Z)",
+      "evidence_id": "logpat-api-gateway-7c1adbea"
+    },
+    {
+      "time": "2026-09-05T09:30:00Z",
+      "label": "OBSERVED EVIDENCE",
+      "event": "Anomaly onset: payment-service error_rate: baseline 0.8 -> window mean 6.69 (max 15.09, change 735.8%), onset 2026-09-05T09:30:00Z",
+      "evidence_id": "met-payment-service-error_rate-0900-0955"
+    },
+    {
+      "time": "2026-09-05T09:30:00Z",
+      "label": "CONFIRMED FACT",
+      "event": "Reported symptom start",
+      "evidence_id": null
+    },
+    {
+      "time": "2026-09-05T09:30:08Z",
+      "label": "OBSERVED EVIDENCE",
+      "event": "First log: 9x ERROR on payment-service: 'Authorization check failed: upstream auth-service 500 (charge ch_67)' (first 2026-09-05T09:30:08Z, last 2026-09-05T09:52:21Z)",
+      "evidence_id": "logpat-payment-service-a56d8d43"
+    },
+    {
+      "time": "2026-09-05T09:30:08Z",
+      "label": "OBSERVED EVIDENCE",
+      "event": "First log: 7x WARN on payment-service: 'Retrying request to auth-service (attempt 2/3)' (first 2026-09-05T09:30:08Z, last 2026-09-05T09:51:40Z)",
+      "evidence_id": "logpat-payment-service-8d3ec00b"
+    },
+    {
+      "time": "2026-09-05T09:32:18Z",
+      "label": "OBSERVED EVIDENCE",
+      "event": "First log: 5x WARN on user-service: 'Deprecated API /v1/users/legacy called by client web-19' (first 2026-09-05T09:32:18Z, last 2026-09-05T09:54:15Z)",
+      "evidence_id": "logpat-user-service-742b555e"
+    },
+    {
+      "time": "2026-09-05T09:36:00Z",
+      "label": "CONFIRMED FACT",
+      "event": "Incident reported",
+      "evidence_id": null
+    }
+  ],
+  "observed_symptoms": [
+    {
+      "label": "OBSERVED EVIDENCE",
+      "statement": "api-gateway error_rate: baseline 0.5 -> window mean 9.05 (max 19.93, change 1706.9%), onset 2026-09-05T09:29:00Z",
+      "evidence_ids": [
+        "met-api-gateway-error_rate-0900-0955"
+      ]
+    },
+    {
+      "label": "OBSERVED EVIDENCE",
+      "statement": "auth-service error_rate: baseline 0.3 -> window mean 12.88 (max 29.54, change 4197.5%), onset 2026-09-05T09:29:00Z",
+      "evidence_ids": [
+        "met-auth-service-error_rate-0900-0955"
+      ]
+    },
+    {
+      "label": "OBSERVED EVIDENCE",
+      "statement": "payment-service error_rate: baseline 0.8 -> window mean 6.69 (max 15.09, change 735.8%), onset 2026-09-05T09:30:00Z",
+      "evidence_ids": [
+        "met-payment-service-error_rate-0900-0955"
+      ]
+    },
+    {
+      "label": "OBSERVED EVIDENCE",
+      "statement": "[dependency] Dependency graph (topology-v1): auth-service calls postgres and redis; its direct downstream callers are api-gateway and payment-service. Transitive potentially-impacted services are api-gateway, order-service and payment-service.",
+      "evidence_ids": [
+        "topo-auth-service-both-d2"
+      ]
+    },
+    {
+      "label": "OBSERVED EVIDENCE",
+      "statement": "[dependency] payment-service calls auth-service, postgres and redis; direct downstream callers are api-gateway and order-service. Potentially impacted: api-gateway and order-service. Because payment-service depends on auth-service, an auth-service fault propagates to payment-service and then to order-service.",
+      "evidence_ids": [
+        "topo-payment-service-both-d2"
+      ]
+    },
+    {
+      "label": "OBSERVED EVIDENCE",
+      "statement": "[dependency] order-service calls message-queue, payment-service, postgres and user-service; its only downstream dependent is api-gateway. Potentially impacted: api-gateway only.",
+      "evidence_ids": [
+        "topo-order-service-both-d2"
+      ]
+    },
+    {
+      "label": "OBSERVED EVIDENCE",
+      "statement": "[dependency] A topology change (topology-v2) adding edge order-service -> redis is listed with effective_from 2026-09-15, i.e. about 10 days after the incident. It cannot be a cause of INC-002 on 2026-09-05.",
+      "evidence_ids": [
+        "topo-order-service-both-d2"
+      ]
+    },
+    {
+      "label": "OBSERVED EVIDENCE",
+      "statement": "[dependency] No topology changes are recorded for auth-service or payment-service in the graph; the dependency structure appears unchanged recently.",
+      "evidence_ids": [
+        "topo-auth-service-both-d2",
+        "topo-payment-service-both-d2"
+      ]
+    },
+    {
+      "label": "OBSERVED EVIDENCE",
+      "statement": "[dependency] Deployment dep-cbc63772 of auth-service (2.13.4 -> 2.14.0: JWT validation migrated to jose-4.2, token cache refactored) finished at 2026-09-05T09:28:00Z, about 2 minutes before T0=09:30. It is the only deployment in the 08:00-09:55 window. Its timing matches the symptom onset, and auth-service is upstream of payment-service and api-gateway.",
+      "evidence_ids": [
+        "dep-cbc63772"
+      ]
+    },
+    {
+      "label": "OBSERVED EVIDENCE",
+      "statement": "[dependency] auth-service deployed 2.13.4 -> 2.14.0 (SUCCEEDED, by ci-pipeline): 'Migrate JWT validation to jose-4.2; refactor token cache', 2 minutes before T0.",
+      "evidence_ids": [
+        "dep-cbc63772"
+      ]
+    },
+    {
+      "label": "OBSERVED EVIDENCE",
+      "statement": "[dependency] auth-service error_rate jumped from baseline ~0.3% to ~27% starting at 09:30 sample (onset 09:29), sustained through 09:55 (window mean 12.88%, max 29.54%). Only ~1 minute after the deploy.",
+      "evidence_ids": [
+        "met-auth-service-error_rate-0900-0955"
+      ]
+    },
+    {
+      "label": "OBSERVED EVIDENCE",
+      "statement": "[dependency] auth-service p99 latency (~90ms) and timeout_rate (~0.05%) were essentially unchanged across the window; the failure mode appears to be errors without latency/timeouts.",
+      "evidence_ids": [
+        "met-auth-service-p99_latency_ms-0900-0955",
+        "met-auth-service-timeout_rate-0900-0955"
+      ]
+    },
+    {
+      "label": "OBSERVED EVIDENCE",
+      "statement": "[dependency] Dependency graph: auth-service depends on postgres and redis; its downstream callers are api-gateway and payment-service (potentially impacted also: order-service). Graph topology-v1 shows no topology changes.",
+      "evidence_ids": [
+        "topo-auth-service-both-d2"
+      ]
+    },
+    {
+      "label": "OBSERVED EVIDENCE",
+      "statement": "[dependency] Config change feature.profile_badges false -> true on user-service (config-bot, OPS-2306) at 09:10. user-service is not a dependency of the in-scope services per the graph queried (not checked for user-service topology).",
+      "evidence_ids": [
+        "cfg-cc6f8080"
+      ]
+    },
+    {
+      "label": "INFERENCE",
+      "statement": "[dependency] The jose-4.2 JWT validation migration or token cache refactor in 2.14.0 may be rejecting tokens (causing 5xx and forced logouts). Not verified; needs error logs/rollback comparison.",
+      "evidence_ids": []
+    },
+    {
+      "label": "OBSERVED EVIDENCE",
+      "statement": "[observability] auth-service error_rate rose from baseline mean 0.3% to window mean 12.88% (max 29.54%); onset 09:29Z, sampled 09:30 at 27.69%, staying ~25-28% through 09:55. p99 latency unchanged (90 ms baseline vs 89.6 ms window); timeout_rate flat (~0.05%); request_rate flat (-0.8%).",
+      "evidence_ids": [
+        "met-auth-service-error_rate-0900-0955",
+        "met-auth-service-p99_latency_ms-0900-0955",
+        "met-auth-service-timeout_rate-0900-0955",
+        "met-auth-service-request_rate-0900-0955"
+      ]
+    },
+    {
+      "label": "OBSERVED EVIDENCE",
+      "statement": "[observability] auth-service ERROR pattern 'TokenValidationException: unsupported key type EC in JWKS' (validator jose-4.2): 27 occurrences, first 09:29:00Z, last 09:54:18Z, across varying kids (k20, k24, k67, ...). Errors are validation/key-parsing failures, not timeouts.",
+      "evidence_ids": [
+        "logpat-auth-service-f41941c5",
+        "log-75321b43",
+        "log-6201a078"
+      ]
+    },
+    {
+      "label": "OBSERVED EVIDENCE",
+      "statement": "[observability] api-gateway error_rate rose from baseline 0.5% to window mean 9.05% (max 19.93%); onset 09:29Z, sampled 09:30 at 13.9% and ~18-19% thereafter. p99 latency flat (249 ms vs 249 ms), timeout_rate flat, request_rate flat (-0.5%). WARN: 'auth-service returned 500 for /v1/token/verify' 14 times, first 09:29:03Z, last 09:53:26Z.",
+      "evidence_ids": [
+        "met-api-gateway-error_rate-0900-0955",
+        "met-api-gateway-p99_latency_ms-0900-0955",
+        "met-api-gateway-timeout_rate-0900-0955",
+        "logpat-api-gateway-7c1adbea"
+      ]
+    },
+    {
+      "label": "OBSERVED EVIDENCE",
+      "statement": "[observability] payment-service error_rate rose from baseline 0.8% to window mean 6.69% (max 15.09%); onset 09:30Z (5.38% at 09:30, ~14% from 09:35). p99 latency flat (302 vs 301 ms), timeout_rate flat, request_rate +1.9%. ERROR 'Authorization check failed: upstream auth-service 500' 9 times from 09:30:08Z to 09:52:21Z; WARN 'Retrying request to auth-service' 7 times from 09:30:08Z.",
+      "evidence_ids": [
+        "met-payment-service-error_rate-0900-0955",
+        "met-payment-service-p99_latency_ms-0900-0955",
+        "met-payment-service-timeout_rate-0900-0955",
+        "met-payment-service-request_rate-0900-0955",
+        "logpat-payment-service-a56d8d43",
+        "logpat-payment-service-8d3ec00b"
+      ]
+    },
+    {
+      "label": "OBSERVED EVIDENCE",
+      "statement": "[observability] Error rate on api-gateway, auth-service and payment-service stepped up sharply at ~09:29-09:30Z and remained at a plateau through 09:55Z, with no recovery visible in the window; latency and traffic stayed at baseline throughout, so this is not a load or latency-driven failure.",
+      "evidence_ids": [
+        "met-api-gateway-error_rate-0900-0955",
+        "met-auth-service-error_rate-0900-0955",
+        "met-payment-service-error_rate-0900-0955"
+      ]
+    },
+    {
+      "label": "OBSERVED EVIDENCE",
+      "statement": "[observability] Unrelated-looking WARN: 'SELECT report_rollup()' slow statements (e.g., 14602 ms), 8 occurrences from 09:02Z to 09:54Z. Not on the auth/checkout error path by direct evidence; noted for completeness.",
+      "evidence_ids": [
+        "logpat-postgres-44883ca5"
+      ]
+    },
+    {
+      "label": "INFERENCE",
+      "statement": "[observability] A JWKS change introducing EC-type keys (new kids) that the jose-4.2 validator cannot parse may be causing token verification failures; this would explain 500s from auth-service on /token/verify and downstream payment auth failures. Requires confirmation via key rotation/deploy logs.",
+      "evidence_ids": []
+    },
+    {
+      "label": "OBSERVED EVIDENCE",
+      "statement": "[observability] DB connection utilisation, CPU, memory, p95 latency and disk IO wait stayed at baseline levels across 09:00-09:55Z (conn util 40.4% vs 39.9% baseline; CPU 35.2% vs 35.2%; p95 12.0ms vs 12.1ms). No onset detected. timeout_rate not collected for postgres.",
+      "evidence_ids": [
+        "met-postgres-db_conn_util_pct-0900-0955",
+        "met-postgres-cpu_pct-0900-0955",
+        "met-postgres-memory_pct-0900-0955",
+        "met-postgres-p95_latency_ms-0900-0955",
+        "met-postgres-disk_io_wait_ms-0900-0955"
+      ]
+    },
+    {
+      "label": "OBSERVED EVIDENCE",
+      "statement": "[observability] Recurring WARN 'duration: <n> ms statement: SELECT report_rollup()' (8 occurrences, 09:02Z-09:54Z, example 14602 ms). Slow query present but not clearly tied to the T0 onset; no matching metric spike.",
+      "evidence_ids": [
+        "logpat-postgres-44883ca5"
+      ]
+    },
+    {
+      "label": "OBSERVED EVIDENCE",
+      "statement": "[observability] Cache hit rate (94.9% vs 95.0% baseline), CPU, memory and p95 latency (1.51ms vs 1.49ms) were flat through the window; no onset. timeout_rate not collected for redis.",
+      "evidence_ids": [
+        "met-redis-cache_hit_rate-0900-0955",
+        "met-redis-cpu_pct-0900-0955",
+        "met-redis-memory_pct-0900-0955",
+        "met-redis-p95_latency_ms-0900-0955"
+      ]
+    },
+    {
+      "label": "ASSUMPTION",
+      "statement": "[critic: unsupported assumption] That 2.13.4 accepted the same EC keys (inferred from the deploy scope, not directly checked)",
+      "evidence_ids": []
+    },
+    {
+      "label": "ASSUMPTION",
+      "statement": "[critic: unsupported assumption] That no key rotation happened, since the config tool may not record JWKS publication events",
+      "evidence_ids": []
+    }
+  ],
+  "investigation_performed": [
+    "Round 1 | observability | completed | attempts 1 | 4 tool calls | Characterize 5xx error rate, latency, and traffic on login and checkout paths in api-gateway, auth-service, and payment-service from 09:00Z to now; identify fir",
+    "Round 1 | observability | completed | attempts 1 | 5 tool calls | Check health of shared data stores and downstream dependencies of auth-service and payment-service (connections, CPU, memory, errors, latency) around 09:30Z.",
+    "Round 1 | dependency | completed | attempts 1 | 4 tool calls | Identify deployments, configuration changes, feature flags, or secret/cert rotations to api-gateway, auth-service, payment-service, postgres, and redis in the w",
+    "Round 1 | dependency | completed | attempts 1 | 4 tool calls | Confirm dependency graph for downstream impact of auth-service and payment-service (order-service and any other callers) and whether topology changed recently.",
+    "Round 1 | reasoning | completed | attempts 1 | 0 tool calls | Develop and rank competing hypotheses",
+    "Round 1 | critic | completed | attempts 1 | 2 tool calls | Independently review hypotheses",
+    "Round 1 | reporting | completed | attempts 1 | 0 tool calls | Write final report"
+  ],
+  "hypotheses": [
+    {
+      "rank": 1,
+      "hypothesis_id": "H1",
+      "category": "deployment_regression",
+      "culprit_service": "auth-service",
+      "description": "auth-service 2.14.0 (deployed 09:28Z) introduced a JWT validation regression: the jose-4.2 migration cannot parse EC keys in the JWKS, so token verification returns 500s, which propagate to api-gateway and payment-service and force logouts and checkout failures. Mechanism: Deploy dep-cbc63772 (2.13.4 -> 2.14.0, jose-4.2 JWT validation migration + token cache refactor) completes 09:28Z -> auth-service validates tokens with jose-4.2 -> JWKS entries of type EC raise TokenValidationException 'unsupported key type EC' -> /v1/token/verify returns 500 -> api-gateway (token-verify 500s from 09:29:03Z) and payment-service (auth-check 500s from 09:30:08Z, with retries) fail -> login/checkout 5xx and session invalidation. Latency and timeouts stay flat because failures are fast validation errors.",
+      "confidence": 0.78,
+      "confidence_explanation": [
+        "base 0.10",
+        "+0.08 corroboration across >=2 independent source types",
+        "+0.78 supporting evidence (6 refs, reliability-weighted, capped)",
+        "-0.15 contradicting evidence (1 refs, capped 0.45)",
+        "+0.08 proposed cause (09:28) precedes/coincides with first observed anomaly (09:29)",
+        "-0.08 5 acknowledged evidence gaps",
+        "+0.05 critic review adjustment",
+        "= 0.78 (evidence-strength score, not a calibrated probability)"
+      ],
+      "supporting_evidence": [
+        {
+          "evidence_id": "logpat-auth-service-f41941c5",
+          "strength": "strong",
+          "note": "27 ERROR records 'unsupported key type EC in JWKS (validator=jose-4.2)' starting 09:29:00Z, matching the failure mode the migration would produce",
+          "exists": true,
+          "label": "OBSERVED EVIDENCE",
+          "description": "27x ERROR on auth-service: 'TokenValidationException: unsupported key type 'EC' in JWKS (validator=jose-4.2, kid=k20)' (first 2026-09-05T09:29:00Z, last 2026-09-05T09:54:18Z)"
+        },
+        {
+          "evidence_id": "met-auth-service-error_rate-0900-0955",
+          "strength": "strong",
+          "note": "error rate 0.3% -> ~27% starting 09:29, sustained; latency and timeouts flat",
+          "exists": true,
+          "label": "OBSERVED EVIDENCE",
+          "description": "auth-service error_rate: baseline 0.3 -> window mean 12.88 (max 29.54, change 4197.5%), onset 2026-09-05T09:29:00Z"
+        },
+        {
+          "evidence_id": "dep-cbc63772",
+          "strength": "moderate",
+          "note": "only deployment in window, finished 09:28, 1 minute before onset; mechanistically linked to JWT validation",
+          "exists": true,
+          "label": "CONFIRMED FACT",
+          "description": "Deployment of auth-service 2.13.4->2.14.0 at 2026-09-05T09:28:00Z (SUCCEEDED): Migrate JWT validation to jose-4.2; refactor token cache"
+        },
+        {
+          "evidence_id": "logpat-api-gateway-7c1adbea",
+          "strength": "moderate",
+          "note": "api-gateway token-verify 500s from auth-service starting 09:29:03Z, consistent with downstream propagation",
+          "exists": true,
+          "label": "OBSERVED EVIDENCE",
+          "description": "14x WARN on api-gateway: 'auth-service returned 500 for /v1/token/verify (req 63)' (first 2026-09-05T09:29:03Z, last 2026-09-05T09:53:26Z)"
+        },
+        {
+          "evidence_id": "logpat-payment-service-a56d8d43",
+          "strength": "moderate",
+          "note": "payment-service auth-check failures from 09:30:08Z after auth-service failures began",
+          "exists": true,
+          "label": "OBSERVED EVIDENCE",
+          "description": "9x ERROR on payment-service: 'Authorization check failed: upstream auth-service 500 (charge ch_67)' (first 2026-09-05T09:30:08Z, last 2026-09-05T09:52:21Z)"
+        },
+        {
+          "evidence_id": "topo-auth-service-both-d2",
+          "strength": "weak",
+          "note": "auth-service is upstream of api-gateway and payment-service, so the fault path is plausible",
+          "exists": true,
+          "label": "CONFIRMED FACT",
+          "description": "auth-service depends on ['postgres', 'redis']; called by ['api-gateway', 'payment-service'] (graph topology-v1)"
+        }
+      ],
+      "contradicting_evidence": [
+        {
+          "evidence_id": "logpat-auth-service-f41941c5",
+          "strength": "moderate",
+          "note": "errors name varying kids (k20, k24, k67); the cause could be key material rather than code, so the deploy is not uniquely implicated by the log text alone",
+          "exists": true,
+          "label": "OBSERVED EVIDENCE",
+          "description": "27x ERROR on auth-service: 'TokenValidationException: unsupported key type 'EC' in JWKS (validator=jose-4.2, kid=k20)' (first 2026-09-05T09:29:00Z, last 2026-09-05T09:54:18Z)"
+        }
+      ],
+      "missing_evidence": [
+        "Diff of JWKS/key handling in 2.14.0 vs 2.13.4 confirming jose-4.2 is the EC-key path",
+        "Per-instance comparison: errors on 2.14.0 instances vs any 2.13.4 instances",
+        "Rollback comparison or canary result",
+        "auth-service INFO logs around 09:28 for key loading and JWKS fetch",
+        "Per-endpoint 5xx breakdown for login vs checkout"
+      ],
+      "critic_decision": "accept"
+    },
+    {
+      "rank": 2,
+      "hypothesis_id": "H2",
+      "category": "configuration_regression",
+      "culprit_service": "auth-service",
+      "description": "A JWKS / signing-key change (new EC-type key(s) published to the auth-service key set) began around 09:29, which the validator cannot handle. The deploy may be a coincidence or a contributing factor, since the key change and the deploy are not yet separated. Mechanism: New EC-type signing key(s) appear in the JWKS source (rotation or config) at about 09:29 -> auth-service fetches or caches the set -> token verification for tokens signed with the EC kid raises 'unsupported key type EC' -> 500s propagate to api-gateway and payment-service -> login/checkout failures. Under this hypothesis the deploy is not the trigger, and the rollback of 2.14.0 alone may not restore service.",
+      "confidence": 0.03,
+      "confidence_explanation": [
+        "base 0.10",
+        "+0.08 corroboration across >=2 independent source types",
+        "+0.46 supporting evidence (3 refs, reliability-weighted, capped)",
+        "-0.15 contradicting evidence (1 refs, capped 0.45)",
+        "+0.08 proposed cause (09:29) precedes/coincides with first observed anomaly (09:29)",
+        "-0.06 3 acknowledged evidence gaps",
+        "-0.40 critic review adjustment",
+        "= 0.03 (evidence-strength score, not a calibrated probability)"
+      ],
+      "supporting_evidence": [
+        {
+          "evidence_id": "logpat-auth-service-f41941c5",
+          "strength": "strong",
+          "note": "errors specifically cite EC key type in JWKS across multiple kids, which points to key material",
+          "exists": true,
+          "label": "OBSERVED EVIDENCE",
+          "description": "27x ERROR on auth-service: 'TokenValidationException: unsupported key type 'EC' in JWKS (validator=jose-4.2, kid=k20)' (first 2026-09-05T09:29:00Z, last 2026-09-05T09:54:18Z)"
+        },
+        {
+          "evidence_id": "met-auth-service-error_rate-0900-0955",
+          "strength": "moderate",
+          "note": "onset at 09:29, consistent with a key change taking effect at that time",
+          "exists": true,
+          "label": "OBSERVED EVIDENCE",
+          "description": "auth-service error_rate: baseline 0.3 -> window mean 12.88 (max 29.54, change 4197.5%), onset 2026-09-05T09:29:00Z"
+        },
+        {
+          "evidence_id": "logpat-api-gateway-7c1adbea",
+          "strength": "weak",
+          "note": "downstream propagation from auth-service",
+          "exists": true,
+          "label": "OBSERVED EVIDENCE",
+          "description": "14x WARN on api-gateway: 'auth-service returned 500 for /v1/token/verify (req 63)' (first 2026-09-05T09:29:03Z, last 2026-09-05T09:53:26Z)"
+        }
+      ],
+      "contradicting_evidence": [
+        {
+          "evidence_id": "dep-cbc63772",
+          "strength": "moderate",
+          "note": "deploy completed 09:28, one minute before onset; a deploy-driven cause is the simpler explanation and the key-change timing is not yet observed",
+          "exists": true,
+          "label": "CONFIRMED FACT",
+          "description": "Deployment of auth-service 2.13.4->2.14.0 at 2026-09-05T09:28:00Z (SUCCEEDED): Migrate JWT validation to jose-4.2; refactor token cache"
+        }
+      ],
+      "missing_evidence": [
+        "JWKS key rotation or key-store change log for 09:20-09:30",
+        "Evidence that the EC kids are new (absent before 09:29)",
+        "Whether tokens with EC kids were issued before 09:29 and validated successfully"
+      ],
+      "critic_decision": "reject"
+    },
+    {
+      "rank": 3,
+      "hypothesis_id": "H3",
+      "category": "configuration_regression",
+      "culprit_service": "user-service",
+      "description": "The user-service feature flag change (feature.profile_badges false -> true at 09:10) caused the auth/checkout failures. Considered only as a low-probability alternative. Mechanism: Flag enabled at 09:10 -> user-service behaviour changes -> auth-service or payment-service calls to user-service fail -> 5xx on login/checkout. Not supported: no graph edge from auth-service or payment-service to user-service, and user-service metrics stayed at baseline.",
+      "confidence": 0.0,
+      "confidence_explanation": [
+        "base 0.10",
+        "+0.04 supporting evidence (1 refs, reliability-weighted, capped)",
+        "-0.45 contradicting evidence (3 refs, capped 0.45)",
+        "+0.08 proposed cause (09:10) precedes/coincides with first observed anomaly (09:29)",
+        "-0.04 2 acknowledged evidence gaps",
+        "-0.40 critic review adjustment",
+        "= 0.00 (evidence-strength score, not a calibrated probability)"
+      ],
+      "supporting_evidence": [
+        {
+          "evidence_id": "cfg-cc6f8080",
+          "strength": "weak",
+          "note": "config change precedes onset by about 19 minutes; temporal only",
+          "exists": true,
+          "label": "CONFIRMED FACT",
+          "description": "Config change on user-service: feature.profile_badges false -> true at 2026-09-05T09:10:00Z (OPS-2306)"
+        }
+      ],
+      "contradicting_evidence": [
+        {
+          "evidence_id": "met-user-service-error_rate-0900-0955",
+          "strength": "strong",
+          "note": "user-service error rate at baseline (0.40 vs 0.41) through 09:55",
+          "exists": true,
+          "label": "OBSERVED EVIDENCE",
+          "description": "user-service error_rate: baseline 0.41 -> window mean 0.4 (max 0.43, change -1.6%), onset none detected"
+        },
+        {
+          "evidence_id": "met-auth-service-error_rate-0900-0955",
+          "strength": "moderate",
+          "note": "auth-service errors are EC key-type validation failures, not user-service calls, and begin at 09:29, after the flag change had already been in effect for 19 minutes with no failures",
+          "exists": true,
+          "label": "OBSERVED EVIDENCE",
+          "description": "auth-service error_rate: baseline 0.3 -> window mean 12.88 (max 29.54, change 4197.5%), onset 2026-09-05T09:29:00Z"
+        },
+        {
+          "evidence_id": "topo-api-gateway-upstream-d2",
+          "strength": "weak",
+          "note": "topology does not link auth/payment to user-service in the failing path",
+          "exists": true,
+          "label": "CONFIRMED FACT",
+          "description": "api-gateway depends on ['auth-service', 'order-service', 'payment-service', 'user-service']; called by ? (graph topology-v1)"
+        }
+      ],
+      "missing_evidence": [
+        "user-service call graph from auth-service or payment-service",
+        "Whether the flag gates any path used by login or token verification"
+      ],
+      "critic_decision": "reject"
+    }
+  ],
+  "critic_review": {
+    "verdict": "APPROVED",
+    "summary": "H1 (auth-service 2.14.0 jose-4.2 JWT validation regression) is well supported. The auth-service EC-key errors name validator=jose-4.2, a library version that exists only in 2.14.0, and they first appear at 09:29:00, one minute after the 09:28 deploy completed. A search of auth-service logs from 08:00 to 09:29 for EC errors returned nothing, and no auth-service config changes occur in 08:00-10:00. Error rate moves from 0.3% to about 27% at 09:29 with latency and timeouts flat, which fits fast validation failures. Downstream onsets (api-gateway 09:29:03, payment-service 09:30:08) follow the auth-service onset in the expected order. H2 (independent key change) is not supported: no key or JWKS change is recorded, and the validator version points to the deploy. It can still be a contributing trigger, so the rollback check is worth doing. H3 is rejected: user-service error rate is flat at baseline, and there is no graph path from auth/payment to user-service in the failing flow, and the flag change preceded onset by 19 minutes with no failures.",
+    "assessments": [
+      {
+        "hypothesis_id": "H1",
+        "decision": "accept",
+        "reasoning": "Onset at 09:29 follows deploy completion at 09:28; errors cite jose-4.2 (only in 2.14.0); no EC errors before 09:29; error rate step change with flat latency; downstream errors follow in order. Remaining gap: rollback confirmation, which is an operational check rather than a blocker."
+      },
+      {
+        "hypothesis_id": "H2",
+        "decision": "reject",
+        "reasoning": "No JWKS/key-rotation or config change recorded for auth-service 08:00-10:00. The errors are attributed to validator jose-4.2, which points to the deployed code rather than key material. A key change could be a contributing factor only if evidence of new kids appears; treat as an alternative to be ruled out by rollback."
+      },
+      {
+        "hypothesis_id": "H3",
+        "decision": "reject",
+        "reasoning": "user-service error rate is flat at baseline through 09:55, no call path from auth-service or payment-service to user-service is shown, and the auth errors are JWT key validation failures. The config change precedes onset with no observed failures in the 19 minutes before it."
+      }
+    ],
+    "precheck_issues": [
+      {
+        "hypothesis_id": "H3",
+        "check": "correlation_only",
+        "severity": "blocking",
+        "detail": "change hypothesis supported only by the change record itself (temporal correlation); no log/metric evidence of the changed behaviour"
+      },
+      {
+        "hypothesis_id": "H3",
+        "check": "culprit_symptom",
+        "severity": "warning",
+        "detail": "no log/metric evidence cited for culprit user-service"
+      },
+      {
+        "hypothesis_id": "H3",
+        "check": "single_source",
+        "severity": "warning",
+        "detail": "all support comes from one source type (config)"
+      }
+    ],
+    "unsupported_assumptions": [
+      "That 2.13.4 accepted the same EC keys (inferred from the deploy scope, not directly checked)",
+      "That no key rotation happened, since the config tool may not record JWKS publication events"
+    ],
+    "alternative_explanations": [
+      "JWKS key material change (H2) as a trigger coinciding with the deploy; not excluded until rollback is tested",
+      "Shared key-store or Redis token-cache issue introduced by the token cache refactor, which would also appear in the same deploy"
+    ],
+    "evidence_requests": [],
+    "round": 1,
+    "rounds_reviewed": 1
+  },
+  "evidence_gaps": [],
+  "probable_root_cause": {
+    "hypothesis_id": "H1",
+    "category": "deployment_regression",
+    "culprit_service": "auth-service",
+    "description": "auth-service 2.14.0 (deployed 09:28Z) introduced a JWT validation regression: the jose-4.2 migration cannot parse EC keys in the JWKS, so token verification returns 500s, which propagate to api-gateway and payment-service and force logouts and checkout failures.",
+    "confidence": 0.78,
+    "label": "ROOT CAUSE IDENTIFIED (critic-approved; still an INFERENCE from evidence)"
+  },
+  "root_cause_statement": "ROOT CAUSE IDENTIFIED (critic-approved; still an INFERENCE from evidence): deployment_regression in auth-service - auth-service 2.14.0 (deployed 09:28Z) introduced a JWT validation regression: the jose-4.2 migration cannot parse EC keys in the JWKS, so token verification returns 500s, which propagate to api-gateway and payment-service and force logouts and checkout failures.",
+  "corrective_actions": [
+    "Roll back auth-service from 2.14.0 to 2.13.4 (dep-cbc63772) to restore token verification. This is the primary mitigation and also serves as the test that confirms the cause.",
+    "After rollback, confirm that auth-service error rate returns to baseline (about 0.3%) and that api-gateway token-verify 500s and payment-service auth-check 500s stop.",
+    "Ask users who were logged out to re-authenticate, and check payment charges that failed or were retried between 09:30Z and rollback for reconciliation.",
+    "Check whether the JWKS key set changed around 09:29Z (H2). If the key set changed, the rollback may not be sufficient on its own and the key publication must be reviewed."
+  ],
+  "preventive_actions": [
+    "Fix the jose-4.2 migration so that it parses EC keys in the JWKS (kid=k20 and any other EC keys), and add a regression test covering every key type published in production before re-release.",
+    "Add a pre-deploy compatibility check that validates the production JWKS against the new validator in staging.",
+    "Review the token cache refactor for shared-state or Redis side effects, since it shipped in the same deploy as the validator change (alternative explanation noted by the critic).",
+    "Stage auth-service changes behind canary or progressive rollout so that a validation regression is caught before full fleet exposure."
+  ],
+  "monitoring_recommendations": [
+    "Alert on auth-service error_rate above 1% sustained for 2 minutes, paging on-call. The 09:29Z onset would have been caught within minutes.",
+    "Alert on auth-service log pattern 'TokenValidationException' or 'unsupported key type' at any non-zero rate.",
+    "Track api-gateway 5xx rate on /v1/token/verify and payment-service upstream auth-service 500 counts as separate dashboards, to show propagation.",
+    "Add a post-deploy watch that compares error rate for 30 minutes after each auth-service deploy with the pre-deploy baseline.",
+    "Log JWKS key publication and key-set changes as events, so that future key-change questions can be answered from records rather than inferred."
+  ],
+  "limitations": [
+    "The assumption that 2.13.4 accepted the same EC keys has been inferred from deploy scope, not directly tested.",
+    "The config tool may not record JWKS publication events, so the absence of a key rotation has not been fully confirmed.",
+    "The token cache refactor's contribution has not been separated from the validator change.",
+    "The 0.78 confidence reflects that the rollback test has not yet been run.",
+    "Confidence values are rule-based evidence-strength scores, not calibrated probabilities.",
+    "Investigation terminated because: critic verdict APPROVED"
+  ],
+  "final_status": "ROOT_CAUSE_IDENTIFIED",
+  "conclusion": "The most probable root cause of INC-002 is the auth-service 2.14.0 deployment (dep-cbc63772), whose jose-4.2 JWT validation cannot parse EC keys in the JWKS. This causes token verification to return 500s, which propagate to api-gateway and payment-service and produce the observed logouts and checkout failures. The evidence supports this with a clear onset sequence, a validator version that exists only in 2.14.0, and a flat latency profile consistent with fast validation errors. The rollback is the decisive next step. The independent JWKS key-change hypothesis (H2) is not excluded until rollback is tested, and the user-service feature flag (H3) is rejected because user-service error rates were at baseline.",
+  "statistics": {
+    "rounds": 1,
+    "tool_calls": 22,
+    "tool_failures": 0,
+    "tool_retries": 0,
+    "partial_results": 0,
+    "agent_failures": 0,
+    "agent_retries": 0,
+    "invalid_llm_outputs": 0,
+    "messages_exchanged": 20,
+    "evidence_records": 78,
+    "duration_s": 54.58,
+    "tokens": {
+      "input_tokens": 46,
+      "output_tokens": 19901,
+      "cache_read_tokens": 27221,
+      "cache_write_tokens": 57854,
+      "llm_calls": 15,
+      "cost_usd": 0.01745906
+    },
+    "tokens_by_agent": {
+      "orchestrator": {
+        "input_tokens": 6,
+        "output_tokens": 1152,
+        "cache_read_tokens": 3832,
+        "cache_write_tokens": 0,
+        "llm_calls": 2,
+        "cost_usd": 0.00061492
+      },
+      "dependency": {
+        "input_tokens": 14,
+        "output_tokens": 4409,
+        "cache_read_tokens": 10352,
+        "cache_write_tokens": 9807,
+        "llm_calls": 5,
+        "cost_usd": 0.003535295
+      },
+      "observability": {
+        "input_tokens": 12,
+        "output_tokens": 6788,
+        "cache_read_tokens": 5712,
+        "cache_write_tokens": 23029,
+        "llm_calls": 4,
+        "cost_usd": 0.006330944999999999
+      },
+      "reasoning": {
+        "input_tokens": 4,
+        "output_tokens": 3955,
+        "cache_read_tokens": 0,
+        "cache_write_tokens": 13367,
+        "llm_calls": 1,
+        "cost_usd": 0.003648775
+      },
+      "critic": {
+        "input_tokens": 6,
+        "output_tokens": 1966,
+        "cache_read_tokens": 7325,
+        "cache_write_tokens": 8312,
+        "llm_calls": 2,
+        "cost_usd": 0.0020958500000000002
+      },
+      "reporting": {
+        "input_tokens": 4,
+        "output_tokens": 1631,
+        "cache_read_tokens": 0,
+        "cache_write_tokens": 3339,
+        "llm_calls": 1,
+        "cost_usd": 0.001233275
+      }
+    }
+  }
+}

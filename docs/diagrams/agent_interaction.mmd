@@ -1,0 +1,26 @@
+sequenceDiagram
+    participant O as Orchestrator
+    participant Ob as Observability
+    participant D as Dependency
+    participant R as Reasoning
+    participant C as Critic
+    participant Rp as Reporting
+    O->>Ob: TASK_ASSIGNMENT (task_id, services, focus)
+    O->>D: TASK_ASSIGNMENT
+    par concurrent
+        Ob->>O: FINDINGS (typed findings + evidence ids)
+    and
+        D->>O: FINDINGS
+    end
+    O->>R: FINDINGS (forwarded, + coverage gaps in state)
+    R->>C: HYPOTHESES (confidence withheld)
+    R->>O: STATUS (ranking rationale)
+    C->>O: CRITIC_VERDICT
+    C->>R: CRITIC_VERDICT (feedback for next round)
+    C->>O: EVIDENCE_REQUEST (target agent, request, services)
+    alt NEEDS_MORE_EVIDENCE and budget left
+        O->>Ob: TASK_ASSIGNMENT (follow-up, created_by=critic)
+    else approved / inconclusive / limits
+        O->>Rp: REPORT (validated payload)
+        Rp->>O: REPORT (final status)
+    end

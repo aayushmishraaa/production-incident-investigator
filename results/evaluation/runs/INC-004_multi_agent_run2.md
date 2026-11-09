@@ -1,0 +1,266 @@
+# Production Incident Investigation Report
+
+## Incident Information
+- **Incident ID:** INC-004
+- **Title:** Order API timeouts overnight
+- **Severity:** SEV2
+- **Affected services:** order-service
+- **Start time:** 2026-09-11T02:15:00+00:00
+- **Investigation ID:** inv-7e416ff114 (multi_agent)
+- **Final status:** `ROOT_CAUSE_IDENTIFIED`
+
+## Executive Summary
+INC-004 (SEV2, order-service): order creation latency and intermittent timeouts occurred from about 02:15Z on 2026-09-11. Final status is ROOT_CAUSE_IDENTIFIED. The leading hypothesis (H1, confidence 0.8, status supported) is resource saturation in order-service: an invoice-reconciliation batch (batch_size=500000) started on node order-7f9c at 02:05Z (logpat-order-service-f3a6bc4b). This was followed by CPU rising to 70-100% from 02:08Z (met-order-service-cpu_pct-0145-0330), G1 GC pauses up to 8140 ms from 02:08:13Z (logpat-order-service-7b888968), order-worker pool saturation (active=200, queue up to 19250) from 02:12:03Z (logpat-order-service-300bdd51), and deadline errors from 02:15:11Z (logpat-order-service-1c82530b). Timeout rate rose from a baseline of 0.1% to a window maximum of about 6.4% (met-order-service-timeout_rate-0145-0330). Request rate was flat (met-order-service-request_rate-0145-0330), so traffic load is not the cause. The batch-to-symptom sequence is consistent in timing, but the batch's direct causal role is inferred from timing and co-location rather than batch-specific telemetry.
+
+Alternative hypotheses were rejected. H2 (postgres report_rollup degradation) is contradicted by flat postgres p99 latency and flat DB connection utilisation on both postgres and order-service (met-postgres-p99_latency_ms-0145-0240, met-order-service-db_conn_util_pct-0145-0330), and by a postgres CPU rise that starts after the order-service GC onset. H3 (payment-service 5.7.3 deploy) is contradicted by flat payment p99 and timeout rate (met-payment-service-p99_latency_ms-2145-0240, met-payment-service-timeout_rate-0145-0240).
+
+## Incident Timeline
+| Time (UTC) | Label | Event | Evidence |
+|---|---|---|---|
+| 2026-09-10T22:15:00Z | CONFIRMED FACT | Deployment of payment-service 5.7.2->5.7.3 at 2026-09-10T22:15:00Z (SUCCEEDED): Dependency bumps | dep-bd77b48c |
+| 2026-09-11T01:47:24Z | OBSERVED EVIDENCE | First log: 8x WARN on postgres: 'duration: 19602 ms statement: SELECT report_rollup()' (first 2026-09-11T01:47:24Z, last 2026-09-11T02:38:58Z) | logpat-postgres-44883ca5 |
+| 2026-09-11T01:48:19Z | OBSERVED EVIDENCE | First log: 7x WARN on order-service: 'Inventory reservation retry for sku-86' (first 2026-09-11T01:48:19Z, last 2026-09-11T02:45:37Z) | logpat-order-service-95abd1bb |
+| 2026-09-11T01:48:54Z | OBSERVED EVIDENCE | First log: 4x WARN on auth-service: 'Login rate limit hit for user id u-84' (first 2026-09-11T01:48:54Z, last 2026-09-11T02:33:23Z) | logpat-auth-service-cc8d3b87 |
+| 2026-09-11T01:49:41Z | OBSERVED EVIDENCE | First log: 9x WARN on payment-service: 'Card network soft decline (code 05) for charge ch_41' (first 2026-09-11T01:49:41Z, last 2026-09-11T02:37:13Z) | logpat-payment-service-7e9bf84f |
+| 2026-09-11T01:50:30Z | OBSERVED EVIDENCE | First log: 7x WARN on notification-service: 'SMTP provider throttled 1 message' (first 2026-09-11T01:50:30Z, last 2026-09-11T02:36:18Z) | logpat-notification-service-54b86179 |
+| 2026-09-11T01:51:47Z | OBSERVED EVIDENCE | First log: 6x WARN on api-gateway: 'Slow client upload from 10.4.54.12 (1.9MB)' (first 2026-09-11T01:51:47Z, last 2026-09-11T02:33:47Z) | logpat-api-gateway-88b04940 |
+| 2026-09-11T01:52:17Z | OBSERVED EVIDENCE | First log: 6x WARN on user-service: 'Deprecated API /v1/users/legacy called by client web-56' (first 2026-09-11T01:52:17Z, last 2026-09-11T02:32:03Z) | logpat-user-service-742b555e |
+| 2026-09-11T02:08:00Z | OBSERVED EVIDENCE | Anomaly onset: order-service cpu_pct: baseline 44.17 -> window mean 74.97 (max 100.0, change 69.7%), onset 2026-09-11T02:08:00Z | met-order-service-cpu_pct-0145-0330 |
+| 2026-09-11T02:08:13Z | OBSERVED EVIDENCE | First log: 14x WARN on order-service: 'GC pause 8140ms (G1 Evacuation Pause)' (first 2026-09-11T02:08:13Z, last 2026-09-11T02:40:03Z) | logpat-order-service-7b888968 |
+| 2026-09-11T02:12:03Z | OBSERVED EVIDENCE | First log: 12x WARN on order-service: 'Thread pool order-worker saturated: active=200 queue=19250' (first 2026-09-11T02:12:03Z, last 2026-09-11T02:40:17Z) | logpat-order-service-300bdd51 |
+| 2026-09-11T02:13:00Z | OBSERVED EVIDENCE | Anomaly onset: order-service p50_latency_ms: baseline 79.95 -> window mean 655.12 (max 1314.66, change 719.4%), onset 2026-09-11T02:13:00Z | met-order-service-p50_latency_ms-0145-0330 |
+| 2026-09-11T02:13:00Z | OBSERVED EVIDENCE | Anomaly onset: order-service p95_latency_ms: baseline 198.04 -> window mean 1699.48 (max 3318.85, change 758.2%), onset 2026-09-11T02:13:00Z | met-order-service-p95_latency_ms-0145-0330 |
+| 2026-09-11T02:15:00Z | OBSERVED EVIDENCE | Anomaly onset: order-service timeout_rate: baseline 0.1 -> window mean 2.99 (max 6.41, change 2889.6%), onset 2026-09-11T02:15:00Z | met-order-service-timeout_rate-0145-0330 |
+| 2026-09-11T02:15:00Z | OBSERVED EVIDENCE | Anomaly onset: order-service error_rate: baseline 0.61 -> window mean 2.25 (max 4.47, change 270.6%), onset 2026-09-11T02:15:00Z | met-order-service-error_rate-0145-0330 |
+| 2026-09-11T02:15:00Z | OBSERVED EVIDENCE | Anomaly onset: order-service error_rate: baseline 0.61 -> window mean 1.69 (max 4.47, change 177.6%), onset 2026-09-11T02:15:00Z | met-order-service-error_rate-0145-0230 |
+| 2026-09-11T02:15:00Z | CONFIRMED FACT | Reported symptom start |  |
+| 2026-09-11T02:15:11Z | OBSERVED EVIDENCE | First log: 8x ERROR on order-service: 'Request POST /v1/orders exceeded deadline 5000ms' (first 2026-09-11T02:15:11Z, last 2026-09-11T02:40:12Z) | logpat-order-service-1c82530b |
+| 2026-09-11T02:21:00Z | CONFIRMED FACT | Incident reported |  |
+
+## Observed Symptoms
+- **OBSERVED EVIDENCE:** order-service p50_latency_ms: baseline 79.95 -> window mean 655.12 (max 1314.66, change 719.4%), onset 2026-09-11T02:13:00Z (met-order-service-p50_latency_ms-0145-0330)
+- **OBSERVED EVIDENCE:** order-service p95_latency_ms: baseline 198.04 -> window mean 1699.48 (max 3318.85, change 758.2%), onset 2026-09-11T02:13:00Z (met-order-service-p95_latency_ms-0145-0330)
+- **OBSERVED EVIDENCE:** order-service timeout_rate: baseline 0.1 -> window mean 2.99 (max 6.41, change 2889.6%), onset 2026-09-11T02:15:00Z (met-order-service-timeout_rate-0145-0330)
+- **OBSERVED EVIDENCE:** order-service error_rate: baseline 0.61 -> window mean 2.25 (max 4.47, change 270.6%), onset 2026-09-11T02:15:00Z (met-order-service-error_rate-0145-0330)
+- **OBSERVED EVIDENCE:** order-service cpu_pct: baseline 44.17 -> window mean 74.97 (max 100.0, change 69.7%), onset 2026-09-11T02:08:00Z (met-order-service-cpu_pct-0145-0330)
+- **OBSERVED EVIDENCE:** order-service error_rate: baseline 0.61 -> window mean 1.69 (max 4.47, change 177.6%), onset 2026-09-11T02:15:00Z (met-order-service-error_rate-0145-0230)
+- **OBSERVED EVIDENCE:** [dependency] Only deployment in the 24h before T0: payment-service 5.7.2 -> 5.7.3 (dependency bumps), SUCCEEDED, by ci-pipeline. (dep-bd77b48c)
+- **OBSERVED EVIDENCE:** [dependency] Upstream dependencies of order-service: message-queue, payment-service, postgres, user-service (with transitive auth-service, redis via payment/user). Downstream: api-gateway. Only topology change is topology-v2 effective 2026-09-15 (adds order-service -> redis), which is after the incident and cannot explain it. (topo-order-service-both-d2)
+- **OBSERVED EVIDENCE:** [dependency] payment-service p99 latency (~262-328 ms), error rate (~0.75-0.87%) and timeout rate (~0.1%) stayed flat across 21:45Z-02:40Z, including at the 22:15Z deploy and at the 02:15Z onset. No visible behaviour change from the deploy. (met-payment-service-p99_latency_ms-2145-0240, met-payment-service-error_rate-2145-0240, met-payment-service-timeout_rate-2145-0240)
+- **OBSERVED EVIDENCE:** [dependency] order-service timeout_rate was ~0.1% until 02:10, rose to 1.5% at 02:15 and ~6% from 02:20 onward. p99 latency stayed around 375-420 ms throughout, with no clear step in p99. (met-order-service-timeout_rate-2145-0240, met-order-service-p99_latency_ms-2145-0240)
+- **INFERENCE:** [dependency] The overnight timeout step (~6%) with flat p99 suggests a subset of requests hitting a hard timeout rather than a general slowdown, which could point to a dependency connection or pool issue, a scheduled job, or a credential/cert event. This needs checking in upstream service metrics and non-config change sources. 
+- **OBSERVED EVIDENCE:** [observability] postgres cpu_pct rose from baseline mean 35.11% to window mean 43.57% (+24.1%, max 54.78%); detected onset 02:11Z. Series: 02:05 34.7%, 02:10 44.4%, 02:15 52.4%, then ~49-53% through 02:40. (met-postgres-cpu_pct-0145-0240)
+- **OBSERVED EVIDENCE:** [observability] postgres WARN slow statements 'SELECT report_rollup()' (durations ~17.9-19.6s) recurring 8 times, first seen 01:47:24Z, last 02:38:58Z. (logpat-postgres-44883ca5, log-9aca42b9, log-b4544c2f)
+- **OBSERVED EVIDENCE:** [observability] postgres p99 latency (baseline 25.06ms vs window 24.92ms), db_conn_util_pct (40.18 vs 39.51), and disk_io_wait_ms (1.99 vs 2.02) show no meaningful change. (met-postgres-p99_latency_ms-0145-0240, met-postgres-db_conn_util_pct-0145-0240, met-postgres-disk_io_wait_ms-0145-0240)
+- **OBSERVED EVIDENCE:** [observability] payment-service p99 latency (297.9 -> 299.7ms), error_rate (0.81 -> 0.80%), timeout_rate (0.10 -> 0.10%) and cpu (40.1 -> 39.5%) are flat across the window. Only WARN is card network soft decline code 05, 9 occurrences from 01:49:41Z to 02:37:13Z, similar across windows. (met-payment-service-p99_latency_ms-0145-0240, met-payment-service-error_rate-0145-0240, met-payment-service-timeout_rate-0145-0240, met-payment-service-cpu_pct-0145-0240, logpat-payment-service-7e9bf84f)
+- **OBSERVED EVIDENCE:** [observability] user-service p99 (161.7 -> 161.0ms), error_rate (0.4%), timeout_rate (0.05%) and cpu (30%) are flat. (met-user-service-p99_latency_ms-0145-0240, met-user-service-error_rate-0145-0240, met-user-service-timeout_rate-0145-0240, met-user-service-cpu_pct-0145-0240)
+- **OBSERVED EVIDENCE:** [observability] auth-service p99 (89.9 -> 90.3ms), error_rate (0.3%), timeout_rate (0.05%) and cpu (29.8%) are flat. (met-auth-service-p99_latency_ms-0145-0240, met-auth-service-error_rate-0145-0240, met-auth-service-timeout_rate-0145-0240, met-auth-service-cpu_pct-0145-0240)
+- **OBSERVED EVIDENCE:** [observability] redis p99 (3.0ms), cache_hit_rate (95.0% vs 95.0%), memory (60%) and error_rate (0.01%) are flat; no evictions metric available. (met-redis-p99_latency_ms-0145-0240, met-redis-cache_hit_rate-0145-0240, met-redis-memory_pct-0145-0240, met-redis-error_rate-0145-0240)
+- **OBSERVED EVIDENCE:** [observability] message-queue p99 (20.1 -> 19.9ms), error_rate 0%, request_rate (404.7 -> 399.6, -1.2%) and cpu (20%) are flat. No consumer lag or queue depth metric was available for this service. (met-message-queue-p99_latency_ms-0145-0240, met-message-queue-error_rate-0145-0240, met-message-queue-request_rate-0145-0240, met-message-queue-cpu_pct-0145-0240)
+- **OBSERVED EVIDENCE:** [observability] order-service internal signals: first GC pause WARN at 02:08:13Z (13 total, up to 8140ms G1 evacuation pause); order-worker pool saturated first at 02:12:03Z (active=200, queue up to 19250, 11 occurrences); first deadline ERROR 'POST /v1/orders exceeded deadline 5000ms' at 02:15:11Z (7 total, last 02:36:36Z). (logpat-order-service-7b888968, logpat-order-service-300bdd51, logpat-order-service-1c82530b, log-e84d5728)
+- **INFERENCE:** [observability] Latency appears to originate inside order-service (GC pressure / thread pool exhaustion) rather than from a downstream dependency; the postgres CPU rise may be a secondary effect or a contributing load source and needs correlation with report_rollup() timing (the slow report queries began 01:47Z, before the 02:11 CPU onset, so they do not by themselves explain the onset). (logpat-order-service-7b888968, met-postgres-cpu_pct-0145-0240, logpat-postgres-44883ca5)
+- **OBSERVED EVIDENCE:** [observability] order-service p50 latency rose from baseline mean 79.95 ms to window mean 655.12 ms (+719%); p95 from 198 ms to 1699 ms (+758%). Onset detected at 02:13Z for both; sampled 5m series steps from ~83 ms at 02:10 to 928 ms at 02:15 and ~1275 ms by 02:20. (met-order-service-p50_latency_ms-0145-0330, met-order-service-p95_latency_ms-0145-0330)
+- **OBSERVED EVIDENCE:** [observability] order-service timeout_rate rose from baseline 0.10% to window mean 2.99% (max 6.41%); onset 02:15Z, sampled 0.10% at 02:10 to 1.51% at 02:15 and ~6% from 02:20 onward. error_rate rose from 0.61% to 2.25% (max 4.47%), onset 02:15Z. (met-order-service-timeout_rate-0145-0330, met-order-service-error_rate-0145-0330)
+- **OBSERVED EVIDENCE:** [observability] order-service CPU rose from baseline 44.2% to window mean 75.0% (max 100%); onset 02:08Z (70% at 02:10, 95% at 02:15, 100% at 02:30). Memory rose 55.3% to 66.2% (max 80.8%), onset 02:14Z. (met-order-service-cpu_pct-0145-0330, met-order-service-memory_pct-0145-0330)
+- **OBSERVED EVIDENCE:** [observability] order-service request_rate essentially unchanged (250.2 baseline vs 250.6 window) and db_conn_util_pct unchanged (30.1% vs 30.0%); p99 latency unchanged (398 vs 405 ms). (met-order-service-request_rate-0145-0330, met-order-service-db_conn_util_pct-0145-0330, met-order-service-p99_latency_ms-0145-0330)
+- **ASSUMPTION:** [critic: unsupported assumption] That the batch job is the direct cause of the GC and CPU rise rather than a coincident event (no batch-specific metric or thread dump) 
+- **ASSUMPTION:** [critic: unsupported assumption] That only order-7f9c is affected (service-level metrics only) 
+- **ASSUMPTION:** [critic: unsupported assumption] That the batch is still running or its resource profile (no end-time or progress evidence) 
+
+## Investigation Performed
+- Round 1 | observability | completed | attempts 1 | 7 tool calls | Characterize latency, error rate, and timeouts for order-service and api-gateway between 01:45Z and 03:30Z; identify when the change in behavior began relative 
+- Round 1 | observability | completed | attempts 1 | 7 tool calls | Check upstream dependencies of order-service for saturation or errors over the same window to see whether latency originates downstream.
+- Round 1 | dependency | completed | attempts 1 | 5 tool calls | Identify deployments, configuration changes, feature flags, or infra/scheduled jobs affecting order-service and its upstream services in the 24 hours before 02:
+- Round 1 | reasoning | completed | attempts 1 | 0 tool calls | Develop and rank competing hypotheses
+- Round 1 | critic | completed | attempts 1 | 3 tool calls | Independently review hypotheses
+- Round 1 | reporting | completed | attempts 1 | 0 tool calls | Write final report
+
+## Root-Cause Hypotheses (ranked by evidence strength)
+### 1. H1 - `resource_saturation` in `order-service` (confidence 0.80, critic: accept)
+**INFERENCE:** Invoice-reconciliation batch (batch_size=500000) started on node order-7f9c at 02:05Z exhausted CPU/heap in order-service, causing G1 GC pauses and order-worker pool saturation, which produced deadline timeouts and errors. Mechanism: Batch job starts 02:05Z -> CPU and heap pressure on order-7f9c -> GC pauses from 02:08:13Z (up to 8.1s) and CPU rising to 70-100% from 02:08Z -> worker threads blocked, pool saturated (active=200, queue up to 19250) from 02:12Z -> queued POST /v1/orders exceed 5000ms deadline from 02:15Z -> timeout rate 0.1% to ~6% and error rate rise. Memory rises from 02:14Z as queues build.
+
+Confidence breakdown: base 0.10; +0.08 corroboration across >=2 independent source types; +0.78 supporting evidence (8 refs, reliability-weighted, capped); -0.10 contradicting evidence (2 refs, capped 0.45); +0.08 proposed cause (02:05) precedes/coincides with first observed anomaly (02:08); -0.05 tool failures/partial data for order-service; -0.06 3 acknowledged evidence gaps; +0.05 critic review adjustment; = 0.80 (evidence-strength score, not a calibrated probability)
+
+Supporting evidence:
+- [OBSERVED EVIDENCE] `logpat-order-service-f3a6bc4b` (moderate): 1x INFO on order-service: 'Scheduled job invoice-reconciliation started (batch_size=500000, node=order-7f9c)' (first 2026-09-11T02:05:00Z, last 2026-09-11T02:05:00Z)
+- [OBSERVED EVIDENCE] `met-order-service-cpu_pct-0145-0330` (strong): order-service cpu_pct: baseline 44.17 -> window mean 74.97 (max 100.0, change 69.7%), onset 2026-09-11T02:08:00Z
+- [OBSERVED EVIDENCE] `logpat-order-service-7b888968` (strong): 14x WARN on order-service: 'GC pause 8140ms (G1 Evacuation Pause)' (first 2026-09-11T02:08:13Z, last 2026-09-11T02:40:03Z)
+- [OBSERVED EVIDENCE] `logpat-order-service-300bdd51` (strong): 12x WARN on order-service: 'Thread pool order-worker saturated: active=200 queue=19250' (first 2026-09-11T02:12:03Z, last 2026-09-11T02:40:17Z)
+- [OBSERVED EVIDENCE] `logpat-order-service-1c82530b` (strong): 8x ERROR on order-service: 'Request POST /v1/orders exceeded deadline 5000ms' (first 2026-09-11T02:15:11Z, last 2026-09-11T02:40:12Z)
+- [OBSERVED EVIDENCE] `met-order-service-timeout_rate-0145-0330` (moderate): order-service timeout_rate: baseline 0.1 -> window mean 2.99 (max 6.41, change 2889.6%), onset 2026-09-11T02:15:00Z
+- [OBSERVED EVIDENCE] `met-order-service-memory_pct-0145-0330` (weak): order-service memory_pct: baseline 55.25 -> window mean 66.17 (max 80.83, change 19.8%), onset 2026-09-11T02:14:00Z
+- [OBSERVED EVIDENCE] `met-payment-service-p99_latency_ms-0145-0240` (moderate): payment-service p99_latency_ms: baseline 297.92 -> window mean 299.74 (max 328.66, change 0.6%), onset none detected
+
+Contradicting evidence:
+- [OBSERVED EVIDENCE] `logpat-order-service-95abd1bb` (weak): 7x WARN on order-service: 'Inventory reservation retry for sku-86' (first 2026-09-11T01:48:19Z, last 2026-09-11T02:45:37Z)
+- [OBSERVED EVIDENCE] `met-order-service-request_rate-0145-0330` (weak): order-service request_rate: baseline 250.23 -> window mean 250.6 (max 274.8, change 0.1%), onset none detected
+
+Remaining uncertainties / missing evidence:
+- [UNKNOWN] Per-node order-service CPU/GC/heap; unknown whether only order-7f9c is affected
+- [UNKNOWN] Batch job end time or resource profile; whether the batch is still running
+- [UNKNOWN] Thread dump or heap profile showing what the worker threads are blocked on
+
+### 2. H2 - `upstream_dependency_degradation` in `postgres` (confidence 0.00, critic: reject)
+**INFERENCE:** Long-running report_rollup() queries on postgres degraded DB capacity, slowing order-service's DB work and driving worker-pool exhaustion. Mechanism: report_rollup() runs ~18-20s statements from 01:47Z -> postgres CPU rises (35% to 44-53%) from 02:11Z -> DB calls from order-service slow -> worker threads held longer -> pool saturation and deadline timeouts.
+
+Confidence breakdown: base 0.10; +0.08 corroboration across >=2 independent source types; +0.32 supporting evidence (2 refs, reliability-weighted, capped); -0.45 contradicting evidence (4 refs, capped 0.45); +0.08 proposed cause (01:47) precedes/coincides with first observed anomaly (02:08); -0.04 2 acknowledged evidence gaps; -0.40 critic review adjustment; = 0.00 (evidence-strength score, not a calibrated probability)
+
+Supporting evidence:
+- [OBSERVED EVIDENCE] `logpat-postgres-44883ca5` (moderate): 8x WARN on postgres: 'duration: 19602 ms statement: SELECT report_rollup()' (first 2026-09-11T01:47:24Z, last 2026-09-11T02:38:58Z)
+- [OBSERVED EVIDENCE] `met-postgres-cpu_pct-0145-0240` (moderate): postgres cpu_pct: baseline 35.11 -> window mean 43.57 (max 54.78, change 24.1%), onset 2026-09-11T02:11:00Z
+
+Contradicting evidence:
+- [OBSERVED EVIDENCE] `met-postgres-p99_latency_ms-0145-0240` (strong): postgres p99_latency_ms: baseline 25.06 -> window mean 24.92 (max 27.38, change -0.6%), onset none detected
+- [OBSERVED EVIDENCE] `met-postgres-db_conn_util_pct-0145-0240` (moderate): postgres db_conn_util_pct: baseline 40.18 -> window mean 39.51 (max 43.5, change -1.7%), onset none detected
+- [OBSERVED EVIDENCE] `met-order-service-db_conn_util_pct-0145-0330` (moderate): order-service db_conn_util_pct: baseline 30.08 -> window mean 29.96 (max 32.7, change -0.4%), onset none detected
+- [OBSERVED EVIDENCE] `met-order-service-p99_latency_ms-0145-0330` (weak): order-service p99_latency_ms: baseline 397.96 -> window mean 404.53 (max 436.33, change 1.7%), onset none detected
+
+Remaining uncertainties / missing evidence:
+- [UNKNOWN] Postgres lock wait and active-query detail during the window
+- [UNKNOWN] Order-service DB call latency
+
+### 3. H3 - `deployment_regression` in `payment-service` (confidence 0.00, critic: reject)
+**INFERENCE:** The payment-service 5.7.2->5.7.3 deploy at 22:15Z introduced an order-service-side regression that surfaced only overnight. Mechanism: Deploy changes payment client behaviour -> order-service calls to payment slow or hold threads -> pool saturation at 02:12Z.
+
+Confidence breakdown: base 0.10; +0.04 supporting evidence (1 refs, reliability-weighted, capped); -0.45 contradicting evidence (3 refs, capped 0.45); +0.08 proposed cause (22:15) precedes/coincides with first observed anomaly (02:08); -0.04 2 acknowledged evidence gaps; -0.40 critic review adjustment; = 0.00 (evidence-strength score, not a calibrated probability)
+
+Supporting evidence:
+- [CONFIRMED FACT] `dep-bd77b48c` (weak): Deployment of payment-service 5.7.2->5.7.3 at 2026-09-10T22:15:00Z (SUCCEEDED): Dependency bumps
+
+Contradicting evidence:
+- [OBSERVED EVIDENCE] `met-payment-service-p99_latency_ms-2145-0240` (strong): payment-service p99_latency_ms: baseline None -> window mean 299.1 (max 328.66, change None%), onset none detected
+- [OBSERVED EVIDENCE] `met-payment-service-timeout_rate-0145-0240` (strong): payment-service timeout_rate: baseline 0.1 -> window mean 0.1 (max 0.11, change -0.4%), onset none detected
+- [OBSERVED EVIDENCE] `logpat-order-service-7b888968` (moderate): 14x WARN on order-service: 'GC pause 8140ms (G1 Evacuation Pause)' (first 2026-09-11T02:08:13Z, last 2026-09-11T02:40:03Z)
+
+Remaining uncertainties / missing evidence:
+- [UNKNOWN] Order-service-side latency for calls to payment-service
+- [UNKNOWN] Payment-service client config diffs in 5.7.3
+
+## Critic Review
+- **Verdict:** `APPROVED` (rounds reviewed: 1)
+- **Reasoning:** H1 (order-service resource saturation from the invoice-reconciliation batch on order-7f9c) is the leading hypothesis and is supported. Timing is consistent: batch start 02:05:00Z precedes CPU onset (02:08Z), the first GC pause (02:08:13Z, 8140 ms), pool saturation (02:12:03Z), memory rise (02:14-02:15Z) and deadline errors and timeout onset (02:15Z). Error rate rises from 0.54% to about 4% over the same window. Traffic is flat (request_rate +0.1%), so load is not the cause. Downstream payment latency and timeouts are flat, so the latency originates inside order-service. H2 (postgres report_rollup) is contradicted: postgres p99 is flat (25.06 vs 24.92 ms), DB connection utilisation is flat on both postgres and order-service, and the postgres CPU rise is small (35% to 44%) and starts after the order-service GC onset. H3 (payment 5.7.3 deploy) is contradicted: payment p99 and timeout rate are flat through the deploy and the onset, and the deploy is about 4h before onset with no mechanism evidence. Caveats: the batch is linked to the GC and CPU only by timing and co-location, with no batch-specific metric or thread dump; the CPU and GC metrics are service-level, so the claim that only order-7f9c is affected is unverified (per-node metrics are not exposed by the tools); and the inventory-reservation retries from 01:31Z are an unexplained low-level precursor that could be an early sign of the same contention. None of these overturn the category or culprit.
+- H1: **accept** - Batch start precedes all anomalies. CPU onset, GC pauses, pool saturation, memory rise and timeout onset follow in the expected order. Payment latency is flat, so the latency is internal to order-service. Traffic is flat. Remaining gaps (per-node attribution, batch-specific resource profile) are limitations, not contradictions.
+- H2: **reject** - Postgres p99 and connection utilisation are flat, which contradicts DB-capacity degradation. The postgres CPU rise is modest and begins after the order-service GC onset. The slow report_rollup statements began at 01:47Z with no matching latency change, so they do not explain the 02:08Z onset.
+- H3: **reject** - Payment p99 latency and timeout rate are flat through the 22:15Z deploy and the 02:15Z onset. There is no order-service-to-payment latency change. The deploy is the only change in 24h, which is a temporal correlation only, and the order-service GC onset is ~4h later.
+- pre-check blocking `correlation_only` on H3: change hypothesis supported only by the change record itself (temporal correlation); no log/metric evidence of the changed behaviour
+- pre-check warning `culprit_symptom` on H3: no log/metric evidence cited for culprit payment-service
+- pre-check warning `single_source` on H3: all support comes from one source type (deployment)
+- alternative: Inventory reservation retry contention beginning around 01:31Z as an earlier, lower-intensity precursor, which the batch then amplified
+- alternative: Node-local problem on order-7f9c not related to the batch (cannot be separated without per-node metrics; batch timing favours the batch)
+
+## Probable Root Cause
+ROOT CAUSE IDENTIFIED (critic-approved; still an INFERENCE from evidence): resource_saturation in order-service - Invoice-reconciliation batch (batch_size=500000) started on node order-7f9c at 02:05Z exhausted CPU/heap in order-service, causing G1 GC pauses and order-worker pool saturation, which produced deadline timeouts and errors.
+
+## Corrective Actions
+- Pause or throttle the invoice-reconciliation batch (batch_size=500000) on order-7f9c so the order-service CPU and heap pressure recedes; confirm it is not still running (no end-time evidence is currently available).
+- Drain or restart order-service instances on order-7f9c to clear the saturated order-worker pool (active=200, large queue) and confirm timeout and error rates return to baseline (about 0.1% timeouts).
+- Verify whether other order-service nodes are affected, since per-node metrics were not available and the affected-node scope is unverified.
+- Investigate the inventory-reservation retries first seen around 01:31Z (alternative explanation) to determine whether they were an early precursor of the same contention.
+
+## Preventive Actions
+- Isolate batch workloads from request-serving order-service capacity (separate node pool, CPU and memory limits, or a dedicated worker), so batch execution cannot starve the order-worker pool.
+- Set the batch to process in smaller chunks with backpressure and checkpointing rather than a single batch_size=500000 run.
+- Review G1 GC tuning and heap sizing for order-service under batch load, and set bounded queue sizes with load shedding so the queue cannot reach about 19,250 entries.
+- Add batch-specific metrics (progress, duration, resource use per job) and emit a thread dump on pool saturation to strengthen causal attribution in future incidents.
+
+## Monitoring Recommendations
+- Alert on order-service GC pause duration above, for example, 1000 ms and on sustained CPU above 80% per node, using per-node rather than service-level metrics.
+- Alert on order-worker pool active threads at or near the maximum and on queue depth above a defined threshold, with a leading indicator at the first GC pause.
+- Alert on POST /v1/orders deadline-exceeded errors and timeout rate above baseline (for example, above 1%), and monitor error rate.
+- Log the start and end of scheduled jobs with node and resource metadata, and track the invoice-reconciliation job's runtime and status.
+- Monitor postgres report_rollup() statement duration (alert above a few seconds) to keep rejecting H2 or detect it if it recurs.
+- Fix the metric query configuration so api-gateway and order-service queries stay within the 6-metric limit, so that the full evidence set (including db_conn_util_pct and error_rate) can be collected.
+
+## Evidence Gaps
+- [UNKNOWN] query_metrics failed for service=api-gateway, metrics=['p50_latency_ms', 'p95_latency_ms', 'p99_latency_ms', 'timeout_rate', 'error_rate', 'request_rate', 'cpu_pct', 'memory_pct']: metrics: List should have at most 6 items after validation, not 8 (INVALID_QUERY)
+- [UNKNOWN] query_metrics failed for service=order-service, metrics=['p50_latency_ms', 'p95_latency_ms', 'p99_latency_ms', 'timeout_rate', 'error_rate', 'request_rate', 'cpu_pct', 'memory_pct', 'db_conn_util_pct']: metrics: List should have at most 6 items after validation, not 9 (INVALID_QUERY)
+
+## Limitations
+- The batch is linked to the GC and CPU rise by timing and co-location only; no batch-specific metric or thread dump was available.
+- CPU, memory, and GC metrics are service-level, so the claim that only order-7f9c is affected is unverified.
+- No end-time or progress evidence exists for the batch, so whether it is still running is unknown.
+- Some metric queries failed due to the six-metric limit (api-gateway and order-service), so parts of the evidence set are incomplete.
+- Inventory-reservation retries from about 01:31Z are unexplained and may be an earlier precursor of the same contention.
+- 2 tool calls failed and 0 returned partial data; affected areas are treated as unknown, not healthy.
+- Confidence values are rule-based evidence-strength scores, not calibrated probabilities.
+- Investigation terminated because: critic verdict APPROVED
+
+## Final Status
+`ROOT_CAUSE_IDENTIFIED`
+
+The most probable root cause is resource saturation in order-service caused by the invoice-reconciliation batch (batch_size=500000) on node order-7f9c, which led to GC pauses, worker-pool exhaustion, and deadline timeouts from 02:15Z. The conclusion is supported by timing, co-location, and the rejection of the postgres and payment-service alternatives. It is not fully confirmed: batch-specific telemetry, per-node metrics, and an explanation for the 01:31Z inventory-reservation retries are still missing. Mitigation should stop or throttle the batch, and preventive work should isolate batch workloads from order-serving capacity.
+
+## Execution Statistics
+```json
+{
+  "rounds": 1,
+  "tool_calls": 21,
+  "tool_failures": 0,
+  "tool_retries": 0,
+  "partial_results": 0,
+  "agent_failures": 0,
+  "agent_retries": 0,
+  "invalid_llm_outputs": 0,
+  "messages_exchanged": 17,
+  "evidence_records": 108,
+  "duration_s": 59.1,
+  "tokens": {
+    "input_tokens": 42,
+    "output_tokens": 20946,
+    "cache_read_tokens": 28631,
+    "cache_write_tokens": 64823,
+    "llm_calls": 14,
+    "cost_usd": 0.018866385
+  },
+  "tokens_by_agent": {
+    "orchestrator": {
+      "input_tokens": 6,
+      "output_tokens": 917,
+      "cache_read_tokens": 1306,
+      "cache_write_tokens": 1739,
+      "llm_calls": 2,
+      "cost_usd": 0.000689535
+    },
+    "dependency": {
+      "input_tokens": 8,
+      "output_tokens": 2877,
+      "cache_read_tokens": 7247,
+      "cache_write_tokens": 6471,
+      "llm_calls": 3,
+      "cost_usd": 0.002320645
+    },
+    "observability": {
+      "input_tokens": 14,
+      "output_tokens": 9175,
+      "cache_read_tokens": 12071,
+      "cache_write_tokens": 26496,
+      "llm_calls": 5,
+      "cost_usd": 0.00802161
+    },
+    "reasoning": {
+      "input_tokens": 4,
+      "output_tokens": 3486,
+      "cache_read_tokens": 0,
+      "cache_write_tokens": 14551,
+      "llm_calls": 1,
+      "cost_usd": 0.003562275
+    },
+    "critic": {
+      "input_tokens": 6,
+      "output_tokens": 2441,
+      "cache_read_tokens": 8007,
+      "cache_write_tokens": 11430,
+      "llm_calls": 2,
+      "cost_usd": 0.0027299200000000003
+    },
+    "reporting": {
+      "input_tokens": 4,
+      "output_tokens": 2050,
+      "cache_read_tokens": 0,
+      "cache_write_tokens": 4136,
+      "llm_calls": 1,
+      "cost_usd": 0.0015424000000000002
+    }
+  }
+}
+```

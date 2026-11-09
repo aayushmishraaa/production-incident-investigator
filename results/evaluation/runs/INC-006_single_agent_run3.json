@@ -1,0 +1,345 @@
+{
+  "investigation_id": "inv-234949d997",
+  "system": "single_agent",
+  "incident_id": "INC-006",
+  "title": "User profile errors",
+  "severity": "SEV2",
+  "affected_services": [
+    "user-service"
+  ],
+  "start_time": "2026-09-17T21:05:00+00:00",
+  "executive_summary": "user-service errors began at 21:03Z, about 2 minutes after a kernel nf_conntrack \"table full\" event on usr-node-3 (21:02Z). Error rate rose from ~0.4% to ~30% and timeouts from 0.05% to ~9%. Errors are PSQLException \"connection refused\" and \"connection reset by peer\" to postgres-primary:5432, so the failure is at the network/connection layer, not pool exhaustion (user-service DB connection utilisation stayed flat at ~30%, baseline 29.9%). The most likely cause is conntrack exhaustion on usr-node-3 dropping DB packets. This is unconfirmed: the log does not say whether other nodes are affected, and PostgreSQL-side telemetry is missing for the window.",
+  "timeline": [
+    {
+      "time": "2026-09-17T20:32:04Z",
+      "label": "OBSERVED EVIDENCE",
+      "event": "First log: 7x WARN on postgres: 'duration: 12902 ms statement: SELECT report_rollup()' (first 2026-09-17T20:32:04Z, last 2026-09-17T21:35:22Z)",
+      "evidence_id": "logpat-postgres-44883ca5"
+    },
+    {
+      "time": "2026-09-17T20:36:15Z",
+      "label": "OBSERVED EVIDENCE",
+      "event": "First log: 7x WARN on user-service: 'Deprecated API /v1/users/legacy called by client web-59' (first 2026-09-17T20:36:15Z, last 2026-09-17T21:21:22Z)",
+      "evidence_id": "logpat-user-service-742b555e"
+    },
+    {
+      "time": "2026-09-17T21:03:00Z",
+      "label": "OBSERVED EVIDENCE",
+      "event": "Anomaly onset: user-service error_rate: baseline 0.4 -> window mean 14.93 (max 33.51, change 3606.8%), onset 2026-09-17T21:03:00Z",
+      "evidence_id": "met-user-service-error_rate-2035-2130"
+    },
+    {
+      "time": "2026-09-17T21:03:00Z",
+      "label": "OBSERVED EVIDENCE",
+      "event": "Anomaly onset: user-service timeout_rate: baseline 0.05 -> window mean 4.4 (max 9.91, change 8712.6%), onset 2026-09-17T21:03:00Z",
+      "evidence_id": "met-user-service-timeout_rate-2035-2130"
+    },
+    {
+      "time": "2026-09-17T21:03:00Z",
+      "label": "OBSERVED EVIDENCE",
+      "event": "First log: 19x ERROR on user-service: 'PSQLException: Connection to postgres-primary:5432 refused (attempt 76)' (first 2026-09-17T21:03:00Z, last 2026-09-17T21:28:37Z)",
+      "evidence_id": "logpat-user-service-f82ed4bd"
+    },
+    {
+      "time": "2026-09-17T21:03:08Z",
+      "label": "OBSERVED EVIDENCE",
+      "event": "First log: 9x ERROR on user-service: 'I/O error: connection reset by peer (postgres-primary:5432)' (first 2026-09-17T21:03:08Z, last 2026-09-17T21:27:05Z)",
+      "evidence_id": "logpat-user-service-97a18e1d"
+    },
+    {
+      "time": "2026-09-17T21:05:00Z",
+      "label": "CONFIRMED FACT",
+      "event": "Reported symptom start",
+      "evidence_id": null
+    },
+    {
+      "time": "2026-09-17T21:11:00Z",
+      "label": "CONFIRMED FACT",
+      "event": "Incident reported",
+      "evidence_id": null
+    }
+  ],
+  "observed_symptoms": [
+    {
+      "label": "OBSERVED EVIDENCE",
+      "statement": "user-service error_rate: baseline 0.4 -> window mean 14.93 (max 33.51, change 3606.8%), onset 2026-09-17T21:03:00Z",
+      "evidence_ids": [
+        "met-user-service-error_rate-2035-2130"
+      ]
+    },
+    {
+      "label": "OBSERVED EVIDENCE",
+      "statement": "user-service timeout_rate: baseline 0.05 -> window mean 4.4 (max 9.91, change 8712.6%), onset 2026-09-17T21:03:00Z",
+      "evidence_ids": [
+        "met-user-service-timeout_rate-2035-2130"
+      ]
+    }
+  ],
+  "investigation_performed": [],
+  "hypotheses": [
+    {
+      "rank": 1,
+      "hypothesis_id": "H1",
+      "category": "infrastructure_degradation",
+      "culprit_service": "user-service",
+      "description": "nf_conntrack table exhaustion on usr-node-3 drops user-service -> postgres-primary connections, producing refused/reset errors and timeouts. Mechanism: The conntrack table filled on usr-node-3 at 21:02Z and the kernel began dropping packets. New and existing TCP sessions to postgres-primary:5432 from that node were refused or reset. user-service retries fail, which surfaces as DB errors and timeouts. Onset of the error spike (21:03Z) follows the kernel event by about one minute.",
+      "confidence": 0.7,
+      "confidence_explanation": [
+        "self-reported by the single agent"
+      ],
+      "supporting_evidence": [
+        {
+          "evidence_id": "logpat-user-service-227e81bb",
+          "strength": "strong",
+          "note": "nf_conntrack table full, dropping packet on usr-node-3 at 21:02Z, one minute before error onset",
+          "exists": true,
+          "label": "OBSERVED EVIDENCE",
+          "description": "1x WARN on user-service: 'kernel: nf_conntrack: table full, dropping packet (node usr-node-3)' (first 2026-09-17T21:02:00Z, last 2026-09-17T21:02:00Z)"
+        },
+        {
+          "evidence_id": "log-b27e25ff",
+          "strength": "strong",
+          "note": "raw record of the conntrack drop",
+          "exists": true,
+          "label": "OBSERVED EVIDENCE",
+          "description": "WARN user-service: kernel: nf_conntrack: table full, dropping packet (node usr-node-3)"
+        },
+        {
+          "evidence_id": "logpat-user-service-f82ed4bd",
+          "strength": "strong",
+          "note": "19 connection-refused errors to postgres-primary:5432 from 21:03Z onward",
+          "exists": true,
+          "label": "OBSERVED EVIDENCE",
+          "description": "19x ERROR on user-service: 'PSQLException: Connection to postgres-primary:5432 refused (attempt 76)' (first 2026-09-17T21:03:00Z, last 2026-09-17T21:28:37Z)"
+        },
+        {
+          "evidence_id": "logpat-user-service-97a18e1d",
+          "strength": "moderate",
+          "note": "9 connection-reset-by-peer errors to postgres-primary from 21:03Z",
+          "exists": true,
+          "label": "OBSERVED EVIDENCE",
+          "description": "9x ERROR on user-service: 'I/O error: connection reset by peer (postgres-primary:5432)' (first 2026-09-17T21:03:08Z, last 2026-09-17T21:27:05Z)"
+        },
+        {
+          "evidence_id": "met-user-service-error_rate-2035-2130",
+          "strength": "strong",
+          "note": "error rate 0.4% to ~30%, onset 21:03Z",
+          "exists": true,
+          "label": "OBSERVED EVIDENCE",
+          "description": "user-service error_rate: baseline 0.4 -> window mean 14.93 (max 33.51, change 3606.8%), onset 2026-09-17T21:03:00Z"
+        },
+        {
+          "evidence_id": "met-user-service-timeout_rate-2035-2130",
+          "strength": "moderate",
+          "note": "timeout rate 0.05% to ~9%, onset 21:03Z",
+          "exists": true,
+          "label": "OBSERVED EVIDENCE",
+          "description": "user-service timeout_rate: baseline 0.05 -> window mean 4.4 (max 9.91, change 8712.6%), onset 2026-09-17T21:03:00Z"
+        },
+        {
+          "evidence_id": "hist-HIST-2025-073",
+          "strength": "weak",
+          "note": "past incident with the same conntrack-exhaustion signature (analogy only)",
+          "exists": true,
+          "label": "INFERENCE",
+          "description": "Past incident HIST-2025-073 'User service DB errors from node network issue' (similarity 0.494): Node conntrack table exhaustion dropped DB packets for one service."
+        }
+      ],
+      "contradicting_evidence": [
+        {
+          "evidence_id": "logpat-user-service-227e81bb",
+          "strength": "moderate",
+          "note": "only one conntrack log line exists; a single-node event would not obviously explain a service-wide 30% error rate unless most traffic goes through usr-node-3 (not verified)",
+          "exists": true,
+          "label": "OBSERVED EVIDENCE",
+          "description": "1x WARN on user-service: 'kernel: nf_conntrack: table full, dropping packet (node usr-node-3)' (first 2026-09-17T21:02:00Z, last 2026-09-17T21:02:00Z)"
+        },
+        {
+          "evidence_id": "met-user-service-db_conn_util_pct-2035-2130",
+          "strength": "moderate",
+          "note": "user-service DB connection utilisation is flat, so pool exhaustion is ruled out as the direct mechanism",
+          "exists": true,
+          "label": "OBSERVED EVIDENCE",
+          "description": "user-service db_conn_util_pct: baseline 29.86 -> window mean 30.08 (max 33.37, change 0.7%), onset none detected"
+        }
+      ],
+      "missing_evidence": [
+        "Per-node error or conntrack metrics for usr-node-1..N (not queried; no node-level metric is available in the toolset)",
+        "Whether errors come only from usr-node-3 (error log lacks a node field)",
+        "PostgreSQL-side connection and network metrics for 21:00Z onward (missing datapoints)"
+      ],
+      "critic_decision": null
+    },
+    {
+      "rank": 2,
+      "hypothesis_id": "H2",
+      "category": "resource_saturation",
+      "culprit_service": "postgres",
+      "description": "Long-running report_rollup() queries on the database saturate it and cause connection failures. Mechanism: report_rollup() ran for 11\u201320 seconds repeatedly from 20:32Z, which could hold DB resources and reject or reset new connections.",
+      "confidence": 0.15,
+      "confidence_explanation": [
+        "self-reported by the single agent"
+      ],
+      "supporting_evidence": [
+        {
+          "evidence_id": "logpat-postgres-44883ca5",
+          "strength": "moderate",
+          "note": "7 slow report_rollup() executions, 11\u201320s each, 20:32Z to 21:35Z",
+          "exists": true,
+          "label": "OBSERVED EVIDENCE",
+          "description": "7x WARN on postgres: 'duration: 12902 ms statement: SELECT report_rollup()' (first 2026-09-17T20:32:04Z, last 2026-09-17T21:35:22Z)"
+        },
+        {
+          "evidence_id": "met-postgres-cpu_pct-2035-2130",
+          "strength": "weak",
+          "note": "CPU baseline 35%, but postgres telemetry is missing after 21:00",
+          "exists": true,
+          "label": "OBSERVED EVIDENCE",
+          "description": "postgres cpu_pct: baseline 35.12 -> window mean 35.39 (max 38.98, change 0.8%), onset none detected, 31 points missing"
+        }
+      ],
+      "contradicting_evidence": [
+        {
+          "evidence_id": "logpat-postgres-44883ca5",
+          "strength": "strong",
+          "note": "slow queries began 20:32Z, before the 21:03Z onset and before the baseline ended, and did not change at onset",
+          "exists": true,
+          "label": "OBSERVED EVIDENCE",
+          "description": "7x WARN on postgres: 'duration: 12902 ms statement: SELECT report_rollup()' (first 2026-09-17T20:32:04Z, last 2026-09-17T21:35:22Z)"
+        },
+        {
+          "evidence_id": "log-cf483fe1",
+          "strength": "moderate",
+          "note": "the 'connection refused' errors indicate the server was not accepting connections at all, which a slow query alone would not normally cause",
+          "exists": true,
+          "label": "OBSERVED EVIDENCE",
+          "description": "WARN postgres: duration: 14502 ms statement: SELECT report_rollup()"
+        }
+      ],
+      "missing_evidence": [
+        "postgres CPU, connection, and error metrics for 21:00Z to 21:30Z (31 of 56 points missing)",
+        "Postgres max_connections and active connection counts during the window"
+      ],
+      "critic_decision": null
+    },
+    {
+      "rank": 3,
+      "hypothesis_id": "H3",
+      "category": "upstream_dependency_degradation",
+      "culprit_service": "postgres-primary",
+      "description": "postgres-primary itself became unavailable or failed over at about 21:00Z, refusing connections. Mechanism: If the primary restarted or stopped accepting connections, user-service would see refused and reset errors across all nodes, not just one.",
+      "confidence": 0.1,
+      "confidence_explanation": [
+        "self-reported by the single agent"
+      ],
+      "supporting_evidence": [
+        {
+          "evidence_id": "log-e9dd6ec0",
+          "strength": "moderate",
+          "note": "connection refused errors from postgres-primary:5432",
+          "exists": true,
+          "label": "OBSERVED EVIDENCE",
+          "description": "ERROR user-service: PSQLException: Connection to postgres-primary:5432 refused (attempt 76)"
+        }
+      ],
+      "contradicting_evidence": [
+        {
+          "evidence_id": "logpat-postgres-72cfef4c",
+          "strength": "moderate",
+          "note": "checkpoints and autovacuum continued normally through 21:30Z, so the database process was running",
+          "exists": true,
+          "label": "OBSERVED EVIDENCE",
+          "description": "7x INFO on postgres: 'checkpoint complete: wrote 42 buffers' (first 2026-09-17T20:36:30Z, last 2026-09-17T21:30:42Z)"
+        },
+        {
+          "evidence_id": "logpat-user-service-227e81bb",
+          "strength": "moderate",
+          "note": "the conntrack event on one node gives a more specific explanation",
+          "exists": true,
+          "label": "OBSERVED EVIDENCE",
+          "description": "1x WARN on user-service: 'kernel: nf_conntrack: table full, dropping packet (node usr-node-3)' (first 2026-09-17T21:02:00Z, last 2026-09-17T21:02:00Z)"
+        }
+      ],
+      "missing_evidence": [
+        "postgres-primary host or process health data (the service is named 'postgres' in the topology, and 'postgres-primary' was rejected as unknown by the metrics tool)"
+      ],
+      "critic_decision": null
+    }
+  ],
+  "critic_review": {
+    "verdict": "NOT_RUN",
+    "rounds_reviewed": 0
+  },
+  "evidence_gaps": [
+    "[UNKNOWN] query_metrics failed for service=postgres-primary, metrics=['cpu_pct', 'db_conn_util_pct', 'error_rate', 'memory_pct']: unknown service 'postgres-primary'. Known: ['api-gateway', 'auth-service', 'message-queue', 'notification-service', 'order-service', 'payment-service', 'postgres', 'redis', 'user-service'] (INVALID_QUERY)"
+  ],
+  "probable_root_cause": {
+    "hypothesis_id": "H1",
+    "category": "infrastructure_degradation",
+    "culprit_service": "user-service",
+    "description": "nf_conntrack table exhaustion on usr-node-3 drops user-service -> postgres-primary connections, producing refused/reset errors and timeouts.",
+    "confidence": 0.7,
+    "label": "MOST PROBABLE EXPLANATION (INFERENCE, not confirmed)"
+  },
+  "root_cause_statement": "MOST PROBABLE EXPLANATION (INFERENCE, not confirmed): infrastructure_degradation in user-service - nf_conntrack table exhaustion on usr-node-3 drops user-service -> postgres-primary connections, producing refused/reset errors and timeouts.",
+  "corrective_actions": [
+    "Drain or reschedule user-service pods off usr-node-3 and confirm the error rate returns to baseline",
+    "Raise nf_conntrack_max on usr nodes, or clear stale entries, then verify the table no longer fills"
+  ],
+  "preventive_actions": [
+    "Alert on nf_conntrack usage above 80% on all nodes",
+    "Review connection churn from user-service to postgres (pooling, keepalive) to reduce conntrack load",
+    "Optimise or schedule report_rollup() so it does not run during peak traffic"
+  ],
+  "monitoring_recommendations": [
+    "Track user-service error and timeout rate per node",
+    "Track conntrack count vs max per node",
+    "Restore postgres metrics-agent export so DB-side telemetry is complete",
+    "Alert on report_rollup duration above 5s"
+  ],
+  "limitations": [
+    "Telemetry was only available from T0-60m to T0+30m",
+    "Historical match HIST-2025-073 is an analogy only",
+    "The error log lacks node or pod identifiers",
+    "[agent-reported gap] No per-node breakdown of user-service errors",
+    "[agent-reported gap] Postgres telemetry missing for 21:00Z to 21:30Z (31 of 56 points)",
+    "[agent-reported gap] The metrics tool does not recognise 'postgres-primary'; the 'postgres' service was used instead",
+    "[agent-reported gap] No node-level conntrack metrics",
+    "1 tool calls failed and 0 returned partial data; affected areas are treated as unknown, not healthy.",
+    "Confidence values are rule-based evidence-strength scores, not calibrated probabilities.",
+    "Investigation terminated because: agent submitted"
+  ],
+  "final_status": "PROBABLE_ROOT_CAUSE",
+  "conclusion": "The most probable cause is nf_conntrack table exhaustion on usr-node-3, which began at 21:02Z and dropped user-service's connections to postgres-primary, causing refused and reset errors from 21:03Z. There is no deployment or configuration change in the window. The status is PROBABLE rather than confirmed because per-node attribution and PostgreSQL-side telemetry are missing. The report_rollup slowness is a real but pre-existing issue that does not explain the step change at 21:03Z.",
+  "statistics": {
+    "rounds": 1,
+    "tool_calls": 10,
+    "tool_failures": 1,
+    "tool_retries": 0,
+    "partial_results": 0,
+    "agent_failures": 0,
+    "agent_retries": 0,
+    "invalid_llm_outputs": 0,
+    "messages_exchanged": 0,
+    "evidence_records": 60,
+    "duration_s": 21.96,
+    "tokens": {
+      "input_tokens": 10,
+      "output_tokens": 5023,
+      "cache_read_tokens": 23871,
+      "cache_write_tokens": 15158,
+      "llm_calls": 4,
+      "cost_usd": 0.004645959999999999
+    },
+    "tokens_by_agent": {
+      "single_agent": {
+        "input_tokens": 10,
+        "output_tokens": 5023,
+        "cache_read_tokens": 23871,
+        "cache_write_tokens": 15158,
+        "llm_calls": 4,
+        "cost_usd": 0.004645959999999999
+      }
+    }
+  }
+}

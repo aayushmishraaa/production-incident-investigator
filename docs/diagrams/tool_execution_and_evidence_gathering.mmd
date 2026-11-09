@@ -1,0 +1,13 @@
+flowchart TD
+    A[Agent tool_use] --> V{Pydantic input valid?}
+    V -- no --> E1[ToolResult INVALID_QUERY, no retry]
+    V -- yes --> B{tool-call budget left?}
+    B -- no --> E2[ToolResult BUDGET_EXHAUSTED]
+    B -- yes --> F[FailureSimulator.before_call<br/>profile/random faults]
+    F --> T[asyncio.wait_for tool.execute, timeout]
+    T -- ok --> P[apply partial-data profile]
+    P --> R[register EvidenceRecords in state<br/>partial => reliability LOW + EvidenceGap]
+    R --> OK[ToolResult success, evidence_ids]
+    T -- TOOL_TIMEOUT / SERVICE_UNAVAILABLE / INTERNAL --> RT{retries left?}
+    RT -- yes --> B
+    RT -- no --> G[ToolResult error + EvidenceGap<br/>'absence of data is NOT evidence of health']

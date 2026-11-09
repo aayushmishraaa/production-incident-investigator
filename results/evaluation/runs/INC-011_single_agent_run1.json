@@ -1,0 +1,467 @@
+{
+  "investigation_id": "inv-f5e61099fa",
+  "system": "single_agent",
+  "incident_id": "INC-011",
+  "title": "Platform-wide slowness and 429s",
+  "severity": "SEV2",
+  "affected_services": [
+    "api-gateway",
+    "auth-service",
+    "user-service"
+  ],
+  "start_time": "2026-10-02T20:00:00+00:00",
+  "executive_summary": "Latency and 429s began at ~19:55-20:00Z, coinciding with a ~2.2-2.5x surge in request rate at api-gateway, auth-service and user-service. Logs attribute the surge to client_id=mobile-ios-7.4.0, which the gateway reports as the top client by RPS (up to ~9,500 rps) and whose traffic is flagged as retries with Retry-After ignored. The best-supported explanation is a mobile client retry storm. The user-service release 7.1.3 (19:48Z) is not supported as the cause: user-service latency and error rate were flat through the window, and the change was cosmetic.",
+  "timeline": [
+    {
+      "time": "2026-10-02T19:32:46Z",
+      "label": "OBSERVED EVIDENCE",
+      "event": "First log: 4x WARN on auth-service: 'Login rate limit hit for user id u-79' (first 2026-10-02T19:32:46Z, last 2026-10-02T20:24:31Z)",
+      "evidence_id": "logpat-auth-service-cc8d3b87"
+    },
+    {
+      "time": "2026-10-02T19:35:26Z",
+      "label": "OBSERVED EVIDENCE",
+      "event": "First log: 7x WARN on payment-service: 'Card network soft decline (code 05) for charge ch_30' (first 2026-10-02T19:35:26Z, last 2026-10-02T20:17:02Z)",
+      "evidence_id": "logpat-payment-service-7e9bf84f"
+    },
+    {
+      "time": "2026-10-02T19:35:44Z",
+      "label": "OBSERVED EVIDENCE",
+      "event": "First log: 5x WARN on postgres: 'duration: 14702 ms statement: SELECT report_rollup()' (first 2026-10-02T19:35:44Z, last 2026-10-02T20:24:30Z)",
+      "evidence_id": "logpat-postgres-44883ca5"
+    },
+    {
+      "time": "2026-10-02T19:40:07Z",
+      "label": "OBSERVED EVIDENCE",
+      "event": "First log: 5x WARN on api-gateway: 'Slow client upload from 10.4.50.12 (1.9MB)' (first 2026-10-02T19:40:07Z, last 2026-10-02T20:24:11Z)",
+      "evidence_id": "logpat-api-gateway-88b04940"
+    },
+    {
+      "time": "2026-10-02T19:47:26Z",
+      "label": "OBSERVED EVIDENCE",
+      "event": "First log: 5x WARN on notification-service: 'SMTP provider throttled 1 message' (first 2026-10-02T19:47:26Z, last 2026-10-02T20:20:56Z)",
+      "evidence_id": "logpat-notification-service-54b86179"
+    },
+    {
+      "time": "2026-10-02T19:48:00Z",
+      "label": "CONFIRMED FACT",
+      "event": "Deployment of user-service 7.1.2->7.1.3 at 2026-10-02T19:48:00Z (SUCCEEDED): Copy changes on profile page",
+      "evidence_id": "dep-78c036fc"
+    },
+    {
+      "time": "2026-10-02T19:55:00Z",
+      "label": "OBSERVED EVIDENCE",
+      "event": "Anomaly onset: user-service request_rate: baseline 500.78 -> window mean 1124.49 (max 1838.14, change 124.5%), onset 2026-10-02T19:55:00Z",
+      "evidence_id": "met-user-service-request_rate-1930-2025"
+    },
+    {
+      "time": "2026-10-02T19:55:00Z",
+      "label": "OBSERVED EVIDENCE",
+      "event": "Anomaly onset: api-gateway request_rate: baseline 1195.01 -> window mean 2732.17 (max 4529.1, change 128.6%), onset 2026-10-02T19:55:00Z",
+      "evidence_id": "met-api-gateway-request_rate-1930-2025"
+    },
+    {
+      "time": "2026-10-02T19:55:00Z",
+      "label": "OBSERVED EVIDENCE",
+      "event": "Anomaly onset: api-gateway cpu_pct: baseline 34.95 -> window mean 63.51 (max 92.91, change 81.7%), onset 2026-10-02T19:55:00Z",
+      "evidence_id": "met-api-gateway-cpu_pct-1930-2025"
+    },
+    {
+      "time": "2026-10-02T19:55:00Z",
+      "label": "OBSERVED EVIDENCE",
+      "event": "Anomaly onset: auth-service request_rate: baseline 903.83 -> window mean 2016.93 (max 3257.22, change 123.2%), onset 2026-10-02T19:55:00Z",
+      "evidence_id": "met-auth-service-request_rate-1930-2025"
+    },
+    {
+      "time": "2026-10-02T19:55:00Z",
+      "label": "OBSERVED EVIDENCE",
+      "event": "Anomaly onset: auth-service cpu_pct: baseline 30.15 -> window mean 55.05 (max 86.3, change 82.6%), onset 2026-10-02T19:55:00Z",
+      "evidence_id": "met-auth-service-cpu_pct-1930-2025"
+    },
+    {
+      "time": "2026-10-02T19:55:11Z",
+      "label": "OBSERVED EVIDENCE",
+      "event": "First log: 10x WARN on api-gateway: 'Rate limiter: 363% of requests from client_id=mobile-ios-7.4.0 are retries (Retry-After ignored)' (first 2026-10-02T19:55:11Z, last 2026-10-02T20:25:00Z)",
+      "evidence_id": "logpat-api-gateway-d39f8491"
+    },
+    {
+      "time": "2026-10-02T19:56:00Z",
+      "label": "OBSERVED EVIDENCE",
+      "event": "Anomaly onset: user-service cpu_pct: baseline 29.56 -> window mean 48.83 (max 71.04, change 65.2%), onset 2026-10-02T19:56:00Z",
+      "evidence_id": "met-user-service-cpu_pct-1930-2025"
+    },
+    {
+      "time": "2026-10-02T19:56:00Z",
+      "label": "OBSERVED EVIDENCE",
+      "event": "Anomaly onset: api-gateway error_rate: baseline 0.51 -> window mean 3.86 (max 7.6, change 664.0%), onset 2026-10-02T19:56:00Z",
+      "evidence_id": "met-api-gateway-error_rate-1930-2025"
+    },
+    {
+      "time": "2026-10-02T19:56:06Z",
+      "label": "OBSERVED EVIDENCE",
+      "event": "First log: 9x WARN on api-gateway: '429 Too Many Requests returned to client 58' (first 2026-10-02T19:56:06Z, last 2026-10-02T20:21:50Z)",
+      "evidence_id": "logpat-api-gateway-8a499a8e"
+    },
+    {
+      "time": "2026-10-02T20:00:00Z",
+      "label": "CONFIRMED FACT",
+      "event": "Reported symptom start",
+      "evidence_id": null
+    },
+    {
+      "time": "2026-10-02T20:06:00Z",
+      "label": "CONFIRMED FACT",
+      "event": "Incident reported",
+      "evidence_id": null
+    }
+  ],
+  "observed_symptoms": [
+    {
+      "label": "OBSERVED EVIDENCE",
+      "statement": "user-service request_rate: baseline 500.78 -> window mean 1124.49 (max 1838.14, change 124.5%), onset 2026-10-02T19:55:00Z",
+      "evidence_ids": [
+        "met-user-service-request_rate-1930-2025"
+      ]
+    },
+    {
+      "label": "OBSERVED EVIDENCE",
+      "statement": "user-service cpu_pct: baseline 29.56 -> window mean 48.83 (max 71.04, change 65.2%), onset 2026-10-02T19:56:00Z",
+      "evidence_ids": [
+        "met-user-service-cpu_pct-1930-2025"
+      ]
+    },
+    {
+      "label": "OBSERVED EVIDENCE",
+      "statement": "api-gateway error_rate: baseline 0.51 -> window mean 3.86 (max 7.6, change 664.0%), onset 2026-10-02T19:56:00Z",
+      "evidence_ids": [
+        "met-api-gateway-error_rate-1930-2025"
+      ]
+    },
+    {
+      "label": "OBSERVED EVIDENCE",
+      "statement": "api-gateway request_rate: baseline 1195.01 -> window mean 2732.17 (max 4529.1, change 128.6%), onset 2026-10-02T19:55:00Z",
+      "evidence_ids": [
+        "met-api-gateway-request_rate-1930-2025"
+      ]
+    },
+    {
+      "label": "OBSERVED EVIDENCE",
+      "statement": "api-gateway cpu_pct: baseline 34.95 -> window mean 63.51 (max 92.91, change 81.7%), onset 2026-10-02T19:55:00Z",
+      "evidence_ids": [
+        "met-api-gateway-cpu_pct-1930-2025"
+      ]
+    },
+    {
+      "label": "OBSERVED EVIDENCE",
+      "statement": "auth-service request_rate: baseline 903.83 -> window mean 2016.93 (max 3257.22, change 123.2%), onset 2026-10-02T19:55:00Z",
+      "evidence_ids": [
+        "met-auth-service-request_rate-1930-2025"
+      ]
+    },
+    {
+      "label": "OBSERVED EVIDENCE",
+      "statement": "auth-service cpu_pct: baseline 30.15 -> window mean 55.05 (max 86.3, change 82.6%), onset 2026-10-02T19:55:00Z",
+      "evidence_ids": [
+        "met-auth-service-cpu_pct-1930-2025"
+      ]
+    }
+  ],
+  "investigation_performed": [],
+  "hypotheses": [
+    {
+      "rank": 1,
+      "hypothesis_id": "H1",
+      "category": "traffic_surge",
+      "culprit_service": "api-gateway",
+      "description": "Retry storm from mobile-ios-7.4.0 clients that ignore Retry-After, overloading the gateway and downstream auth/user services and triggering rate-limit 429s. Mechanism: Starting ~19:55Z the mobile-ios-7.4.0 client's request volume rises sharply (request_rate 2.2x at gateway, 2.2x at auth, 2.2x at user-service). The gateway flags retries as a large share of that client's traffic with Retry-After ignored, so the retries are not backing off. CPU on the gateway (to ~90%) and auth-service (to ~77-86%) climbs in step, and the gateway begins returning 429s and error rate rises from ~0.5% to ~7%. Causality is consistent with the onset order: client surge at 19:55, then gateway/auth CPU at 19:55-20:00, then 429s at 19:56 and error rate at 19:56.",
+      "confidence": 0.75,
+      "confidence_explanation": [
+        "self-reported by the single agent"
+      ],
+      "supporting_evidence": [
+        {
+          "evidence_id": "logpat-api-gateway-d39f8491",
+          "strength": "strong",
+          "note": "Rate limiter reports retries from mobile-ios-7.4.0 at 314-396% of requests, Retry-After ignored, repeated from 19:55:11 to 20:25.",
+          "exists": true,
+          "label": "OBSERVED EVIDENCE",
+          "description": "10x WARN on api-gateway: 'Rate limiter: 363% of requests from client_id=mobile-ios-7.4.0 are retries (Retry-After ignored)' (first 2026-10-02T19:55:11Z, last 2026-10-02T20:25:00Z)"
+        },
+        {
+          "evidence_id": "logpat-api-gateway-8575c4f9",
+          "strength": "strong",
+          "note": "Top client by RPS is mobile-ios-7.4.0 at 1700 to 9800 rps during the window.",
+          "exists": true,
+          "label": "OBSERVED EVIDENCE",
+          "description": "5x INFO on api-gateway: 'Top client by RPS: mobile-ios-7.4.0 (1700 rps)' (first 2026-10-02T19:56:19Z, last 2026-10-02T20:19:29Z)"
+        },
+        {
+          "evidence_id": "met-api-gateway-request_rate-1930-2025",
+          "strength": "strong",
+          "note": "Gateway request rate onset 19:55, +128.6% vs baseline.",
+          "exists": true,
+          "label": "OBSERVED EVIDENCE",
+          "description": "api-gateway request_rate: baseline 1195.01 -> window mean 2732.17 (max 4529.1, change 128.6%), onset 2026-10-02T19:55:00Z"
+        },
+        {
+          "evidence_id": "met-api-gateway-error_rate-1930-2025",
+          "strength": "strong",
+          "note": "Gateway error rate onset 19:56, 0.51% to 3.86% mean, peak 7.6%.",
+          "exists": true,
+          "label": "OBSERVED EVIDENCE",
+          "description": "api-gateway error_rate: baseline 0.51 -> window mean 3.86 (max 7.6, change 664.0%), onset 2026-10-02T19:56:00Z"
+        },
+        {
+          "evidence_id": "met-api-gateway-cpu_pct-1930-2025",
+          "strength": "moderate",
+          "note": "Gateway CPU onset 19:55, rising to ~90%.",
+          "exists": true,
+          "label": "OBSERVED EVIDENCE",
+          "description": "api-gateway cpu_pct: baseline 34.95 -> window mean 63.51 (max 92.91, change 81.7%), onset 2026-10-02T19:55:00Z"
+        },
+        {
+          "evidence_id": "met-auth-service-request_rate-1930-2025",
+          "strength": "moderate",
+          "note": "Auth request rate onset 19:55, +123%.",
+          "exists": true,
+          "label": "OBSERVED EVIDENCE",
+          "description": "auth-service request_rate: baseline 903.83 -> window mean 2016.93 (max 3257.22, change 123.2%), onset 2026-10-02T19:55:00Z"
+        },
+        {
+          "evidence_id": "logpat-api-gateway-8a499a8e",
+          "strength": "moderate",
+          "note": "429 responses to clients from 19:56:06 onward.",
+          "exists": true,
+          "label": "OBSERVED EVIDENCE",
+          "description": "9x WARN on api-gateway: '429 Too Many Requests returned to client 58' (first 2026-10-02T19:56:06Z, last 2026-10-02T20:21:50Z)"
+        },
+        {
+          "evidence_id": "hist-HIST-2025-068",
+          "strength": "weak",
+          "note": "Analogous past incident (mobile release ignoring Retry-After). Analogy only.",
+          "exists": true,
+          "label": "INFERENCE",
+          "description": "Past incident HIST-2025-068 'Retry storm from mobile client' (similarity 0.48): Mobile release ignored Retry-After causing retry storm."
+        }
+      ],
+      "contradicting_evidence": [
+        {
+          "evidence_id": "met-api-gateway-p99_latency_ms-1930-2025",
+          "strength": "moderate",
+          "note": "Gateway p99 latency is flat (+1%), which is not what a saturated gateway would normally show. Latency symptom may be limited to specific paths or clients.",
+          "exists": true,
+          "label": "OBSERVED EVIDENCE",
+          "description": "api-gateway p99_latency_ms: baseline 247.87 -> window mean 250.34 (max 284.94, change 1.0%), onset none detected"
+        },
+        {
+          "evidence_id": "met-user-service-p99_latency_ms-1930-2025",
+          "strength": "moderate",
+          "note": "user-service p99 is flat (+0%) despite a 2.2x request surge, so the reported user-service slowness is not visible in the metrics.",
+          "exists": true,
+          "label": "OBSERVED EVIDENCE",
+          "description": "user-service p99_latency_ms: baseline 161.15 -> window mean 161.2 (max 173.38, change 0.0%), onset none detected"
+        }
+      ],
+      "missing_evidence": [
+        "Release or version history for the mobile-ios client (7.4.0) to explain why its retry behaviour changed.",
+        "Per-client breakdown of 429s and of the gateway's rate-limit configuration.",
+        "Latency by endpoint or client segment, to reconcile flat p99 with the reported slowness."
+      ],
+      "critic_decision": null
+    },
+    {
+      "rank": 2,
+      "hypothesis_id": "H2",
+      "category": "deployment_regression",
+      "culprit_service": "user-service",
+      "description": "The user-service 7.1.3 release (19:48Z) caused a regression that produced the slowness and 429s. Mechanism: A new user-service build could in theory increase per-request cost or call amplification, which could explain the CPU rise and downstream load.",
+      "confidence": 0.1,
+      "confidence_explanation": [
+        "self-reported by the single agent"
+      ],
+      "supporting_evidence": [
+        {
+          "evidence_id": "dep-78c036fc",
+          "strength": "weak",
+          "note": "user-service 7.1.2 to 7.1.3 deployed at 19:48Z, shortly before onset. Change summary is 'Copy changes on profile page'.",
+          "exists": true,
+          "label": "CONFIRMED FACT",
+          "description": "Deployment of user-service 7.1.2->7.1.3 at 2026-10-02T19:48:00Z (SUCCEEDED): Copy changes on profile page"
+        },
+        {
+          "evidence_id": "met-user-service-cpu_pct-1930-2025",
+          "strength": "weak",
+          "note": "user-service CPU rose from ~30% to ~49% mean, onset 19:56, after the deploy.",
+          "exists": true,
+          "label": "OBSERVED EVIDENCE",
+          "description": "user-service cpu_pct: baseline 29.56 -> window mean 48.83 (max 71.04, change 65.2%), onset 2026-10-02T19:56:00Z"
+        }
+      ],
+      "contradicting_evidence": [
+        {
+          "evidence_id": "met-user-service-p99_latency_ms-1930-2025",
+          "strength": "strong",
+          "note": "user-service p99 latency flat (+0%) through the window, so no latency regression after the deploy.",
+          "exists": true,
+          "label": "OBSERVED EVIDENCE",
+          "description": "user-service p99_latency_ms: baseline 161.15 -> window mean 161.2 (max 173.38, change 0.0%), onset none detected"
+        },
+        {
+          "evidence_id": "met-user-service-error_rate-1930-2025",
+          "strength": "strong",
+          "note": "user-service error rate flat (-0.5%).",
+          "exists": true,
+          "label": "OBSERVED EVIDENCE",
+          "description": "user-service error_rate: baseline 0.4 -> window mean 0.4 (max 0.43, change -0.5%), onset none detected"
+        },
+        {
+          "evidence_id": "met-user-service-timeout_rate-1930-2025",
+          "strength": "moderate",
+          "note": "Timeout rate flat.",
+          "exists": true,
+          "label": "OBSERVED EVIDENCE",
+          "description": "user-service timeout_rate: baseline 0.05 -> window mean 0.05 (max 0.06, change -0.3%), onset none detected"
+        },
+        {
+          "evidence_id": "met-user-service-request_rate-1930-2025",
+          "strength": "strong",
+          "note": "user-service request rate onset at 19:55, 7 minutes after the deploy, and in step with gateway and auth. The surge is external, not from the release.",
+          "exists": true,
+          "label": "OBSERVED EVIDENCE",
+          "description": "user-service request_rate: baseline 500.78 -> window mean 1124.49 (max 1838.14, change 124.5%), onset 2026-10-02T19:55:00Z"
+        },
+        {
+          "evidence_id": "logpat-user-service-742b555e",
+          "strength": "weak",
+          "note": "Only log pattern for user-service is a deprecated-API warning; no errors.",
+          "exists": true,
+          "label": "OBSERVED EVIDENCE",
+          "description": "1x WARN on user-service: 'Deprecated API /v1/users/legacy called by client web-66' (first 2026-10-02T19:47:55Z, last 2026-10-02T19:47:55Z)"
+        }
+      ],
+      "missing_evidence": [
+        "Diff of 7.1.3 beyond the change summary.",
+        "Per-endpoint latency for the profile page."
+      ],
+      "critic_decision": null
+    },
+    {
+      "rank": 3,
+      "hypothesis_id": "H3",
+      "category": "resource_saturation",
+      "culprit_service": "postgres",
+      "description": "A slow report_rollup() query on postgres (background load) is saturating the database and degrading the platform. Mechanism: Long-running SELECT report_rollup() statements (11-15 s) could consume DB capacity and slow services that query postgres.",
+      "confidence": 0.1,
+      "confidence_explanation": [
+        "self-reported by the single agent"
+      ],
+      "supporting_evidence": [
+        {
+          "evidence_id": "logpat-postgres-44883ca5",
+          "strength": "moderate",
+          "note": "5 slow report_rollup() statements from 19:35Z to 20:24Z, 11-15 s each.",
+          "exists": true,
+          "label": "OBSERVED EVIDENCE",
+          "description": "5x WARN on postgres: 'duration: 14702 ms statement: SELECT report_rollup()' (first 2026-10-02T19:35:44Z, last 2026-10-02T20:24:30Z)"
+        }
+      ],
+      "contradicting_evidence": [
+        {
+          "evidence_id": "met-user-service-db_conn_util_pct-1930-2025",
+          "strength": "strong",
+          "note": "user-service DB connection utilisation flat (30% baseline vs 30.2% window).",
+          "exists": true,
+          "label": "OBSERVED EVIDENCE",
+          "description": "user-service db_conn_util_pct: baseline 30.04 -> window mean 30.17 (max 33.21, change 0.4%), onset none detected"
+        },
+        {
+          "evidence_id": "logpat-postgres-44883ca5",
+          "strength": "moderate",
+          "note": "Slow rollups began at 19:35Z, 20 minutes before the 19:55 onset, so they do not explain the onset timing.",
+          "exists": true,
+          "label": "OBSERVED EVIDENCE",
+          "description": "5x WARN on postgres: 'duration: 14702 ms statement: SELECT report_rollup()' (first 2026-10-02T19:35:44Z, last 2026-10-02T20:24:30Z)"
+        }
+      ],
+      "missing_evidence": [
+        "Postgres CPU, lock and connection metrics (no telemetry was queried for postgres)."
+      ],
+      "critic_decision": null
+    }
+  ],
+  "critic_review": {
+    "verdict": "NOT_RUN",
+    "rounds_reviewed": 0
+  },
+  "evidence_gaps": [],
+  "probable_root_cause": {
+    "hypothesis_id": "H1",
+    "category": "traffic_surge",
+    "culprit_service": "api-gateway",
+    "description": "Retry storm from mobile-ios-7.4.0 clients that ignore Retry-After, overloading the gateway and downstream auth/user services and triggering rate-limit 429s.",
+    "confidence": 0.75,
+    "label": "MOST PROBABLE EXPLANATION (INFERENCE, not confirmed)"
+  },
+  "root_cause_statement": "MOST PROBABLE EXPLANATION (INFERENCE, not confirmed): traffic_surge in api-gateway - Retry storm from mobile-ios-7.4.0 clients that ignore Retry-After, overloading the gateway and downstream auth/user services and triggering rate-limit 429s.",
+  "corrective_actions": [
+    "Throttle or block mobile-ios-7.4.0 at the gateway (per-client rate limit or client-version block) to stop the retry amplification.",
+    "Enforce server-side backoff: return and honour Retry-After, and apply a circuit breaker or 429 shedding at the gateway.",
+    "Roll back or hotfix the mobile-ios-7.4.0 client retry behaviour, and coordinate with mobile release owners.",
+    "Hold a rollback of user-service 7.1.3 in reserve; roll it back only if the surge is ruled out and user-service degrades."
+  ],
+  "preventive_actions": [
+    "Require client SDK tests that verify Retry-After compliance before release.",
+    "Add gateway-side retry-budget enforcement per client, with alerts on retry ratio.",
+    "Add canary and per-client-version monitoring for mobile releases."
+  ],
+  "monitoring_recommendations": [
+    "Alert on per-client request rate and retry ratio at api-gateway (threshold, e.g., retries >50% of a client's traffic).",
+    "Alert on gateway 429 rate and error rate above 1%.",
+    "Monitor gateway and auth CPU, and track p95/p99 latency per endpoint so slowness is not hidden by flat aggregate p99.",
+    "Monitor postgres report_rollup() duration as a separate background-load signal."
+  ],
+  "limitations": [
+    "No telemetry was queried for postgres, the notification or order services, or the mobile client itself.",
+    "Telemetry is aggregated per service; per-client latency was not available.",
+    "The 429 log patterns are sampled, so exact 429 volume is unknown.",
+    "[agent-reported gap] Release/trigger for mobile-ios-7.4.0 is unknown.",
+    "[agent-reported gap] Flat user-service and gateway p99 latency conflicts with the reported slowness and was not explained.",
+    "[agent-reported gap] No postgres or DB-side metrics were examined for the report_rollup() statements.",
+    "[agent-reported gap] No per-client latency or 429 breakdown was available.",
+    "Confidence values are rule-based evidence-strength scores, not calibrated probabilities.",
+    "Investigation terminated because: agent submitted"
+  ],
+  "final_status": "PROBABLE_ROOT_CAUSE",
+  "conclusion": "INC-011's most likely root cause is a retry storm from mobile-ios-7.4.0 clients that ignore Retry-After, starting ~19:55Z. This drove a ~2.2x request surge that saturated gateway and auth CPU and produced the 429s and gateway error rate. The user-service 7.1.3 release at 19:48Z is not supported as the cause: its latency, error and timeout metrics are flat, and the traffic surge it coincides with is external. The status is PROBABLE rather than confirmed because the mobile client's release trigger and the cause of the flat p99 latency are not established.",
+  "statistics": {
+    "rounds": 1,
+    "tool_calls": 9,
+    "tool_failures": 0,
+    "tool_retries": 0,
+    "partial_results": 0,
+    "agent_failures": 0,
+    "agent_retries": 0,
+    "invalid_llm_outputs": 0,
+    "messages_exchanged": 0,
+    "evidence_records": 70,
+    "duration_s": 24.97,
+    "tokens": {
+      "input_tokens": 8,
+      "output_tokens": 5843,
+      "cache_read_tokens": 17463,
+      "cache_write_tokens": 16814,
+      "llm_calls": 3,
+      "cost_usd": 0.00519868
+    },
+    "tokens_by_agent": {
+      "single_agent": {
+        "input_tokens": 8,
+        "output_tokens": 5843,
+        "cache_read_tokens": 17463,
+        "cache_write_tokens": 16814,
+        "llm_calls": 3,
+        "cost_usd": 0.00519868
+      }
+    }
+  }
+}

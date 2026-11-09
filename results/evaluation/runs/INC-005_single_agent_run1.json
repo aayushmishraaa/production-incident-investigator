@@ -1,0 +1,418 @@
+{
+  "investigation_id": "inv-6a5bca0722",
+  "system": "single_agent",
+  "incident_id": "INC-005",
+  "title": "Payments slow right after release",
+  "severity": "SEV1",
+  "affected_services": [
+    "order-service",
+    "payment-service"
+  ],
+  "start_time": "2026-09-14T11:40:00+00:00",
+  "executive_summary": "The payment-service 5.8.0 release (11:32Z) did not start the incident. Degradation begins at ~11:21-11:23Z on the postgres host: storage volume vol-0a3f write latency rises (log 11:21:06Z), disk IO wait jumps from ~2ms to ~130ms (onset 11:22Z), and postgres p95 latency jumps from ~12ms to ~690ms (onset 11:23Z). Payment p95 latency rises at 11:27Z and errors/statement timeouts start 11:28Z, all before the 11:32Z deployment. The most likely cause is degraded database storage (infrastructure), with payment and order symptoms being downstream effects. Confidence is moderate because the storage root cause is inferred from correlated telemetry and logs, not confirmed by a storage-provider signal.",
+  "timeline": [
+    {
+      "time": "2026-09-14T11:21:06Z",
+      "label": "OBSERVED EVIDENCE",
+      "event": "First log: 3x WARN on postgres: 'storage: volume vol-0a3f write latency degraded (avg 835ms)' (first 2026-09-14T11:21:06Z, last 2026-09-14T11:33:51Z)",
+      "evidence_id": "logpat-postgres-d629c24d"
+    },
+    {
+      "time": "2026-09-14T11:22:00Z",
+      "label": "OBSERVED EVIDENCE",
+      "event": "Anomaly onset: postgres disk_io_wait_ms: baseline 2.02 -> window mean 107.34 (max 161.01, change 5219.4%), onset 2026-09-14T11:22:00Z",
+      "evidence_id": "met-postgres-disk_io_wait_ms-1110-1205"
+    },
+    {
+      "time": "2026-09-14T11:23:00Z",
+      "label": "OBSERVED EVIDENCE",
+      "event": "Anomaly onset: postgres p95_latency_ms: baseline 12.01 -> window mean 667.73 (max 960.48, change 5461.9%), onset 2026-09-14T11:23:00Z",
+      "evidence_id": "met-postgres-p95_latency_ms-1110-1205"
+    },
+    {
+      "time": "2026-09-14T11:26:00Z",
+      "label": "OBSERVED EVIDENCE",
+      "event": "Anomaly onset: postgres db_conn_util_pct: baseline 40.2 -> window mean 73.64 (max 96.22, change 83.2%), onset 2026-09-14T11:26:00Z",
+      "evidence_id": "met-postgres-db_conn_util_pct-1110-1205"
+    },
+    {
+      "time": "2026-09-14T11:27:00Z",
+      "label": "OBSERVED EVIDENCE",
+      "event": "Anomaly onset: payment-service p95_latency_ms: baseline 150.16 -> window mean 1585.88 (max 2489.32, change 956.1%), onset 2026-09-14T11:27:00Z",
+      "evidence_id": "met-payment-service-p95_latency_ms-1110-1205"
+    },
+    {
+      "time": "2026-09-14T11:28:00Z",
+      "label": "OBSERVED EVIDENCE",
+      "event": "Anomaly onset: payment-service error_rate: baseline 0.8 -> window mean 6.02 (max 9.65, change 655.3%), onset 2026-09-14T11:28:00Z",
+      "evidence_id": "met-payment-service-error_rate-1110-1205"
+    },
+    {
+      "time": "2026-09-14T11:28:00Z",
+      "label": "OBSERVED EVIDENCE",
+      "event": "Anomaly onset: payment-service db_conn_util_pct: baseline 34.88 -> window mean 63.61 (max 86.52, change 82.4%), onset 2026-09-14T11:28:00Z",
+      "evidence_id": "met-payment-service-db_conn_util_pct-1110-1205"
+    },
+    {
+      "time": "2026-09-14T11:28:17Z",
+      "label": "OBSERVED EVIDENCE",
+      "event": "First log: 6x ERROR on payment-service: 'SQL query exceeded 2000ms statement timeout (charges.insert) req 25' (first 2026-09-14T11:28:17Z, last 2026-09-14T11:39:03Z)",
+      "evidence_id": "logpat-payment-service-c828e437"
+    },
+    {
+      "time": "2026-09-14T11:32:00Z",
+      "label": "CONFIRMED FACT",
+      "event": "Deployment of payment-service 5.7.3->5.8.0 at 2026-09-14T11:32:00Z (SUCCEEDED): Add idempotency-key header logging",
+      "evidence_id": "dep-31448d11"
+    },
+    {
+      "time": "2026-09-14T11:40:00Z",
+      "label": "CONFIRMED FACT",
+      "event": "Reported symptom start",
+      "evidence_id": null
+    },
+    {
+      "time": "2026-09-14T11:46:00Z",
+      "label": "CONFIRMED FACT",
+      "event": "Incident reported",
+      "evidence_id": null
+    }
+  ],
+  "observed_symptoms": [
+    {
+      "label": "OBSERVED EVIDENCE",
+      "statement": "payment-service error_rate: baseline 0.8 -> window mean 6.02 (max 9.65, change 655.3%), onset 2026-09-14T11:28:00Z",
+      "evidence_ids": [
+        "met-payment-service-error_rate-1110-1205"
+      ]
+    },
+    {
+      "label": "OBSERVED EVIDENCE",
+      "statement": "payment-service db_conn_util_pct: baseline 34.88 -> window mean 63.61 (max 86.52, change 82.4%), onset 2026-09-14T11:28:00Z",
+      "evidence_ids": [
+        "met-payment-service-db_conn_util_pct-1110-1205"
+      ]
+    },
+    {
+      "label": "OBSERVED EVIDENCE",
+      "statement": "postgres db_conn_util_pct: baseline 40.2 -> window mean 73.64 (max 96.22, change 83.2%), onset 2026-09-14T11:26:00Z",
+      "evidence_ids": [
+        "met-postgres-db_conn_util_pct-1110-1205"
+      ]
+    },
+    {
+      "label": "OBSERVED EVIDENCE",
+      "statement": "postgres p95_latency_ms: baseline 12.01 -> window mean 667.73 (max 960.48, change 5461.9%), onset 2026-09-14T11:23:00Z",
+      "evidence_ids": [
+        "met-postgres-p95_latency_ms-1110-1205"
+      ]
+    },
+    {
+      "label": "OBSERVED EVIDENCE",
+      "statement": "postgres disk_io_wait_ms: baseline 2.02 -> window mean 107.34 (max 161.01, change 5219.4%), onset 2026-09-14T11:22:00Z",
+      "evidence_ids": [
+        "met-postgres-disk_io_wait_ms-1110-1205"
+      ]
+    },
+    {
+      "label": "OBSERVED EVIDENCE",
+      "statement": "payment-service p95_latency_ms: baseline 150.16 -> window mean 1585.88 (max 2489.32, change 956.1%), onset 2026-09-14T11:27:00Z",
+      "evidence_ids": [
+        "met-payment-service-p95_latency_ms-1110-1205"
+      ]
+    }
+  ],
+  "investigation_performed": [],
+  "hypotheses": [
+    {
+      "rank": 1,
+      "hypothesis_id": "H1",
+      "category": "infrastructure_degradation",
+      "culprit_service": "postgres",
+      "description": "Degraded block storage volume vol-0a3f on the postgres host slowed writes/WAL, causing charges.insert statement timeouts and payment latency/error spikes. Mechanism: Volume write latency degrades (11:21Z) -> disk IO wait up ~65x (11:22Z) and checkpoint/WAL stalls (checkpoint took 453s, 11:24Z) -> postgres p95 latency up ~55x (11:23Z) and DB connection utilisation climbs to ~80-96% (11:26Z) as connections are held longer -> payment-service p95 rises (11:27Z), charges.insert exceeds 2000ms statement timeout and errors rise (11:28Z).",
+      "confidence": 0.7,
+      "confidence_explanation": [
+        "self-reported by the single agent"
+      ],
+      "supporting_evidence": [
+        {
+          "evidence_id": "log-77fdc9ea",
+          "strength": "strong",
+          "note": "volume vol-0a3f write latency degraded avg 835ms at 11:21:06Z, first anomaly",
+          "exists": true,
+          "label": "OBSERVED EVIDENCE",
+          "description": "WARN postgres: storage: volume vol-0a3f write latency degraded (avg 835ms)"
+        },
+        {
+          "evidence_id": "met-postgres-disk_io_wait_ms-1110-1205",
+          "strength": "strong",
+          "note": "disk IO wait 2ms -> ~107ms mean, onset 11:22Z",
+          "exists": true,
+          "label": "OBSERVED EVIDENCE",
+          "description": "postgres disk_io_wait_ms: baseline 2.02 -> window mean 107.34 (max 161.01, change 5219.4%), onset 2026-09-14T11:22:00Z"
+        },
+        {
+          "evidence_id": "met-postgres-p95_latency_ms-1110-1205",
+          "strength": "strong",
+          "note": "postgres p95 12ms -> 668ms, onset 11:23Z",
+          "exists": true,
+          "label": "OBSERVED EVIDENCE",
+          "description": "postgres p95_latency_ms: baseline 12.01 -> window mean 667.73 (max 960.48, change 5461.9%), onset 2026-09-14T11:23:00Z"
+        },
+        {
+          "evidence_id": "logpat-postgres-7ce84fae",
+          "strength": "strong",
+          "note": "checkpoint took 453.2s; WAL write slow from 11:24Z",
+          "exists": true,
+          "label": "OBSERVED EVIDENCE",
+          "description": "2x ERROR on postgres: 'checkpoint took 453.2 s; WAL write slow' (first 2026-09-14T11:24:14Z, last 2026-09-14T11:32:14Z)"
+        },
+        {
+          "evidence_id": "met-postgres-db_conn_util_pct-1110-1205",
+          "strength": "moderate",
+          "note": "postgres conn util 40% -> 74%, onset 11:26Z",
+          "exists": true,
+          "label": "OBSERVED EVIDENCE",
+          "description": "postgres db_conn_util_pct: baseline 40.2 -> window mean 73.64 (max 96.22, change 83.2%), onset 2026-09-14T11:26:00Z"
+        },
+        {
+          "evidence_id": "logpat-payment-service-c828e437",
+          "strength": "strong",
+          "note": "charges.insert statement timeouts 11:28Z-11:39Z",
+          "exists": true,
+          "label": "OBSERVED EVIDENCE",
+          "description": "6x ERROR on payment-service: 'SQL query exceeded 2000ms statement timeout (charges.insert) req 25' (first 2026-09-14T11:28:17Z, last 2026-09-14T11:39:03Z)"
+        },
+        {
+          "evidence_id": "met-payment-service-p95_latency_ms-1110-1205",
+          "strength": "strong",
+          "note": "payment p95 150ms -> 1586ms, onset 11:27Z",
+          "exists": true,
+          "label": "OBSERVED EVIDENCE",
+          "description": "payment-service p95_latency_ms: baseline 150.16 -> window mean 1585.88 (max 2489.32, change 956.1%), onset 2026-09-14T11:27:00Z"
+        },
+        {
+          "evidence_id": "met-payment-service-error_rate-1110-1205",
+          "strength": "strong",
+          "note": "payment error rate 0.8% -> 6.0%, onset 11:28Z",
+          "exists": true,
+          "label": "OBSERVED EVIDENCE",
+          "description": "payment-service error_rate: baseline 0.8 -> window mean 6.02 (max 9.65, change 655.3%), onset 2026-09-14T11:28:00Z"
+        },
+        {
+          "evidence_id": "hist-HIST-2025-047",
+          "strength": "weak",
+          "note": "analogous past storage degradation incident",
+          "exists": true,
+          "label": "INFERENCE",
+          "description": "Past incident HIST-2025-047 'Database storage latency degradation' (similarity 0.384): Cloud block storage volume degraded."
+        }
+      ],
+      "contradicting_evidence": [
+        {
+          "evidence_id": "logpat-postgres-44883ca5",
+          "strength": "weak",
+          "note": "a 16s report_rollup() query at 11:28Z could also contribute load; not ruled out",
+          "exists": true,
+          "label": "OBSERVED EVIDENCE",
+          "description": "1x WARN on postgres: 'duration: 16402 ms statement: SELECT report_rollup()' (first 2026-09-14T11:28:01Z, last 2026-09-14T11:28:01Z)"
+        },
+        {
+          "evidence_id": "met-postgres-cpu_pct-1110-1205",
+          "strength": "weak",
+          "note": "postgres CPU fell during the window, so this is an IO/storage stall rather than CPU saturation",
+          "exists": true,
+          "label": "OBSERVED EVIDENCE",
+          "description": "postgres cpu_pct: baseline 35.25 -> window mean 29.92 (max 37.58, change -15.1%), onset none detected"
+        }
+      ],
+      "missing_evidence": [
+        "Cloud provider/volume-level health or event data for vol-0a3f",
+        "Postgres lock/wait-event data and pg_stat_activity during 11:20-11:30Z"
+      ],
+      "critic_decision": null
+    },
+    {
+      "rank": 2,
+      "hypothesis_id": "H2",
+      "category": "deployment_regression",
+      "culprit_service": "payment-service",
+      "description": "payment-service 5.8.0 (idempotency-key header logging) caused the latency/error regression. Mechanism: New logging in the release adds overhead or DB writes on the charges.insert path, slowing requests.",
+      "confidence": 0.1,
+      "confidence_explanation": [
+        "self-reported by the single agent"
+      ],
+      "supporting_evidence": [
+        {
+          "evidence_id": "dep-31448d11",
+          "strength": "weak",
+          "note": "release at 11:32Z, the only deployment in the window",
+          "exists": true,
+          "label": "CONFIRMED FACT",
+          "description": "Deployment of payment-service 5.7.3->5.8.0 at 2026-09-14T11:32:00Z (SUCCEEDED): Add idempotency-key header logging"
+        }
+      ],
+      "contradicting_evidence": [
+        {
+          "evidence_id": "met-payment-service-error_rate-1110-1205",
+          "strength": "strong",
+          "note": "error onset 11:28Z precedes the 11:32Z deployment",
+          "exists": true,
+          "label": "OBSERVED EVIDENCE",
+          "description": "payment-service error_rate: baseline 0.8 -> window mean 6.02 (max 9.65, change 655.3%), onset 2026-09-14T11:28:00Z"
+        },
+        {
+          "evidence_id": "met-payment-service-p95_latency_ms-1110-1205",
+          "strength": "strong",
+          "note": "p95 onset 11:27Z precedes deployment",
+          "exists": true,
+          "label": "OBSERVED EVIDENCE",
+          "description": "payment-service p95_latency_ms: baseline 150.16 -> window mean 1585.88 (max 2489.32, change 956.1%), onset 2026-09-14T11:27:00Z"
+        },
+        {
+          "evidence_id": "logpat-postgres-d629c24d",
+          "strength": "strong",
+          "note": "storage degradation at 11:21Z precedes deployment",
+          "exists": true,
+          "label": "OBSERVED EVIDENCE",
+          "description": "3x WARN on postgres: 'storage: volume vol-0a3f write latency degraded (avg 835ms)' (first 2026-09-14T11:21:06Z, last 2026-09-14T11:33:51Z)"
+        },
+        {
+          "evidence_id": "met-payment-service-cpu_pct-1110-1205",
+          "strength": "moderate",
+          "note": "payment CPU and memory flat, no release-specific resource change",
+          "exists": true,
+          "label": "OBSERVED EVIDENCE",
+          "description": "payment-service cpu_pct: baseline 39.75 -> window mean 40.08 (max 45.14, change 0.8%), onset none detected"
+        }
+      ],
+      "missing_evidence": [
+        "Diff of 5.8.0 code beyond the change summary"
+      ],
+      "critic_decision": null
+    },
+    {
+      "rank": 3,
+      "hypothesis_id": "H3",
+      "category": "db_connection_pool_exhaustion",
+      "culprit_service": "payment-service",
+      "description": "Connection leak or pool exhaustion in payment-service. Mechanism: Leaked connections would saturate the pool and cause timeouts, but the data shows postgres-side saturation starting after storage latency.",
+      "confidence": 0.05,
+      "confidence_explanation": [
+        "self-reported by the single agent"
+      ],
+      "supporting_evidence": [
+        {
+          "evidence_id": "met-payment-service-db_conn_util_pct-1110-1205",
+          "strength": "weak",
+          "note": "payment DB conn util rises to ~79%",
+          "exists": true,
+          "label": "OBSERVED EVIDENCE",
+          "description": "payment-service db_conn_util_pct: baseline 34.88 -> window mean 63.61 (max 86.52, change 82.4%), onset 2026-09-14T11:28:00Z"
+        },
+        {
+          "evidence_id": "hist-HIST-2025-014",
+          "strength": "weak",
+          "note": "analogous pool exhaustion incident",
+          "exists": true,
+          "label": "INFERENCE",
+          "description": "Past incident HIST-2025-014 'Payment latency from leaked DB connections' (similarity 0.427): Connection leak in refund path held pooled connections; pool exhausted."
+        }
+      ],
+      "contradicting_evidence": [
+        {
+          "evidence_id": "met-payment-service-timeout_rate-1110-1205",
+          "strength": "moderate",
+          "note": "client timeout rate flat at ~0.1%",
+          "exists": true,
+          "label": "OBSERVED EVIDENCE",
+          "description": "payment-service timeout_rate: baseline 0.1 -> window mean 0.1 (max 0.11, change -1.4%), onset none detected"
+        },
+        {
+          "evidence_id": "met-payment-service-request_rate-1110-1205",
+          "strength": "weak",
+          "note": "request rate flat, no load-driven pool growth",
+          "exists": true,
+          "label": "OBSERVED EVIDENCE",
+          "description": "payment-service request_rate: baseline 303.91 -> window mean 299.38 (max 319.5, change -1.5%), onset none detected"
+        }
+      ],
+      "missing_evidence": [
+        "Pool-level metrics (active/idle/waiting per pool) from payment-service"
+      ],
+      "critic_decision": null
+    }
+  ],
+  "critic_review": {
+    "verdict": "NOT_RUN",
+    "rounds_reviewed": 0
+  },
+  "evidence_gaps": [],
+  "probable_root_cause": {
+    "hypothesis_id": "H1",
+    "category": "infrastructure_degradation",
+    "culprit_service": "postgres",
+    "description": "Degraded block storage volume vol-0a3f on the postgres host slowed writes/WAL, causing charges.insert statement timeouts and payment latency/error spikes.",
+    "confidence": 0.7,
+    "label": "MOST PROBABLE EXPLANATION (INFERENCE, not confirmed)"
+  },
+  "root_cause_statement": "MOST PROBABLE EXPLANATION (INFERENCE, not confirmed): infrastructure_degradation in postgres - Degraded block storage volume vol-0a3f on the postgres host slowed writes/WAL, causing charges.insert statement timeouts and payment latency/error spikes.",
+  "corrective_actions": [
+    "Check volume vol-0a3f health with the cloud/storage provider; if degraded, fail over postgres to a replica or migrate the volume",
+    "Reduce DB load while storage is degraded: pause or reschedule report_rollup() and heavy autovacuum",
+    "Reassess the 5.8.0 rollback only if errors persist after storage recovers"
+  ],
+  "preventive_actions": [
+    "Alert on postgres disk IO wait and volume write latency so storage degradation is caught before payment timeouts",
+    "Set guardrails on long-running reporting queries against the primary"
+  ],
+  "monitoring_recommendations": [
+    "postgres disk_io_wait_ms and write latency for vol-0a3f",
+    "postgres checkpoint duration and WAL write time",
+    "payment-service charges.insert statement timeout count and p95 latency",
+    "payment db_conn_util_pct"
+  ],
+  "limitations": [
+    "Order-service metrics show no change, despite the reported order latency; the reported symptom may not be reflected in the telemetry",
+    "No storage provider or infrastructure events were available",
+    "Telemetry in the 11:10-11:20Z range is only a baseline; pool-level metrics were unavailable",
+    "[agent-reported gap] Cloud/storage health data for vol-0a3f",
+    "[agent-reported gap] payment-service connection pool wait metrics",
+    "[agent-reported gap] postgres wait-event and lock data",
+    "Confidence values are rule-based evidence-strength scores, not calibrated probabilities.",
+    "Investigation terminated because: agent submitted"
+  ],
+  "final_status": "PROBABLE_ROOT_CAUSE",
+  "conclusion": "The release is not the trigger. The evidence points to degraded postgres storage (vol-0a3f) starting about 11:21Z, which produced DB latency, statement timeouts and payment errors from 11:27-11:28Z, before the 11:32Z release. Confidence is moderate: the storage cause is inferred from correlated logs and metrics, and provider-side confirmation is still missing. Order-service showed no metric change, so its impact is not established from this data.",
+  "statistics": {
+    "rounds": 1,
+    "tool_calls": 11,
+    "tool_failures": 0,
+    "tool_retries": 0,
+    "partial_results": 0,
+    "agent_failures": 0,
+    "agent_retries": 0,
+    "invalid_llm_outputs": 0,
+    "messages_exchanged": 0,
+    "evidence_records": 46,
+    "duration_s": 23.18,
+    "tokens": {
+      "input_tokens": 12,
+      "output_tokens": 5334,
+      "cache_read_tokens": 43322,
+      "cache_write_tokens": 10744,
+      "llm_calls": 5,
+      "cost_usd": 0.00444442
+    },
+    "tokens_by_agent": {
+      "single_agent": {
+        "input_tokens": 12,
+        "output_tokens": 5334,
+        "cache_read_tokens": 43322,
+        "cache_write_tokens": 10744,
+        "llm_calls": 5,
+        "cost_usd": 0.00444442
+      }
+    }
+  }
+}

@@ -1,0 +1,45 @@
+flowchart LR
+    subgraph Interfaces
+        CLI[app/cli.py]
+        API[FastAPI app/main.py]
+    end
+    subgraph Orchestration["Orchestration (app/orchestration)"]
+        WF[workflow.py<br/>LangGraph StateGraph]
+        TM[task_manager.py<br/>task DAG + parallel waves]
+        BUS[communication.py<br/>MessageBus]
+        REC[recovery.py<br/>bounded agent retries]
+    end
+    subgraph Agents["Agents (app/agents)"]
+        ORC[Orchestrator]
+        OBS[Observability]
+        DEP[Dependency]
+        REA[Reasoning]
+        CRI[Critic]
+        REP[Reporting]
+    end
+    subgraph Tools["Tools (app/tools)"]
+        EX[ToolExecutor<br/>validation, budget, timeout,<br/>retries, fault injection]
+        T1[query_logs] & T2[query_metrics] & T3[get_deployments] & T4[get_config_changes] & T5[get_service_dependencies] & T6[search_historical_incidents]
+    end
+    STATE[(InvestigationState<br/>shared state)]
+    LLM[LLMProvider<br/>Anthropic / stub]
+    DATA[(data/ synthetic<br/>operational data)]
+    GT[(data/ground_truth)]
+    DB[(SQLite history)]
+    EVAL[app/evaluation<br/>evaluator + metrics]
+
+    CLI --> WF
+    API --> WF
+    WF --> ORC & OBS & DEP & REA & CRI & REP
+    WF --- TM & BUS & REC
+    Agents --> LLM
+    OBS & DEP & CRI & ORC & REA --> EX
+    EX --> T1 & T2 & T3 & T4 & T5 & T6
+    T1 & T2 & T3 & T4 & T5 & T6 --> DATA
+    EX --> STATE
+    BUS --> STATE
+    Agents --> STATE
+    WF --> DB
+    EVAL --> WF
+    EVAL --> GT
+    GT -. never read by agents/tools .- EX

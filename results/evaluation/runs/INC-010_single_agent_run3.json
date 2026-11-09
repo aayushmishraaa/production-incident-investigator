@@ -1,0 +1,278 @@
+{
+  "investigation_id": "inv-0694d90ce6",
+  "system": "single_agent",
+  "incident_id": "INC-010",
+  "title": "Intermittent gateway latency",
+  "severity": "SEV3",
+  "affected_services": [
+    "api-gateway"
+  ],
+  "start_time": "2026-09-29T19:45:00+00:00",
+  "executive_summary": "api-gateway P99 latency rose about 18.5% (baseline mean 252.9 ms to 299.6 ms) with onset around 19:40Z and a peak of 557 ms at 19:45Z, consistent with the reported T0 of 19:45Z. The rise is small, p95, error rate, timeout rate, request rate and CPU were flat, and no deployments or config changes occurred in the 18:00-20:10Z window. Over half of the gateway and downstream telemetry is missing after about 19:35-19:50Z, so the cause cannot be confirmed. The most notable signal is a recurring slow statement SELECT report_rollup() on postgres (11.7 s at 19:30Z, 15.8 s at 19:40Z, 14.5 s at 20:03Z). Its timing is suggestive but not proven to affect gateway latency, and postgres's own metrics show no change.",
+  "timeline": [
+    {
+      "time": "2026-09-29T19:45:00Z",
+      "label": "CONFIRMED FACT",
+      "event": "Reported symptom start",
+      "evidence_id": null
+    },
+    {
+      "time": "2026-09-29T19:51:00Z",
+      "label": "CONFIRMED FACT",
+      "event": "Incident reported",
+      "evidence_id": null
+    }
+  ],
+  "observed_symptoms": [],
+  "investigation_performed": [],
+  "hypotheses": [
+    {
+      "rank": 1,
+      "hypothesis_id": "H1",
+      "category": "db_connection_pool_exhaustion",
+      "culprit_service": "postgres",
+      "description": "Long-running report_rollup() queries on postgres hold resources/connections and slow requests that traverse the gateway's upstream services (order/auth/payment/user), raising gateway P99. Mechanism: Periodic heavy report job executes for 11-16 s; if it contends with OLTP queries or holds locks/connections, requests waiting on DB calls see elevated tail latency, showing up as gateway P99 spikes at 19:40-19:45Z.",
+      "confidence": 0.3,
+      "confidence_explanation": [
+        "self-reported by the single agent"
+      ],
+      "supporting_evidence": [
+        {
+          "evidence_id": "logpat-postgres-44883ca5",
+          "strength": "moderate",
+          "note": "Recurring slow report_rollup() statements, first at 19:30:27Z, then 19:40:44Z and 20:03:45Z; the 19:40 run precedes the gateway P99 onset.",
+          "exists": true,
+          "label": "OBSERVED EVIDENCE",
+          "description": "2x WARN on postgres: 'duration: 15802 ms statement: SELECT report_rollup()' (first 2026-09-29T19:40:44Z, last 2026-09-29T20:03:45Z)"
+        },
+        {
+          "evidence_id": "log-87888189",
+          "strength": "weak",
+          "note": "Raw record of the 11.7 s statement at 19:30:27Z.",
+          "exists": true,
+          "label": "OBSERVED EVIDENCE",
+          "description": "WARN postgres: duration: 11702 ms statement: SELECT report_rollup()"
+        },
+        {
+          "evidence_id": "log-13313f6d",
+          "strength": "weak",
+          "note": "Raw record of the 15.8 s statement at 19:40:44Z.",
+          "exists": true,
+          "label": "OBSERVED EVIDENCE",
+          "description": "WARN postgres: duration: 15802 ms statement: SELECT report_rollup()"
+        },
+        {
+          "evidence_id": "met-api-gateway-p99_latency_ms-1915-2010",
+          "strength": "moderate",
+          "note": "Gateway P99 rise of 18.5% with onset at 19:40Z.",
+          "exists": true,
+          "label": "OBSERVED EVIDENCE",
+          "description": "api-gateway p99_latency_ms: baseline 252.9 -> window mean 299.56 (max 556.96, change 18.5%), onset 2026-09-29T19:40:00Z, 24 points missing"
+        }
+      ],
+      "contradicting_evidence": [
+        {
+          "evidence_id": "met-postgres-db_conn_util_pct-1915-2010",
+          "strength": "moderate",
+          "note": "postgres DB connection utilisation fell slightly (-1.0%) and never saturated.",
+          "exists": true,
+          "label": "OBSERVED EVIDENCE",
+          "description": "postgres db_conn_util_pct: baseline 40.12 -> window mean 39.73 (max 43.8, change -1.0%), onset none detected"
+        },
+        {
+          "evidence_id": "met-postgres-p99_latency_ms-1915-2010",
+          "strength": "moderate",
+          "note": "postgres P99 latency unchanged (-0.8%).",
+          "exists": true,
+          "label": "OBSERVED EVIDENCE",
+          "description": "postgres p99_latency_ms: baseline 25.14 -> window mean 24.94 (max 26.4, change -0.8%), onset none detected"
+        },
+        {
+          "evidence_id": "met-postgres-cpu_pct-1915-2010",
+          "strength": "weak",
+          "note": "postgres CPU and disk IO wait unchanged.",
+          "exists": true,
+          "label": "OBSERVED EVIDENCE",
+          "description": "postgres cpu_pct: baseline 35.19 -> window mean 35.1 (max 39.16, change -0.3%), onset none detected"
+        },
+        {
+          "evidence_id": "met-order-service-p99_latency_ms-1915-2010",
+          "strength": "weak",
+          "note": "Order-service P99 is flat, which does not support a DB-wide slowdown reaching the gateway (but telemetry after 19:35Z is missing).",
+          "exists": true,
+          "label": "OBSERVED EVIDENCE",
+          "description": "order-service p99_latency_ms: baseline 398.55 -> window mean 394.55 (max 415.95, change -1.0%), onset none detected, 36 points missing"
+        }
+      ],
+      "missing_evidence": [
+        "Gateway-to-upstream span or trace data for the 19:40-19:50Z window.",
+        "Whether report_rollup() shares locks or connections with the request path.",
+        "Telemetry for postgres and upstream services after 19:35Z (about 36 of 56 datapoints missing)."
+      ],
+      "critic_decision": null
+    },
+    {
+      "rank": 2,
+      "hypothesis_id": "H3",
+      "category": "unknown",
+      "culprit_service": null,
+      "description": "Transient or ingestion-related effect: the gateway P99 bump may be partly a measurement artifact, given the telemetry gaps and the small magnitude. Mechanism: Telemetry delivery was delayed or incomplete after 19:35-19:50Z, so the P99 spike may reflect sparse sampling rather than a real, sustained degradation.",
+      "confidence": 0.2,
+      "confidence_explanation": [
+        "self-reported by the single agent"
+      ],
+      "supporting_evidence": [
+        {
+          "evidence_id": "met-api-gateway-p99_latency_ms-1915-2010",
+          "strength": "weak",
+          "note": "Only 32 of 56 datapoints present; the 19:45 max may come from a small sample.",
+          "exists": true,
+          "label": "OBSERVED EVIDENCE",
+          "description": "api-gateway p99_latency_ms: baseline 252.9 -> window mean 299.56 (max 556.96, change 18.5%), onset 2026-09-29T19:40:00Z, 24 points missing"
+        }
+      ],
+      "contradicting_evidence": [
+        {
+          "evidence_id": "met-api-gateway-p95_latency_ms-1915-2010",
+          "strength": "weak",
+          "note": "P95 barely moved, which is only partially consistent with a real tail-only issue.",
+          "exists": true,
+          "label": "OBSERVED EVIDENCE",
+          "description": "api-gateway p95_latency_ms: baseline 120.41 -> window mean 126.01 (max 151.58, change 4.6%), onset none detected, 24 points missing"
+        }
+      ],
+      "missing_evidence": [
+        "Raw request-level latency logs for the gateway."
+      ],
+      "critic_decision": null
+    },
+    {
+      "rank": 3,
+      "hypothesis_id": "H2",
+      "category": "traffic_surge",
+      "culprit_service": "api-gateway",
+      "description": "A client-side issue (large or slow uploads, or retries) occupies gateway worker capacity and inflates tail latency. Mechanism: Slow large-body uploads hold gateway connections, increasing tail latency for other requests.",
+      "confidence": 0.15,
+      "confidence_explanation": [
+        "self-reported by the single agent"
+      ],
+      "supporting_evidence": [
+        {
+          "evidence_id": "logpat-api-gateway-88b04940",
+          "strength": "weak",
+          "note": "Only 2 'Slow client upload' WARN records (1.9 MB), at 19:37:24Z and 19:57:04Z, and 20:01:21Z; volume is too small to explain the tail.",
+          "exists": true,
+          "label": "OBSERVED EVIDENCE",
+          "description": "2x WARN on api-gateway: 'Slow client upload from 10.4.53.12 (1.9MB)' (first 2026-09-29T19:57:04Z, last 2026-09-29T20:01:21Z)"
+        },
+        {
+          "evidence_id": "hist-HIST-2025-068",
+          "strength": "weak",
+          "note": "Historical retry storm analogy with a similarity of only 0.139.",
+          "exists": true,
+          "label": "INFERENCE",
+          "description": "Past incident HIST-2025-068 'Retry storm from mobile client' (similarity 0.139): Mobile release ignored Retry-After causing retry storm."
+        }
+      ],
+      "contradicting_evidence": [
+        {
+          "evidence_id": "met-api-gateway-request_rate-1915-2010",
+          "strength": "moderate",
+          "note": "Request rate did not increase (-1.6%).",
+          "exists": true,
+          "label": "OBSERVED EVIDENCE",
+          "description": "api-gateway request_rate: baseline 1219.56 -> window mean 1200.06 (max 1323.96, change -1.6%), onset none detected, 24 points missing"
+        },
+        {
+          "evidence_id": "met-api-gateway-cpu_pct-1915-2010",
+          "strength": "moderate",
+          "note": "Gateway CPU flat (-0.2%).",
+          "exists": true,
+          "label": "OBSERVED EVIDENCE",
+          "description": "api-gateway cpu_pct: baseline 34.72 -> window mean 34.67 (max 37.46, change -0.2%), onset none detected, 24 points missing"
+        },
+        {
+          "evidence_id": "met-api-gateway-p95_latency_ms-1915-2010",
+          "strength": "moderate",
+          "note": "P95 nearly flat (+4.6%), which argues against broad slowness.",
+          "exists": true,
+          "label": "OBSERVED EVIDENCE",
+          "description": "api-gateway p95_latency_ms: baseline 120.41 -> window mean 126.01 (max 151.58, change 4.6%), onset none detected, 24 points missing"
+        }
+      ],
+      "missing_evidence": [
+        "Gateway connection/worker-pool metrics.",
+        "Client-level breakdown of request sizes and retries."
+      ],
+      "critic_decision": null
+    }
+  ],
+  "critic_review": {
+    "verdict": "NOT_RUN",
+    "rounds_reviewed": 0
+  },
+  "evidence_gaps": [
+    "[UNKNOWN] query_logs returned incomplete data for all (PARTIAL_DATA)",
+    "[UNKNOWN] query_logs returned incomplete data for service=api-gateway (PARTIAL_DATA)",
+    "[UNKNOWN] query_logs returned incomplete data for service=postgres, keyword=report_rollup (PARTIAL_DATA)"
+  ],
+  "probable_root_cause": null,
+  "root_cause_statement": "Root cause could not be conclusively established with the available evidence.",
+  "corrective_actions": [
+    "Pull request-level traces for api-gateway between 19:35Z and 19:50Z to attribute the tail latency to a specific upstream call.",
+    "Review the report_rollup() schedule and, if it is confirmed to interfere, move it off the peak path or add a statement timeout."
+  ],
+  "preventive_actions": [
+    "Add alerting on gateway P99 with a deviation threshold, so tail regressions are detected even when the average stays flat.",
+    "Fix telemetry pipeline gaps so that per-service metrics are complete during incidents."
+  ],
+  "monitoring_recommendations": [
+    "Track postgres slow-statement duration for report_rollup() and alert above 5 s.",
+    "Track gateway P99 and P99 per upstream dependency, plus gateway connection-pool utilisation.",
+    "Monitor telemetry completeness (datapoint availability) per service."
+  ],
+  "limitations": [
+    "Tool budget was partly used; the investigation was not exhaustive.",
+    "Historical incident matches have low similarity (0.14-0.16) and are analogies only.",
+    "[agent-reported gap] About 24 of 56 gateway datapoints and 36 of 56 upstream datapoints are missing after 19:35-19:50Z.",
+    "[agent-reported gap] No trace or span data linking gateway requests to upstream calls.",
+    "[agent-reported gap] Log search results are flagged as incomplete, so absence of errors cannot be concluded.",
+    "[agent-reported gap] No gateway connection-pool or worker-saturation metrics were available.",
+    "0 tool calls failed and 3 returned partial data; affected areas are treated as unknown, not healthy.",
+    "Confidence values are rule-based evidence-strength scores, not calibrated probabilities.",
+    "Investigation terminated because: agent submitted"
+  ],
+  "final_status": "INCONCLUSIVE",
+  "conclusion": "Root cause could not be conclusively established with the available evidence. The evidence does not establish a root cause for the intermittent gateway P99 increase. The rise is modest and confined to the tail (p95 and error rates are flat), with no deployments or config changes. Heavy telemetry gaps weaken all conclusions after about 19:35-19:50Z. The recurring slow report_rollup() statements on postgres are the most promising lead but are not supported by postgres's own latency or connection metrics. Status is INCONCLUSIVE.",
+  "statistics": {
+    "rounds": 1,
+    "tool_calls": 13,
+    "tool_failures": 0,
+    "tool_retries": 0,
+    "partial_results": 3,
+    "agent_failures": 0,
+    "agent_retries": 0,
+    "invalid_llm_outputs": 0,
+    "messages_exchanged": 0,
+    "evidence_records": 41,
+    "duration_s": 25.17,
+    "tokens": {
+      "input_tokens": 10,
+      "output_tokens": 6129,
+      "cache_read_tokens": 31869,
+      "cache_write_tokens": 13068,
+      "llm_calls": 4,
+      "cost_usd": 0.00501769
+    },
+    "tokens_by_agent": {
+      "single_agent": {
+        "input_tokens": 10,
+        "output_tokens": 6129,
+        "cache_read_tokens": 31869,
+        "cache_write_tokens": 13068,
+        "llm_calls": 4,
+        "cost_usd": 0.00501769
+      }
+    }
+  }
+}

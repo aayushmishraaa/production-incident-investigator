@@ -1,0 +1,264 @@
+# Production Incident Investigation Report
+
+## Incident Information
+- **Incident ID:** INC-006
+- **Title:** User profile errors
+- **Severity:** SEV2
+- **Affected services:** user-service
+- **Start time:** 2026-09-17T21:05:00+00:00
+- **Investigation ID:** inv-89a39b6edc (multi_agent)
+- **Final status:** `INCONCLUSIVE`
+
+## Executive Summary
+INC-006 (SEV2, user profile errors) is INCONCLUSIVE. The root cause could not be established. user-service error rate rose from about 0.4% to about 23% (max 33.5%) starting 2026-09-17T21:03Z (met-user-service-error_rate-2055-2130). Logs show 19 ERRORs of 'Connection to postgres-primary:5432 refused' (logpat-user-service-f82ed4bd) and 9 'connection reset by peer' errors against postgres-primary:5432 (logpat-user-service-97a18e1d), first at 21:03:00Z and 21:03:08Z. The only node-tagged signal is a single nf_conntrack 'table full' WARN on usr-node-3 at 21:02:00Z (logpat-user-service-227e81bb), which does not repeat and is not linked to the errors by node. No deployments were recorded for any service 18:00-21:30Z. Three hypotheses remain unresolved: H1 (network-path failure, confidence 0.20, needs evidence), H3 (unrecorded change on the path, confidence 0.08, needs evidence), and H2 (postgres-side degradation, rejected). No hypothesis is adequately supported.
+
+## Incident Timeline
+| Time (UTC) | Label | Event | Evidence |
+|---|---|---|---|
+| 2026-09-17T20:50:35Z | OBSERVED EVIDENCE | First log: 5x WARN on postgres: 'duration: 14502 ms statement: SELECT report_rollup()' (first 2026-09-17T20:50:35Z, last 2026-09-17T21:22:05Z) | logpat-postgres-44883ca5 |
+| 2026-09-17T21:03:00Z | OBSERVED EVIDENCE | First log: 19x ERROR on user-service: 'PSQLException: Connection to postgres-primary:5432 refused (attempt 76)' (first 2026-09-17T21:03:00Z, last 2026-09-17T21:28:37Z) | logpat-user-service-f82ed4bd |
+| 2026-09-17T21:03:00Z | OBSERVED EVIDENCE | Anomaly onset: user-service error_rate: baseline 0.4 -> window mean 20.24 (max 33.51, change 4926.6%), onset 2026-09-17T21:03:00Z | met-user-service-error_rate-2050-2130 |
+| 2026-09-17T21:03:00Z | OBSERVED EVIDENCE | Anomaly onset: user-service timeout_rate: baseline 0.05 -> window mean 5.99 (max 9.91, change 11900.6%), onset 2026-09-17T21:03:00Z | met-user-service-timeout_rate-2050-2130 |
+| 2026-09-17T21:03:00Z | OBSERVED EVIDENCE | Anomaly onset: user-service p95_latency_ms: baseline 80.19 -> window mean 1012.04 (max 1603.87, change 1162.1%), onset 2026-09-17T21:03:00Z | met-user-service-p95_latency_ms-2050-2130 |
+| 2026-09-17T21:03:00Z | OBSERVED EVIDENCE | Anomaly onset: user-service error_rate: baseline 0.4 -> window mean 14.93 (max 33.51, change 3606.8%), onset 2026-09-17T21:03:00Z | met-user-service-error_rate-2035-2130 |
+| 2026-09-17T21:03:00Z | OBSERVED EVIDENCE | Anomaly onset: user-service error_rate: baseline 0.4 -> window mean 23.0 (max 33.51, change 5659.2%), onset 2026-09-17T21:03:00Z | met-user-service-error_rate-2055-2130 |
+| 2026-09-17T21:03:00Z | OBSERVED EVIDENCE | Anomaly onset: user-service timeout_rate: baseline 0.05 -> window mean 6.82 (max 9.91, change 13673.0%), onset 2026-09-17T21:03:00Z | met-user-service-timeout_rate-2055-2130 |
+| 2026-09-17T21:03:08Z | OBSERVED EVIDENCE | First log: 9x ERROR on user-service: 'I/O error: connection reset by peer (postgres-primary:5432)' (first 2026-09-17T21:03:08Z, last 2026-09-17T21:27:05Z) | logpat-user-service-97a18e1d |
+| 2026-09-17T21:03:22Z | OBSERVED EVIDENCE | First log: 3x WARN on user-service: 'Deprecated API /v1/users/legacy called by client web-39' (first 2026-09-17T21:03:22Z, last 2026-09-17T21:21:22Z) | logpat-user-service-742b555e |
+| 2026-09-17T21:05:00Z | CONFIRMED FACT | Reported symptom start |  |
+| 2026-09-17T21:11:00Z | CONFIRMED FACT | Incident reported |  |
+
+## Observed Symptoms
+- **OBSERVED EVIDENCE:** user-service error_rate: baseline 0.4 -> window mean 20.24 (max 33.51, change 4926.6%), onset 2026-09-17T21:03:00Z (met-user-service-error_rate-2050-2130)
+- **OBSERVED EVIDENCE:** user-service timeout_rate: baseline 0.05 -> window mean 5.99 (max 9.91, change 11900.6%), onset 2026-09-17T21:03:00Z (met-user-service-timeout_rate-2050-2130)
+- **OBSERVED EVIDENCE:** user-service p95_latency_ms: baseline 80.19 -> window mean 1012.04 (max 1603.87, change 1162.1%), onset 2026-09-17T21:03:00Z (met-user-service-p95_latency_ms-2050-2130)
+- **OBSERVED EVIDENCE:** user-service error_rate: baseline 0.4 -> window mean 14.93 (max 33.51, change 3606.8%), onset 2026-09-17T21:03:00Z (met-user-service-error_rate-2035-2130)
+- **OBSERVED EVIDENCE:** user-service error_rate: baseline 0.4 -> window mean 23.0 (max 33.51, change 5659.2%), onset 2026-09-17T21:03:00Z (met-user-service-error_rate-2055-2130)
+- **OBSERVED EVIDENCE:** user-service timeout_rate: baseline 0.05 -> window mean 6.82 (max 9.91, change 13673.0%), onset 2026-09-17T21:03:00Z (met-user-service-timeout_rate-2055-2130)
+- **OBSERVED EVIDENCE:** [observability] Request rate flat across the analysis window vs baseline (baseline mean 1204.37, window mean 1203.78, change -0.0%); no onset detected; no spike at 21:05Z (21:05 sample 1190.35). (met-api-gateway-request_rate-2035-2130)
+- **OBSERVED EVIDENCE:** [observability] Error rate (0.5% baseline and window), p99 latency (252 ms baseline vs 249 ms window) and timeout rate (0.1% vs 0.1%) show no change and no onset. (met-api-gateway-error_rate-2035-2130, met-api-gateway-p99_latency_ms-2035-2130, met-api-gateway-timeout_rate-2035-2130)
+- **OBSERVED EVIDENCE:** [observability] Request rate (+0.5%), error rate (-1.7%), timeout rate (-0.2%) and p99 latency (-0.5%) unchanged vs baseline; no onset detected around 21:05Z. (met-notification-service-request_rate-2035-2130, met-notification-service-error_rate-2035-2130, met-notification-service-timeout_rate-2035-2130, met-notification-service-p99_latency_ms-2035-2130)
+- **OBSERVED EVIDENCE:** [observability] Request rate (-1.2%), error rate (-0.3%), timeout rate (-0.2%) and p99 latency (+0.9%) essentially unchanged vs baseline; no onset detected. (met-order-service-request_rate-2035-2130, met-order-service-error_rate-2035-2130, met-order-service-timeout_rate-2035-2130, met-order-service-p99_latency_ms-2035-2130)
+- **OBSERVED EVIDENCE:** [dependency] user-service error_rate stepped from a baseline mean of 0.4% to a window mean of 14.93% (max 33.5%), with onset at 21:03Z. The 21:00 sample was 0.39% and the 21:05 sample was 30.9%, and the elevated level persisted through 21:30Z. (met-user-service-error_rate-2035-2130)
+- **OBSERVED EVIDENCE:** [dependency] user-service p99 latency, db_conn_util_pct and request_rate stayed flat versus baseline (-0.5%, +0.7%, -1.3%). No connection-pool saturation is visible in user-service's own metrics during the error spike. (met-user-service-p99_latency_ms-2035-2130, met-user-service-db_conn_util_pct-2035-2130, met-user-service-request_rate-2035-2130)
+- **OBSERVED EVIDENCE:** [dependency] notification-service request_rate, error_rate and timeout_rate were flat across the window (+0.5%, -1.7%, -0.2%). It shows no visible impact from the failing user-service errors. (met-notification-service-request_rate-2035-2130, met-notification-service-error_rate-2035-2130, met-notification-service-timeout_rate-2035-2130)
+- **OBSERVED EVIDENCE:** [dependency] Topology graph topology-v2 shows the added edge notification-service -> user-service with effective_from 2026-09-15T00:00Z. That is about two days before T0, so it is not a change coincident with the incident. user-service upstreams are postgres and redis; downstream dependents are api-gateway, notification-service and order-service. (topo-user-service-both-d2)
+- **OBSERVED EVIDENCE:** [observability] error_rate onset at 21:03Z; baseline mean 0.40%, window mean 20.24%, max 33.51%, 5-min samples ~30% from 21:05Z onward. (met-user-service-error_rate-2050-2130)
+- **OBSERVED EVIDENCE:** [observability] timeout_rate onset at 21:03Z; baseline 0.05%, window mean 5.99%, max 9.91%. (met-user-service-timeout_rate-2050-2130)
+- **OBSERVED EVIDENCE:** [observability] p95 latency onset at 21:03Z; baseline mean 80.19ms, window mean 1012ms, max 1604ms. (met-user-service-p95_latency_ms-2050-2130)
+- **OBSERVED EVIDENCE:** [observability] p50 latency (baseline 25.05ms vs window 24.99ms) and p99 latency (baseline 161.96ms vs window 160.59ms) show no change; no onset detected. (met-user-service-p50_latency_ms-2050-2130, met-user-service-p99_latency_ms-2050-2130)
+- **OBSERVED EVIDENCE:** [observability] db_conn_util_pct stayed flat (baseline 29.86% vs window 30.13%, max 33.37%); no onset. Pool saturation is not visible from user-service's side. (met-user-service-db_conn_util_pct-2050-2130)
+- **OBSERVED EVIDENCE:** [observability] cpu_pct (30.21% vs 30.21%), memory_pct (49.28% vs 49.86%) and request_rate (502 vs 495 rps, -1.4%) show no meaningful change. (met-user-service-cpu_pct-2050-2130, met-user-service-memory_pct-2050-2130, met-user-service-request_rate-2050-2130)
+- **OBSERVED EVIDENCE:** [observability] ERROR pattern 'PSQLException: Connection to postgres-primary:<n> refused (attempt <n>)': 19 occurrences, first 21:03:00Z, last 21:28:37Z; attempt counter reaches 91. (logpat-user-service-f82ed4bd)
+- **OBSERVED EVIDENCE:** [observability] ERROR pattern 'I/O error: connection reset by peer (postgres-primary:<n>)': 9 occurrences, first 21:03:08Z, last 21:27:05Z. (logpat-user-service-97a18e1d)
+- **OBSERVED EVIDENCE:** [observability] WARN kernel 'nf_conntrack: table full, dropping packet' on node usr-node-3 at 21:02:00Z, one occurrence, one minute before the error onset. (logpat-user-service-227e81bb)
+- **OBSERVED EVIDENCE:** [observability] WARN 'Deprecated API /v1/users/legacy called by client web-<n>': 3 occurrences 21:03–21:21Z; low volume, unlikely primary. (logpat-user-service-742b555e)
+- **INFERENCE:** [observability] Connection-refused and reset errors to postgres-primary starting at 21:03Z, with flat client-side pool utilisation, suggest network-path or DB-endpoint unavailability (possibly related to the nf_conntrack table-full event at 21:02Z on usr-node-3) rather than client pool exhaustion. This is unverified; postgres-primary and network telemetry need checking. 
+- **ASSUMPTION:** [critic: unsupported assumption] That the single conntrack WARN on usr-node-3 causes 25 minutes of failure across the service, since no drop counters or repeated events were shown 
+- **ASSUMPTION:** [critic: unsupported assumption] That the 'refused' errors come from the network path rather than from postgres, since no connection-acceptance logs or postgres metrics cover the failure window 
+- **ASSUMPTION:** [critic: unsupported assumption] That the rollups cause the failures, given that earlier rollups completed without errors 
+- **ASSUMPTION:** [critic: unsupported assumption] That the flat db_conn_util on user-service rules out pool-side causes, since metrics are not split by node 
+
+## Investigation Performed
+- Round 1 | observability | completed | attempts 1 | 4 tool calls | Analyze user-service error logs and metrics from 2026-09-17T20:50Z onward: error rate, latency, DB error messages, connection pool saturation, timeouts, and 5xx
+- Round 1 | observability | completed | attempts 1 | 4 tool calls | Check postgres and redis health metrics and logs around the symptom window: connections, CPU, locks, slow queries, replication, evictions, errors.
+- Round 1 | dependency | completed | attempts 1 | 5 tool calls | Identify deployments, config changes, or feature flag changes to user-service, postgres, redis, and their callers in the window 2026-09-17T18:00Z to 21:11Z, and
+- Round 1 | observability | completed | attempts 1 | 4 tool calls | Check traffic and error patterns of upstream callers (api-gateway, notification-service, order-service) toward user-service to see if load spikes or retry storm
+- Round 1 | reasoning | completed | attempts 1 | 0 tool calls | Develop and rank competing hypotheses
+- Round 1 | critic | completed | attempts 1 | 5 tool calls | Independently review hypotheses
+- Round 2 | observability | completed | attempts 1 | 3 tool calls | FOLLOW-UP requested by critic: Restore or re-query postgres metrics (db_conn_util_pct, error_rate, p95_latency_ms, cpu_pct) for 21:00-21:30Z, and check whether 
+- Round 2 | observability | completed | attempts 1 | 5 tool calls | FOLLOW-UP requested by critic: Per-node breakdown of user-service error_rate and timeout_rate for 20:55-21:30Z, distinguishing usr-node-3 from other user-servic
+- Round 2 | observability | completed | attempts 1 | 8 tool calls | FOLLOW-UP requested by critic: Query postgres logs for connection-acceptance or capacity events (too many connections, listener, backend fork failure, lock wait
+- Round 2 | reasoning | completed | attempts 1 | 0 tool calls | Develop and rank competing hypotheses
+- Round 2 | critic | completed | attempts 1 | 7 tool calls | Independently review hypotheses
+- Round 3 | observability | completed | attempts 1 | 2 tool calls | FOLLOW-UP requested by critic: Obtain user-service error and timeout counts split by instance/host (usr-node-1..N) for 21:00-21:30Z, from host tags or instance-
+- Round 3 | observability | completed | attempts 1 | 6 tool calls | FOLLOW-UP requested by critic: Query nf_conntrack usage and drop counters (if exposed as metrics or logs) on usr-node-3 and at least one peer node for 20:55-21:
+- Round 3 | dependency | completed | attempts 1 | 3 tool calls | FOLLOW-UP requested by critic: Identify any proxy, load balancer, or firewall component in the path from user-service to postgres-primary:5432 and check its log
+- Round 3 | reasoning | completed | attempts 1 | 0 tool calls | Develop and rank competing hypotheses
+- Round 3 | critic | completed | attempts 1 | 2 tool calls | Independently review hypotheses
+- Round 3 | reporting | completed | attempts 1 | 0 tool calls | Write final report
+
+## Root-Cause Hypotheses (ranked by evidence strength)
+### 1. H1 - `infrastructure_degradation` in `user-service` (confidence 0.20, critic: needs_evidence)
+**INFERENCE:** Network-path failure between user-service and postgres-primary:5432, possibly starting with nf_conntrack table exhaustion on usr-node-3 at 21:02Z. Node concentration is unverified. Mechanism: nf_conntrack table fills on usr-node-3 (21:02:00Z) -> new TCP sessions to postgres-primary:5432 are dropped or reset -> user-service DB connects fail with 'connection refused' / 'connection reset by peer' from 21:03Z -> ~30% user-service error rate and timeout step-up while client pool utilisation stays flat (failures occur before pool use).
+
+Confidence breakdown: base 0.10; +0.08 corroboration across >=2 independent source types; +0.48 supporting evidence (4 refs, reliability-weighted, capped); -0.30 contradicting evidence (2 refs, capped 0.45); +0.08 proposed cause (21:02) precedes/coincides with first observed anomaly (21:03); -0.05 tool failures/partial data for user-service; -0.06 3 acknowledged evidence gaps; -0.05 critic review adjustment; = 0.20 (evidence-strength score, not a calibrated probability)
+
+Supporting evidence:
+- [OBSERVED EVIDENCE] `logpat-user-service-227e81bb` (moderate): 1x WARN on user-service: 'kernel: nf_conntrack: table full, dropping packet (node usr-node-3)' (first 2026-09-17T21:02:00Z, last 2026-09-17T21:02:00Z)
+- [OBSERVED EVIDENCE] `logpat-user-service-f82ed4bd` (moderate): 19x ERROR on user-service: 'PSQLException: Connection to postgres-primary:5432 refused (attempt 76)' (first 2026-09-17T21:03:00Z, last 2026-09-17T21:28:37Z)
+- [OBSERVED EVIDENCE] `met-user-service-error_rate-2055-2130` (moderate): user-service error_rate: baseline 0.4 -> window mean 23.0 (max 33.51, change 5659.2%), onset 2026-09-17T21:03:00Z
+- [OBSERVED EVIDENCE] `met-user-service-db_conn_util_pct-2050-2130` (weak): user-service db_conn_util_pct: baseline 29.86 -> window mean 30.13 (max 33.37, change 0.9%), onset none detected
+
+Contradicting evidence:
+- [OBSERVED EVIDENCE] `logpat-user-service-227e81bb` (moderate): 1x WARN on user-service: 'kernel: nf_conntrack: table full, dropping packet (node usr-node-3)' (first 2026-09-17T21:02:00Z, last 2026-09-17T21:02:00Z)
+- [OBSERVED EVIDENCE] `logpat-user-service-f82ed4bd` (moderate): 19x ERROR on user-service: 'PSQLException: Connection to postgres-primary:5432 refused (attempt 76)' (first 2026-09-17T21:03:00Z, last 2026-09-17T21:28:37Z)
+
+Remaining uncertainties / missing evidence:
+- [UNKNOWN] Per-node error split (error lines carry no host tag; metrics have no instance dimension)
+- [UNKNOWN] nf_conntrack usage and drop counters for usr-node-3 and peer nodes, 20:55-21:30Z
+- [UNKNOWN] Firewall/LB/NAT logs for the user-service to postgres path
+
+### 2. H3 - `unknown` in `None` (confidence 0.08, critic: needs_evidence)
+**INFERENCE:** Residual alternative: an unrecorded change on the path or endpoint to postgres-primary (intermediate proxy/firewall/LB rule, DNS or endpoint change, credential or certificate rotation) that the change feeds did not capture. Mechanism: A change in a middlebox or endpoint resolution on the user-service to postgres-primary path -> connections refused or reset for a subset of attempts -> intermittent user-service DB errors from 21:03Z.
+
+Confidence breakdown: base 0.10; +0.08 corroboration across >=2 independent source types; +0.16 supporting evidence (2 refs, reliability-weighted, capped); -0.15 contradicting evidence (1 refs, capped 0.45); +0.08 proposed cause (21:03) precedes/coincides with first observed anomaly (21:03); -0.06 3 acknowledged evidence gaps; -0.05 critic review adjustment; = 0.08 (evidence-strength score, not a calibrated probability)
+
+Supporting evidence:
+- [OBSERVED EVIDENCE] `logpat-user-service-97a18e1d` (weak): 9x ERROR on user-service: 'I/O error: connection reset by peer (postgres-primary:5432)' (first 2026-09-17T21:03:08Z, last 2026-09-17T21:27:05Z)
+- [CONFIRMED FACT] `topo-user-service-upstream-d3` (weak): user-service depends on ['postgres', 'redis']; called by ? (graph topology-v2)
+
+Contradicting evidence:
+- [OBSERVED EVIDENCE] `logpat-user-service-f82ed4bd` (moderate): 19x ERROR on user-service: 'PSQLException: Connection to postgres-primary:5432 refused (attempt 76)' (first 2026-09-17T21:03:00Z, last 2026-09-17T21:28:37Z)
+
+Remaining uncertainties / missing evidence:
+- [UNKNOWN] Network device, LB, and firewall logs for 21:00-21:30Z
+- [UNKNOWN] DNS resolution or endpoint records for postgres-primary
+- [UNKNOWN] Credential or certificate rotation records
+
+### 3. H2 - `upstream_dependency_degradation` in `postgres` (confidence 0.00, critic: reject)
+**INFERENCE:** postgres-primary is degraded or intermittently refusing or resetting connections from about 21:03Z, possibly because of long-running report_rollup() statements holding resources or locks. Mechanism: report_rollup() runs of 11-20 s (from 20:50Z) consume resources or locks -> postgres connection acceptance or backend handling degrades -> user-service connections to postgres-primary are refused or reset -> user-service errors and timeouts.
+
+Confidence breakdown: base 0.10; +0.08 corroboration across >=2 independent source types; +0.26 supporting evidence (3 refs, reliability-weighted, capped); -0.33 contradicting evidence (3 refs, capped 0.45); +0.08 proposed cause (20:50) precedes/coincides with first observed anomaly (21:03); -0.06 3 acknowledged evidence gaps; (reliability discount already applied: 0.02); -0.40 critic review adjustment; = 0.00 (evidence-strength score, not a calibrated probability)
+
+Supporting evidence:
+- [OBSERVED EVIDENCE] `logpat-postgres-44883ca5` (moderate): 5x WARN on postgres: 'duration: 14502 ms statement: SELECT report_rollup()' (first 2026-09-17T20:50:35Z, last 2026-09-17T21:22:05Z)
+- [OBSERVED EVIDENCE] `logpat-user-service-f82ed4bd` (weak): 19x ERROR on user-service: 'PSQLException: Connection to postgres-primary:5432 refused (attempt 76)' (first 2026-09-17T21:03:00Z, last 2026-09-17T21:28:37Z)
+- [OBSERVED EVIDENCE] `met-postgres-db_conn_util_pct-2050-2130` (weak): postgres db_conn_util_pct: baseline 39.48 -> window mean 39.88 (max 42.83, change 1.0%), onset none detected, 31 points missing
+
+Contradicting evidence:
+- [OBSERVED EVIDENCE] `logpat-postgres-44883ca5` (moderate): 5x WARN on postgres: 'duration: 14502 ms statement: SELECT report_rollup()' (first 2026-09-17T20:50:35Z, last 2026-09-17T21:22:05Z)
+- [OBSERVED EVIDENCE] `logpat-postgres-72cfef4c` (moderate): 3x INFO on postgres: 'checkpoint complete: wrote 95 buffers' (first 2026-09-17T21:04:59Z, last 2026-09-17T21:25:17Z)
+- [OBSERVED EVIDENCE] `met-postgres-db_conn_util_pct-2035-2130` (weak): postgres db_conn_util_pct: baseline 39.51 -> window mean 39.92 (max 44.21, change 1.0%), onset none detected, 31 points missing
+
+Remaining uncertainties / missing evidence:
+- [UNKNOWN] Postgres metrics 21:00-21:30Z (31 of 41 points missing; metrics-agent backlog at 20:59Z)
+- [UNKNOWN] pg_stat_activity, lock waits, max_connections headroom
+- [UNKNOWN] Postgres connection-acceptance logs (INFO scan not complete)
+
+## Critic Review
+- **Verdict:** `INCONCLUSIVE` (rounds reviewed: 3)
+- **Reasoning:** No hypothesis is adequately supported. Verified evidence: user-service error_rate steps from ~0.4% to ~23% at 21:03Z. DB errors are 'refused' (19 pattern hits) and 'connection reset by peer' (9), first at 21:03:00Z and 21:03:08Z. The only node-tagged signal is a single nf_conntrack 'table full' WARN on usr-node-3 at 21:02:00Z. Re-querying user-service logs confirmed the 21:03-21:09 error burst and that the WARN has no repeats. No deployments were recorded for any service 18:00-21:30Z. Config-change and postgres metric data for 21:00-21:30Z are missing or empty. H1 is plausible in timing, but the one-off WARN cannot sustain 25 minutes of failure, it is not linked to the errors by node, and conntrack drops normally produce timeouts rather than 'refused' signatures. H2 is weakened by onset timing: rollups at 20:50 and 20:58 completed without user-service errors, and postgres shows routine checkpoints with no FATAL or connection-limit messages. Its post-onset server state is unknown because postgres metrics are missing. H3 is an unrecorded change with no positive evidence. Round 3 is the final round, so the remaining gaps cannot be closed by further requests within this investigation.
+- H1: **needs_evidence** - Timing fits (conntrack WARN 21:02Z precedes first DB error 21:03Z), but the evidence is thin: a single WARN with no drop counters, no per-node split of errors, and a 'refused' error signature that does not match silent conntrack drops. Node concentration is unverified, so usr-node-3 is not confirmed as the culprit.
+- H2: **reject** - Onset does not track the rollups. Earlier rollups at 20:50 and 20:58 completed with no user-service errors until 21:03. Postgres logs show routine checkpoints and no FATAL, restart, or connection-limit messages after onset. Postgres metrics for 21:00-21:30Z are missing, so this is not a positive exclusion, but nothing supports the claimed mechanism. The rollup-to-refused-connection link is temporal correlation only.
+- H3: **needs_evidence** - Unrecorded change is possible but has no positive evidence. Deployments are empty and the config feed is empty for 18:00-21:11Z. The reset-by-peer signal is weak and not specific to a middlebox. Cannot be accepted without network, LB, or DNS records, which are not obtainable with the available tools.
+- alternative: Network-path or middlebox fault on the user-service to postgres-primary path (H1 or H3), with the node-level conntrack exhaustion on usr-node-3 as one possible trigger
+- alternative: Intermittent postgres-side connection refusal or reset during the post-onset window, for which postgres metrics are missing and cannot be confirmed as healthy (H2 in a weaker form)
+- alternative: Subset of user-service nodes or client-side connection handling failing, with error lines lacking a host tag so the split by node cannot be done
+
+## Probable Root Cause
+Root cause could not be conclusively established with the available evidence.
+
+## Corrective Actions
+- Mitigate the user-service failure now: check whether the errors are confined to particular nodes (usr-node-3 first), and drain or restart affected user-service instances to clear any stale or exhausted connections.
+- Verify end-to-end connectivity from user-service hosts to postgres-primary:5432 (TCP connect, DNS resolution, endpoint/IP), and check for any firewall, proxy, or load-balancer changes on that path.
+- On usr-node-3, inspect conntrack utilization and drop counters (nf_conntrack_count vs nf_conntrack_max, drop statistics) to test H1 directly, since the single WARN alone does not explain 25 minutes of failure.
+- Check postgres-primary connection acceptance and health directly (max_connections, FATAL messages, listener status, pg_stat_activity) for 21:00-21:30Z, because postgres metrics for this window are missing.
+
+## Preventive Actions
+- Add per-node tagging to user-service database error logs so failures can be split by host.
+- Record configuration, network, and credential or certificate changes in the change feed, including intermediate proxies, firewalls, and load balancers, so unrecorded changes can be ruled in or out.
+- Set conntrack capacity alerts and tune nf_conntrack_max and timeouts on user-service nodes to prevent table exhaustion.
+- Ensure the metrics pipeline covers postgres-primary and per-node user-service metrics, and fix the query limits and service naming that caused the failed queries in this investigation.
+
+## Monitoring Recommendations
+- Alert on user-service error_rate above 2% for 3 consecutive minutes, and on the count of 'refused' and 'connection reset by peer' errors to postgres-primary:5432 per node.
+- Monitor nf_conntrack usage and drop counters per node on user-service hosts, with alerts above 80% utilization or any sustained drops.
+- Collect postgres-primary connection metrics (active and total connections, refused connections, FATAL events, checkpoint and lock activity) at 1-minute resolution, and alert on any gap in these metrics.
+- Track TCP connect latency and failure rate from user-service to postgres-primary:5432 with synthetic probes from each node.
+
+## Evidence Gaps
+- [UNKNOWN] query_metrics failed for service=user-service, metrics=['error_rate', 'p50_latency_ms', 'p95_latency_ms', 'p99_latency_ms', 'db_conn_util_pct', 'timeout_rate', 'request_rate', 'cpu_pct']: metrics: List should have at most 6 items after validation, not 8 (INVALID_QUERY)
+- [UNKNOWN] query_metrics failed for service=usr-node-3, metrics=['error_rate', 'timeout_rate', 'cpu_pct', 'request_rate']: unknown service 'usr-node-3'. Known: ['api-gateway', 'auth-service', 'message-queue', 'notification-service', 'order-service', 'payment-service', 'postgres', 'redis', 'user-service'] (INVALID_QUERY)
+
+## Limitations
+- The root cause could not be established; the status is INCONCLUSIVE.
+- The single conntrack WARN on usr-node-3 (21:02Z) does not repeat and cannot by itself explain roughly 25 minutes of failure. No drop counters were available.
+- Postgres metrics for 21:00-21:30Z are missing or empty, so postgres-side health after onset cannot be confirmed.
+- user-service error lines lack a host tag, so the error distribution across nodes is unknown.
+- Configuration-change data for 21:00-21:30Z is missing or empty; no deployments were recorded.
+- Metric queries failed for user-service (too many metrics requested) and for usr-node-3 (not a known service), so some signals were not collected.
+- Upstream and caller topology is incomplete (callers unknown).
+- 2 tool calls failed and 0 returned partial data; affected areas are treated as unknown, not healthy.
+- Confidence values are rule-based evidence-strength scores, not calibrated probabilities.
+- Investigation terminated because: critic verdict INCONCLUSIVE
+
+## Final Status
+`INCONCLUSIVE`
+
+Root cause could not be conclusively established with the available evidence. The root cause of INC-006 is not established. The evidence shows a real user-service to postgres-primary connectivity failure starting 21:03Z, with refused and reset connections. Whether the cause is a network-path fault (possibly linked to the usr-node-3 conntrack WARN), an unrecorded change, or postgres-side refusal cannot be determined from the available data. Immediate actions should focus on mitigation and on closing the evidence gaps listed in the limitations, especially the missing postgres metrics and the per-node error split. Because the investigation has reached its final round, these gaps must be closed through follow-up work.
+
+## Execution Statistics
+```json
+{
+  "rounds": 3,
+  "tool_calls": 58,
+  "tool_failures": 1,
+  "tool_retries": 0,
+  "partial_results": 0,
+  "agent_failures": 0,
+  "agent_retries": 0,
+  "invalid_llm_outputs": 4,
+  "messages_exchanged": 56,
+  "evidence_records": 110,
+  "duration_s": 170.17,
+  "tokens": {
+    "input_tokens": 120,
+    "output_tokens": 60387,
+    "cache_read_tokens": 124711,
+    "cache_write_tokens": 182060,
+    "llm_calls": 42,
+    "cost_usd": 0.05421011
+  },
+  "tokens_by_agent": {
+    "orchestrator": {
+      "input_tokens": 6,
+      "output_tokens": 1020,
+      "cache_read_tokens": 2948,
+      "cache_write_tokens": 0,
+      "llm_calls": 2,
+      "cost_usd": 0.00054008
+    },
+    "dependency": {
+      "input_tokens": 16,
+      "output_tokens": 6215,
+      "cache_read_tokens": 15241,
+      "cache_write_tokens": 12727,
+      "llm_calls": 6,
+      "cost_usd": 0.004852385
+    },
+    "observability": {
+      "input_tokens": 62,
+      "output_tokens": 29609,
+      "cache_read_tokens": 70927,
+      "cache_write_tokens": 68967,
+      "llm_calls": 23,
+      "cost_usd": 0.024140845
+    },
+    "reasoning": {
+      "input_tokens": 12,
+      "output_tokens": 12188,
+      "cache_read_tokens": 0,
+      "cache_write_tokens": 57417,
+      "llm_calls": 3,
+      "cost_usd": 0.013272324999999998
+    },
+    "critic": {
+      "input_tokens": 20,
+      "output_tokens": 9582,
+      "cache_read_tokens": 35595,
+      "cache_write_tokens": 39531,
+      "llm_calls": 7,
+      "cost_usd": 0.010090325
+    },
+    "reporting": {
+      "input_tokens": 4,
+      "output_tokens": 1773,
+      "cache_read_tokens": 0,
+      "cache_write_tokens": 3418,
+      "llm_calls": 1,
+      "cost_usd": 0.00131415
+    }
+  }
+}
+```

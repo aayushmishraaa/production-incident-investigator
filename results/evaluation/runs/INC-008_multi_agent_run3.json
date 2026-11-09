@@ -1,0 +1,769 @@
+{
+  "investigation_id": "inv-8418a25b47",
+  "system": "multi_agent",
+  "incident_id": "INC-008",
+  "title": "Database CPU high and slow user pages",
+  "severity": "SEV2",
+  "affected_services": [
+    "postgres",
+    "user-service"
+  ],
+  "start_time": "2026-09-23T12:50:00+00:00",
+  "executive_summary": "INC-008 (SEV2): Postgres CPU alarm and slow user profile pages starting around 12:50Z. The investigation status is ROOT_CAUSE_IDENTIFIED, with the leading hypothesis (H1, confidence 0.88) being Redis memory pressure causing cache-degradation. Redis reached its 8G maxmemory under allkeys-lru policy, and evictions began at 12:43:15Z (logpat-redis-4b4f360d). Redis p95 latency rose from a 1.49 ms baseline with onset at 12:44Z (met-redis-p95_latency_ms-1230-1300), and cache hit rate fell from about 95% to 71.7% at 12:45 and 37.6% at 12:50. user-service then logged cache-miss fallbacks to Postgres from 12:45:15Z (logpat-user-service-481445ce). Postgres request rate rose about 2.2x (onset 12:45Z) and CPU rose from 35% to 60% (met-postgres-request_rate-1230-1300). Slow users-table SELECTs (25-30 s) and user-service timeouts followed from 12:46-12:47Z. Payment-service p95 latency rose from about 151 ms to about 525 ms from 12:46Z (met-payment-service-p95_latency_ms-1220-1315); the link to Postgres is inferred, not directly measured. This is the most probable explanation, not a confirmed one. The validation critic approved the result. The DBA's bad-query hypothesis is not supported: the load tracks cache misses rather than a new query pattern.",
+  "timeline": [
+    {
+      "time": "2026-09-23T12:10:00Z",
+      "label": "CONFIRMED FACT",
+      "event": "Config change on user-service: feature.profile_v2_cache false -> true at 2026-09-23T12:10:00Z (OPS-2229)",
+      "evidence_id": "cfg-b6fe4aaf"
+    },
+    {
+      "time": "2026-09-23T12:35:13Z",
+      "label": "OBSERVED EVIDENCE",
+      "event": "First log: 4x WARN on user-service: 'Deprecated API /v1/users/legacy called by client web-34' (first 2026-09-23T12:35:13Z, last 2026-09-23T12:59:44Z)",
+      "evidence_id": "logpat-user-service-742b555e"
+    },
+    {
+      "time": "2026-09-23T12:43:15Z",
+      "label": "OBSERVED EVIDENCE",
+      "event": "First log: 6x WARN on redis: 'Evicting keys: used_memory 7.970G reached maxmemory 8G (policy allkeys-lru), evicted_keys=1870233' (first 2026-09-23T12:43:15Z, last 2026-09-23T12:57:49Z)",
+      "evidence_id": "logpat-redis-4b4f360d"
+    },
+    {
+      "time": "2026-09-23T12:44:00Z",
+      "label": "OBSERVED EVIDENCE",
+      "event": "Anomaly onset: redis p95_latency_ms: baseline 1.49 -> window mean 12.9 (max 27.89, change 765.6%), onset 2026-09-23T12:44:00Z",
+      "evidence_id": "met-redis-p95_latency_ms-1230-1300"
+    },
+    {
+      "time": "2026-09-23T12:45:00Z",
+      "label": "OBSERVED EVIDENCE",
+      "event": "Anomaly onset: postgres cpu_pct: baseline 35.46 -> window mean 60.47 (max 95.48, change 70.5%), onset 2026-09-23T12:45:00Z",
+      "evidence_id": "met-postgres-cpu_pct-1230-1300"
+    },
+    {
+      "time": "2026-09-23T12:45:00Z",
+      "label": "OBSERVED EVIDENCE",
+      "event": "Anomaly onset: postgres request_rate: baseline 2496.81 -> window mean 5524.48 (max 9622.76, change 121.3%), onset 2026-09-23T12:45:00Z",
+      "evidence_id": "met-postgres-request_rate-1230-1300"
+    },
+    {
+      "time": "2026-09-23T12:45:15Z",
+      "label": "OBSERVED EVIDENCE",
+      "event": "First log: 12x WARN on user-service: 'Cache miss for user profile u-79, falling back to DB' (first 2026-09-23T12:45:15Z, last 2026-09-23T12:58:49Z)",
+      "evidence_id": "logpat-user-service-481445ce"
+    },
+    {
+      "time": "2026-09-23T12:46:00Z",
+      "label": "OBSERVED EVIDENCE",
+      "event": "Anomaly onset: postgres db_conn_util_pct: baseline 39.95 -> window mean 59.91 (max 92.25, change 50.0%), onset 2026-09-23T12:46:00Z",
+      "evidence_id": "met-postgres-db_conn_util_pct-1230-1300"
+    },
+    {
+      "time": "2026-09-23T12:46:00Z",
+      "label": "OBSERVED EVIDENCE",
+      "event": "Anomaly onset: user-service p95_latency_ms: baseline 79.7 -> window mean 803.07 (max 1972.06, change 907.6%), onset 2026-09-23T12:46:00Z",
+      "evidence_id": "met-user-service-p95_latency_ms-1230-1300"
+    },
+    {
+      "time": "2026-09-23T12:46:00Z",
+      "label": "OBSERVED EVIDENCE",
+      "event": "Anomaly onset: payment-service p95_latency_ms: baseline 151.47 -> window mean 525.1 (max 973.35, change 246.7%), onset 2026-09-23T12:46:00Z",
+      "evidence_id": "met-payment-service-p95_latency_ms-1220-1315"
+    },
+    {
+      "time": "2026-09-23T12:46:04Z",
+      "label": "OBSERVED EVIDENCE",
+      "event": "First log: 5x WARN on postgres: 'duration: 26410 ms statement: SELECT * FROM users WHERE id = $1' (first 2026-09-23T12:46:04Z, last 2026-09-23T12:59:11Z)",
+      "evidence_id": "logpat-postgres-cee9c952"
+    },
+    {
+      "time": "2026-09-23T12:47:00Z",
+      "label": "OBSERVED EVIDENCE",
+      "event": "Anomaly onset: user-service error_rate: baseline 0.4 -> window mean 2.17 (max 5.16, change 448.9%), onset 2026-09-23T12:47:00Z",
+      "evidence_id": "met-user-service-error_rate-1230-1300"
+    },
+    {
+      "time": "2026-09-23T12:47:12Z",
+      "label": "OBSERVED EVIDENCE",
+      "event": "First log: 4x ERROR on user-service: 'Query timeout on users table after 2000ms (req 89)' (first 2026-09-23T12:47:12Z, last 2026-09-23T12:59:16Z)",
+      "evidence_id": "logpat-user-service-f882ebef"
+    },
+    {
+      "time": "2026-09-23T12:50:00Z",
+      "label": "CONFIRMED FACT",
+      "event": "Reported symptom start",
+      "evidence_id": null
+    },
+    {
+      "time": "2026-09-23T12:56:00Z",
+      "label": "CONFIRMED FACT",
+      "event": "Incident reported",
+      "evidence_id": null
+    }
+  ],
+  "observed_symptoms": [
+    {
+      "label": "OBSERVED EVIDENCE",
+      "statement": "postgres cpu_pct: baseline 35.46 -> window mean 60.47 (max 95.48, change 70.5%), onset 2026-09-23T12:45:00Z",
+      "evidence_ids": [
+        "met-postgres-cpu_pct-1230-1300"
+      ]
+    },
+    {
+      "label": "OBSERVED EVIDENCE",
+      "statement": "postgres db_conn_util_pct: baseline 39.95 -> window mean 59.91 (max 92.25, change 50.0%), onset 2026-09-23T12:46:00Z",
+      "evidence_ids": [
+        "met-postgres-db_conn_util_pct-1230-1300"
+      ]
+    },
+    {
+      "label": "OBSERVED EVIDENCE",
+      "statement": "postgres request_rate: baseline 2496.81 -> window mean 5524.48 (max 9622.76, change 121.3%), onset 2026-09-23T12:45:00Z",
+      "evidence_ids": [
+        "met-postgres-request_rate-1230-1300"
+      ]
+    },
+    {
+      "label": "OBSERVED EVIDENCE",
+      "statement": "user-service p95_latency_ms: baseline 79.7 -> window mean 803.07 (max 1972.06, change 907.6%), onset 2026-09-23T12:46:00Z",
+      "evidence_ids": [
+        "met-user-service-p95_latency_ms-1230-1300"
+      ]
+    },
+    {
+      "label": "OBSERVED EVIDENCE",
+      "statement": "user-service error_rate: baseline 0.4 -> window mean 2.17 (max 5.16, change 448.9%), onset 2026-09-23T12:47:00Z",
+      "evidence_ids": [
+        "met-user-service-error_rate-1230-1300"
+      ]
+    },
+    {
+      "label": "OBSERVED EVIDENCE",
+      "statement": "redis p95_latency_ms: baseline 1.49 -> window mean 12.9 (max 27.89, change 765.6%), onset 2026-09-23T12:44:00Z",
+      "evidence_ids": [
+        "met-redis-p95_latency_ms-1230-1300"
+      ]
+    },
+    {
+      "label": "OBSERVED EVIDENCE",
+      "statement": "payment-service p95_latency_ms: baseline 151.47 -> window mean 525.1 (max 973.35, change 246.7%), onset 2026-09-23T12:46:00Z",
+      "evidence_ids": [
+        "met-payment-service-p95_latency_ms-1220-1315"
+      ]
+    },
+    {
+      "label": "OBSERVED EVIDENCE",
+      "statement": "[dependency] Config change feature.profile_v2_cache flipped false -> true on user-service at 12:10Z (40 min before T0), author config-bot, ticket OPS-2229.",
+      "evidence_ids": [
+        "cfg-b6fe4aaf"
+      ]
+    },
+    {
+      "label": "OBSERVED EVIDENCE",
+      "statement": "[dependency] user-service upstream dependencies are postgres and redis; downstream dependents are api-gateway, notification-service, order-service. Topology v2 (effective 2026-09-15) added edge notification-service -> user-service, i.e. that call path predates the incident by about a week and is not a change within the window.",
+      "evidence_ids": [
+        "topo-user-service-both-d2"
+      ]
+    },
+    {
+      "label": "OBSERVED EVIDENCE",
+      "statement": "[observability] p95 latency jumped from a baseline mean of ~151 ms to a window mean of ~525 ms (+247%), with detected onset at 12:46Z. The 12:45 sample was ~147 ms; the 12:50 sample was ~938 ms and stayed 820-940 ms through 13:15.",
+      "evidence_ids": [
+        "met-payment-service-p95_latency_ms-1220-1315"
+      ]
+    },
+    {
+      "label": "OBSERVED EVIDENCE",
+      "statement": "[observability] payment-service request_rate was flat (baseline 300.5 rps vs window 296.4 rps, -1.4%), with no spike at symptom start. Error rate (-0.5%) and timeout rate (+0.4%) were essentially unchanged.",
+      "evidence_ids": [
+        "met-payment-service-request_rate-1220-1315",
+        "met-payment-service-error_rate-1220-1315",
+        "met-payment-service-timeout_rate-1220-1315"
+      ]
+    },
+    {
+      "label": "OBSERVED EVIDENCE",
+      "statement": "[observability] notification-service request_rate, error_rate, p95 latency and timeout_rate were all flat versus baseline (request rate change 0%, p95 +1.3%, error rate ~0.2%, timeout ~0.05%). No change at 12:50Z.",
+      "evidence_ids": [
+        "met-notification-service-request_rate-1220-1315",
+        "met-notification-service-p95_latency_ms-1220-1315",
+        "met-notification-service-error_rate-1220-1315",
+        "met-notification-service-timeout_rate-1220-1315"
+      ]
+    },
+    {
+      "label": "OBSERVED EVIDENCE",
+      "statement": "[observability] auth-service request rate (-1.3%), error rate (-0.6%), p95 latency (+0.6%) and timeout rate (-0.6%) were flat versus baseline across the window.",
+      "evidence_ids": [
+        "met-auth-service-request_rate-1220-1315",
+        "met-auth-service-error_rate-1220-1315",
+        "met-auth-service-p95_latency_ms-1220-1315",
+        "met-auth-service-timeout_rate-1220-1315"
+      ]
+    },
+    {
+      "label": "OBSERVED EVIDENCE",
+      "statement": "[observability] order-service request rate (+1.4%), error rate (+0.1%), p95 latency (+1.6%) and timeout rate (+1.8%, ~0.10%) were within normal variation; no step change at 12:50Z.",
+      "evidence_ids": [
+        "met-order-service-request_rate-1220-1315",
+        "met-order-service-error_rate-1220-1315",
+        "met-order-service-p95_latency_ms-1220-1315",
+        "met-order-service-timeout_rate-1220-1315"
+      ]
+    },
+    {
+      "label": "OBSERVED EVIDENCE",
+      "statement": "[observability] api-gateway request rate (+0.3%), error rate (-0.4%), p95 latency (+0.4%) and timeout rate (+0.5%) were flat; no step change at 12:50Z.",
+      "evidence_ids": [
+        "met-api-gateway-request_rate-1220-1315",
+        "met-api-gateway-error_rate-1220-1315",
+        "met-api-gateway-p95_latency_ms-1220-1315",
+        "met-api-gateway-timeout_rate-1220-1315"
+      ]
+    },
+    {
+      "label": "INFERENCE",
+      "statement": "[observability] The payment-service latency step at ~12:46-12:50Z with flat traffic is consistent with a slower downstream dependency (e.g. a DB or service call) rather than a load increase; this is an interpretation and needs confirmation from postgres/user-service metrics and payment-service dependency logs.",
+      "evidence_ids": [
+        "met-payment-service-p95_latency_ms-1220-1315"
+      ]
+    },
+    {
+      "label": "OBSERVED EVIDENCE",
+      "statement": "[observability] Postgres CPU rose from baseline mean 35.5% to window mean 60.5% (max 95.5%); onset 12:45, sampled 88.5% at 12:50 and 95.5% at 12:55.",
+      "evidence_ids": [
+        "met-postgres-cpu_pct-1230-1300"
+      ]
+    },
+    {
+      "label": "OBSERVED EVIDENCE",
+      "statement": "[observability] Postgres request rate rose from baseline ~2497/s to ~5524/s mean (max 9623/s), onset 12:45, step to ~9171/s at 12:50. Connection utilisation rose from 40% to 59.9% mean (max 92.2%), onset 12:46.",
+      "evidence_ids": [
+        "met-postgres-request_rate-1230-1300",
+        "met-postgres-db_conn_util_pct-1230-1300"
+      ]
+    },
+    {
+      "label": "OBSERVED EVIDENCE",
+      "statement": "[observability] Postgres p95 latency metric was essentially flat (11.97 ms baseline vs 12.14 ms window), which does not match slow-query log durations of 25-30 s; the p95 metric may not capture these statements.",
+      "evidence_ids": [
+        "met-postgres-p95_latency_ms-1230-1300",
+        "logpat-postgres-cee9c952"
+      ]
+    },
+    {
+      "label": "OBSERVED EVIDENCE",
+      "statement": "[observability] Postgres WARN slow-statement log pattern 'SELECT * FROM users WHERE id = $1' logged 5 times between 12:46:04 and 12:59:11 with durations 25.2-29.9 s (example 26410 ms). Also 'SELECT report_rollup()' logged 2 times at 12:32:44 and 12:35:26 (15.9 s and 18.8 s), before the CPU onset.",
+      "evidence_ids": [
+        "logpat-postgres-cee9c952",
+        "logpat-postgres-44883ca5",
+        "log-d5a950f3",
+        "log-321d6d3d"
+      ]
+    },
+    {
+      "label": "OBSERVED EVIDENCE",
+      "statement": "[observability] user-service p95 latency rose from baseline 79.7 ms to 803 ms mean (max 1972 ms); onset 12:46, 1972 ms at 12:50. Error rate rose from 0.4% to 2.17% mean (max 5.16%), onset 12:47. Request rate flat (495.6 -> 491.9/s).",
+      "evidence_ids": [
+        "met-user-service-p95_latency_ms-1230-1300",
+        "met-user-service-error_rate-1230-1300",
+        "met-user-service-request_rate-1230-1300"
+      ]
+    },
+    {
+      "label": "OBSERVED EVIDENCE",
+      "statement": "[observability] user-service logged ERROR 'Query timeout on users table after 2000ms' 4 times (12:47:12 to 12:59:16), and WARN 'Cache miss for user profile ... falling back to DB' 12 times from 12:45:15 to 12:58:49.",
+      "evidence_ids": [
+        "logpat-user-service-f882ebef",
+        "logpat-user-service-481445ce"
+      ]
+    },
+    {
+      "label": "OBSERVED EVIDENCE",
+      "statement": "[observability] Redis p95 latency rose from 1.49 ms baseline to 12.9 ms mean (max 27.9 ms), onset 12:44; cache hit rate dropped from 95.0% to 67.5% mean (min 37.6%), onset 12:46 (71.7% at 12:45, 37.6% at 12:50). Redis request rate flat (~6008 -> 5970/s).",
+      "evidence_ids": [
+        "met-redis-p95_latency_ms-1230-1300",
+        "met-redis-cache_hit_rate-1230-1300",
+        "met-redis-request_rate-1230-1300"
+      ]
+    },
+    {
+      "label": "OBSERVED EVIDENCE",
+      "statement": "[observability] Redis WARN evictions: used_memory ~7.94-7.98G reached maxmemory 8G (policy allkeys-lru), evicted_keys ~1.87M at 12:43:15, rising to ~1.88M by 12:54:55; 6 eviction warnings 12:43-12:57.",
+      "evidence_ids": [
+        "logpat-redis-4b4f360d",
+        "log-de6e5c7a"
+      ]
+    },
+    {
+      "label": "INFERENCE",
+      "statement": "[observability] Redis memory pressure (maxmemory 8G with allkeys-lru eviction) may have evicted user-profile cache keys, increasing cache misses that fall back to Postgres 'SELECT * FROM users WHERE id' queries, which would explain the Postgres load increase and user-service timeouts. Alternative: the 'report_rollup' queries seen earlier or other callers drive the CPU. Not confirmed.",
+      "evidence_ids": [
+        "logpat-redis-4b4f360d",
+        "logpat-user-service-481445ce",
+        "logpat-postgres-cee9c952",
+        "logpat-postgres-44883ca5"
+      ]
+    }
+  ],
+  "investigation_performed": [
+    "Round 1 | observability | completed | attempts 1 | 7 tool calls | Characterize Postgres CPU and query load from 12:30Z to 13:00Z: CPU, active connections, query latency, slow query / top query patterns, lock waits, and which c",
+    "Round 1 | observability | completed | attempts 1 | 5 tool calls | Check latency, error rate and traffic for the services calling Postgres and the notification service that calls user-service, to see whether load increased at s",
+    "Round 1 | dependency | completed | attempts 1 | 3 tool calls | Identify deployments, config changes, or schema/migration changes in the 2 hours before 12:50Z for postgres, user-service, redis, and notification-service, incl",
+    "Round 1 | reasoning | completed | attempts 1 | 0 tool calls | Develop and rank competing hypotheses",
+    "Round 1 | critic | completed | attempts 1 | 2 tool calls | Independently review hypotheses",
+    "Round 1 | reporting | completed | attempts 1 | 0 tool calls | Write final report"
+  ],
+  "hypotheses": [
+    {
+      "rank": 1,
+      "hypothesis_id": "H1",
+      "category": "cache_degradation",
+      "culprit_service": "redis",
+      "description": "Redis memory pressure (maxmemory 8G, allkeys-lru) began evicting user-profile cache keys, causing cache misses that fall back to Postgres 'SELECT * FROM users WHERE id' and overload the DB, which in turn slows user-service and payment-service. Mechanism: Redis reaches maxmemory -> LRU evictions start 12:43:15 -> redis p95 rises 12:44 and hit rate falls (71.7% at 12:45, 37.6% at 12:50) -> user-service logs cache-miss fallbacks from 12:45:15 -> Postgres request rate ~2.2x and CPU 35%->60% (onset 12:45) -> users SELECTs slow to 25-30 s from 12:46 -> user-service p95 and timeouts from 12:46-12:47 -> payment-service latency (dependency on Postgres, inferred) from 12:46.",
+      "confidence": 0.88,
+      "confidence_explanation": [
+        "base 0.10",
+        "+0.08 corroboration across >=2 independent source types",
+        "+0.78 supporting evidence (7 refs, reliability-weighted, capped)",
+        "-0.05 contradicting evidence (1 refs, capped 0.45)",
+        "+0.08 proposed cause (12:43) precedes/coincides with first observed anomaly (12:44)",
+        "-0.08 4 acknowledged evidence gaps",
+        "+0.05 critic review adjustment",
+        "= 0.88 (evidence-strength score, not a calibrated probability)"
+      ],
+      "supporting_evidence": [
+        {
+          "evidence_id": "logpat-redis-4b4f360d",
+          "strength": "strong",
+          "note": "Eviction warnings begin 12:43:15, the earliest anomaly in the data; memory at 7.97G of 8G maxmemory",
+          "exists": true,
+          "label": "OBSERVED EVIDENCE",
+          "description": "6x WARN on redis: 'Evicting keys: used_memory 7.970G reached maxmemory 8G (policy allkeys-lru), evicted_keys=1870233' (first 2026-09-23T12:43:15Z, last 2026-09-23T12:57:49Z)"
+        },
+        {
+          "evidence_id": "met-redis-p95_latency_ms-1230-1300",
+          "strength": "strong",
+          "note": "Redis latency onset 12:44, before DB and user-service changes",
+          "exists": true,
+          "label": "OBSERVED EVIDENCE",
+          "description": "redis p95_latency_ms: baseline 1.49 -> window mean 12.9 (max 27.89, change 765.6%), onset 2026-09-23T12:44:00Z"
+        },
+        {
+          "evidence_id": "met-redis-cache_hit_rate-1230-1300",
+          "strength": "strong",
+          "note": "Hit rate drop 95% -> ~38% from 12:45-12:46, matching DB load step",
+          "exists": true,
+          "label": "OBSERVED EVIDENCE",
+          "description": "redis cache_hit_rate: baseline 95.0 -> window mean 67.47 (max 95.86, change -29.0%), onset 2026-09-23T12:46:00Z"
+        },
+        {
+          "evidence_id": "logpat-user-service-481445ce",
+          "strength": "moderate",
+          "note": "Cache-miss fallback-to-DB warnings from 12:45:15, after eviction onset",
+          "exists": true,
+          "label": "OBSERVED EVIDENCE",
+          "description": "12x WARN on user-service: 'Cache miss for user profile u-79, falling back to DB' (first 2026-09-23T12:45:15Z, last 2026-09-23T12:58:49Z)"
+        },
+        {
+          "evidence_id": "met-postgres-request_rate-1230-1300",
+          "strength": "moderate",
+          "note": "Postgres request rate step at 12:45 with flat user-service request rate; consistent with extra cache-miss reads",
+          "exists": true,
+          "label": "OBSERVED EVIDENCE",
+          "description": "postgres request_rate: baseline 2496.81 -> window mean 5524.48 (max 9622.76, change 121.3%), onset 2026-09-23T12:45:00Z"
+        },
+        {
+          "evidence_id": "met-redis-request_rate-1230-1300",
+          "strength": "weak",
+          "note": "Redis request rate flat, so the load change is not caller traffic on Redis but memory/eviction behaviour",
+          "exists": true,
+          "label": "OBSERVED EVIDENCE",
+          "description": "redis request_rate: baseline 6007.51 -> window mean 5969.76 (max 6495.82, change -0.6%), onset none detected"
+        },
+        {
+          "evidence_id": "met-payment-service-p95_latency_ms-1220-1315",
+          "strength": "weak",
+          "note": "Payment latency onset 12:46, consistent with a Postgres-dependent slowdown; traffic flat",
+          "exists": true,
+          "label": "OBSERVED EVIDENCE",
+          "description": "payment-service p95_latency_ms: baseline 151.47 -> window mean 525.1 (max 973.35, change 246.7%), onset 2026-09-23T12:46:00Z"
+        }
+      ],
+      "contradicting_evidence": [
+        {
+          "evidence_id": "met-user-service-request_rate-1230-1300",
+          "strength": "weak",
+          "note": "Flat user-service traffic means the cache-miss increase is not from more requests; not contradictory alone but caps the magnitude explanation",
+          "exists": true,
+          "label": "OBSERVED EVIDENCE",
+          "description": "user-service request_rate: baseline 495.63 -> window mean 491.85 (max 525.87, change -0.8%), onset none detected"
+        }
+      ],
+      "missing_evidence": [
+        "Redis memory trend before 12:43 (did used_memory grow gradually, and why)",
+        "Redis key count/key-size breakdown for user-profile keys",
+        "Postgres per-caller or pg_stat_statements breakdown confirming users SELECTs dominate the added load",
+        "Redis-side cause of memory growth (what wrote new keys)"
+      ],
+      "critic_decision": "accept"
+    },
+    {
+      "rank": 2,
+      "hypothesis_id": "H2",
+      "category": "configuration_regression",
+      "culprit_service": "user-service",
+      "description": "The feature flag feature.profile_v2_cache enabled at 12:10Z (OPS-2229) changed user-service cache behaviour, increasing cached key volume or churn, which pushed Redis into memory pressure and evictions, leading to the DB fallback chain. Mechanism: Flag flipped true 12:10 -> v2 profile cache writes more/larger keys (or different key patterns) -> redis used_memory climbs toward 8G maxmemory -> LRU evictions from 12:43 -> hit-rate collapse -> Postgres fallback load from 12:45 -> user-service and payment latency.",
+      "confidence": 0.0,
+      "confidence_explanation": [
+        "base 0.10",
+        "+0.08 corroboration across >=2 independent source types",
+        "+0.28 supporting evidence (3 refs, reliability-weighted, capped)",
+        "-0.20 contradicting evidence (2 refs, capped 0.45)",
+        "+0.08 proposed cause (12:10) precedes/coincides with first observed anomaly (12:44)",
+        "-0.06 3 acknowledged evidence gaps",
+        "-0.40 critic review adjustment",
+        "= 0.00 (evidence-strength score, not a calibrated probability)"
+      ],
+      "supporting_evidence": [
+        {
+          "evidence_id": "cfg-b6fe4aaf",
+          "strength": "moderate",
+          "note": "Only config change in the 2h pre-incident window on the user-service cache path",
+          "exists": true,
+          "label": "CONFIRMED FACT",
+          "description": "Config change on user-service: feature.profile_v2_cache false -> true at 2026-09-23T12:10:00Z (OPS-2229)"
+        },
+        {
+          "evidence_id": "met-redis-p95_latency_ms-1230-1300",
+          "strength": "weak",
+          "note": "Redis anomalies begin at 12:43-12:44, shortly after the flag change window",
+          "exists": true,
+          "label": "OBSERVED EVIDENCE",
+          "description": "redis p95_latency_ms: baseline 1.49 -> window mean 12.9 (max 27.89, change 765.6%), onset 2026-09-23T12:44:00Z"
+        },
+        {
+          "evidence_id": "logpat-redis-4b4f360d",
+          "strength": "weak",
+          "note": "Memory-pressure evictions are the mechanism that would be affected by a cache-volume change",
+          "exists": true,
+          "label": "OBSERVED EVIDENCE",
+          "description": "6x WARN on redis: 'Evicting keys: used_memory 7.970G reached maxmemory 8G (policy allkeys-lru), evicted_keys=1870233' (first 2026-09-23T12:43:15Z, last 2026-09-23T12:57:49Z)"
+        }
+      ],
+      "contradicting_evidence": [
+        {
+          "evidence_id": "met-redis-request_rate-1230-1300",
+          "strength": "moderate",
+          "note": "No change in redis request rate at 12:10 or 12:43 is recorded, which a new cache write pattern would likely show; no 12:10 anomaly recorded in redis metrics",
+          "exists": true,
+          "label": "OBSERVED EVIDENCE",
+          "description": "redis request_rate: baseline 6007.51 -> window mean 5969.76 (max 6495.82, change -0.6%), onset none detected"
+        },
+        {
+          "evidence_id": "logpat-redis-4b4f360d",
+          "strength": "weak",
+          "note": "Evictions begin 33 minutes after the flag change; no evidence the flag caused a memory step at 12:10",
+          "exists": true,
+          "label": "OBSERVED EVIDENCE",
+          "description": "6x WARN on redis: 'Evicting keys: used_memory 7.970G reached maxmemory 8G (policy allkeys-lru), evicted_keys=1870233' (first 2026-09-23T12:43:15Z, last 2026-09-23T12:57:49Z)"
+        }
+      ],
+      "missing_evidence": [
+        "Redis metrics between 12:10Z and 12:43Z showing memory growth correlated with the flag",
+        "Confirmation of what the flag changes in cache key layout or TTL",
+        "Whether any user-service latency or error changes occurred at 12:10Z"
+      ],
+      "critic_decision": "reject"
+    },
+    {
+      "rank": 3,
+      "hypothesis_id": "H3",
+      "category": "resource_saturation",
+      "culprit_service": "postgres",
+      "description": "Postgres itself is saturated or has a degraded users-table access path (e.g., missing or unused index on users.id, plan regression, or lock/IO contention), so the normal 'SELECT * FROM users WHERE id' becomes 25-30 s and CPU rises, independent of Redis eviction. Mechanism: Some change or data growth makes the users lookup expensive -> each query consumes CPU and holds connections -> connection utilisation climbs to 92% -> user-service queries exceed the 2 s timeout -> user-service p95/errors rise, and the extra cache-miss traffic amplifies the saturation.",
+      "confidence": 0.0,
+      "confidence_explanation": [
+        "base 0.10",
+        "+0.08 corroboration across >=2 independent source types",
+        "+0.40 supporting evidence (4 refs, reliability-weighted, capped)",
+        "-0.35 contradicting evidence (3 refs, capped 0.45)",
+        "+0.08 proposed cause (12:45) precedes/coincides with first observed anomaly (12:44)",
+        "-0.06 3 acknowledged evidence gaps",
+        "-0.40 critic review adjustment",
+        "= 0.00 (evidence-strength score, not a calibrated probability)"
+      ],
+      "supporting_evidence": [
+        {
+          "evidence_id": "logpat-postgres-cee9c952",
+          "strength": "moderate",
+          "note": "Users SELECT durations 25-30 s from 12:46:04, consistent with a query-plan or index issue",
+          "exists": true,
+          "label": "OBSERVED EVIDENCE",
+          "description": "5x WARN on postgres: 'duration: 26410 ms statement: SELECT * FROM users WHERE id = $1' (first 2026-09-23T12:46:04Z, last 2026-09-23T12:59:11Z)"
+        },
+        {
+          "evidence_id": "met-postgres-cpu_pct-1230-1300",
+          "strength": "moderate",
+          "note": "Sustained CPU rise to 95% at 12:55",
+          "exists": true,
+          "label": "OBSERVED EVIDENCE",
+          "description": "postgres cpu_pct: baseline 35.46 -> window mean 60.47 (max 95.48, change 70.5%), onset 2026-09-23T12:45:00Z"
+        },
+        {
+          "evidence_id": "met-postgres-db_conn_util_pct-1230-1300",
+          "strength": "weak",
+          "note": "Connection utilisation saturation to 92%",
+          "exists": true,
+          "label": "OBSERVED EVIDENCE",
+          "description": "postgres db_conn_util_pct: baseline 39.95 -> window mean 59.91 (max 92.25, change 50.0%), onset 2026-09-23T12:46:00Z"
+        },
+        {
+          "evidence_id": "logpat-postgres-44883ca5",
+          "strength": "weak",
+          "note": "report_rollup() slow statements at 12:32-12:35 show Postgres was already slow before the CPU onset",
+          "exists": true,
+          "label": "OBSERVED EVIDENCE",
+          "description": "2x WARN on postgres: 'duration: 15902 ms statement: SELECT report_rollup()' (first 2026-09-23T12:32:44Z, last 2026-09-23T12:35:26Z)"
+        }
+      ],
+      "contradicting_evidence": [
+        {
+          "evidence_id": "met-postgres-request_rate-1230-1300",
+          "strength": "moderate",
+          "note": "Request rate more than doubled at 12:45; the CPU rise is coincident with a volume change, not explained by a query alone",
+          "exists": true,
+          "label": "OBSERVED EVIDENCE",
+          "description": "postgres request_rate: baseline 2496.81 -> window mean 5524.48 (max 9622.76, change 121.3%), onset 2026-09-23T12:45:00Z"
+        },
+        {
+          "evidence_id": "met-redis-p95_latency_ms-1230-1300",
+          "strength": "moderate",
+          "note": "Redis anomaly starts at 12:43-12:44, before Postgres CPU, so Postgres was not the first anomaly",
+          "exists": true,
+          "label": "OBSERVED EVIDENCE",
+          "description": "redis p95_latency_ms: baseline 1.49 -> window mean 12.9 (max 27.89, change 765.6%), onset 2026-09-23T12:44:00Z"
+        },
+        {
+          "evidence_id": "met-postgres-p95_latency_ms-1230-1300",
+          "strength": "weak",
+          "note": "Postgres p95 metric flat, which does not show a 25-30 s regime; metric may be incomplete",
+          "exists": true,
+          "label": "OBSERVED EVIDENCE",
+          "description": "postgres p95_latency_ms: baseline 11.97 -> window mean 12.14 (max 13.2, change 1.4%), onset none detected"
+        }
+      ],
+      "missing_evidence": [
+        "Schema/index change history for users table (none returned)",
+        "pg_stat_statements / EXPLAIN plans for the users lookup",
+        "Lock-wait and active-session data (only log grep done, none found)"
+      ],
+      "critic_decision": "reject"
+    },
+    {
+      "rank": 4,
+      "hypothesis_id": "H4",
+      "category": "unknown",
+      "culprit_service": "postgres",
+      "description": "Caller-driven load from a non-user-service client (e.g., report_rollup jobs or auth/order/payment queries) is driving the Postgres CPU rise; user-service fallback is a downstream effect rather than the cause. Mechanism: A batch or report workload (report_rollup, seen at 12:32-12:35 and possibly ongoing) or an unidentified caller increases Postgres request rate and CPU from 12:45 -> connection pool and CPU contention slow the users lookups -> user-service timeouts and cache-miss fallback.",
+      "confidence": 0.0,
+      "confidence_explanation": [
+        "base 0.10",
+        "+0.08 corroboration across >=2 independent source types",
+        "+0.32 supporting evidence (2 refs, reliability-weighted, capped)",
+        "-0.20 contradicting evidence (2 refs, capped 0.45)",
+        "+0.08 proposed cause (12:32) precedes/coincides with first observed anomaly (12:44)",
+        "-0.04 2 acknowledged evidence gaps",
+        "-0.40 critic review adjustment",
+        "= 0.00 (evidence-strength score, not a calibrated probability)"
+      ],
+      "supporting_evidence": [
+        {
+          "evidence_id": "logpat-postgres-44883ca5",
+          "strength": "moderate",
+          "note": "report_rollup() slow executions precede the CPU onset",
+          "exists": true,
+          "label": "OBSERVED EVIDENCE",
+          "description": "2x WARN on postgres: 'duration: 15902 ms statement: SELECT report_rollup()' (first 2026-09-23T12:32:44Z, last 2026-09-23T12:35:26Z)"
+        },
+        {
+          "evidence_id": "met-postgres-request_rate-1230-1300",
+          "strength": "moderate",
+          "note": "Postgres request rate step at 12:45 while user-service request rate flat, so load may come from other callers",
+          "exists": true,
+          "label": "OBSERVED EVIDENCE",
+          "description": "postgres request_rate: baseline 2496.81 -> window mean 5524.48 (max 9622.76, change 121.3%), onset 2026-09-23T12:45:00Z"
+        }
+      ],
+      "contradicting_evidence": [
+        {
+          "evidence_id": "met-auth-service-request_rate-1220-1315",
+          "strength": "moderate",
+          "note": "Auth, order and payment request rates flat; no caller-side traffic increase is visible, which weakens external-caller load",
+          "exists": true,
+          "label": "OBSERVED EVIDENCE",
+          "description": "auth-service request_rate: baseline 910.8 -> window mean 899.1 (max 987.02, change -1.3%), onset none detected"
+        },
+        {
+          "evidence_id": "met-order-service-request_rate-1220-1315",
+          "strength": "weak",
+          "note": "Order-service request rate flat at 12:45-12:50",
+          "exists": true,
+          "label": "OBSERVED EVIDENCE",
+          "description": "order-service request_rate: baseline 245.04 -> window mean 248.51 (max 275.25, change 1.4%), onset none detected"
+        }
+      ],
+      "missing_evidence": [
+        "Per-caller breakdown of Postgres connections/queries",
+        "Whether report_rollup runs on a schedule and when it ran at 12:45-12:50"
+      ],
+      "critic_decision": "reject"
+    }
+  ],
+  "critic_review": {
+    "verdict": "APPROVED",
+    "summary": "H1 (Redis memory pressure and LRU eviction causing a cache-miss fallback storm on Postgres) is well supported. Redis memory was flat at about 53-60% through 12:25, then ramped to 74% at 12:35, 95% at 12:40 and 100% at 12:45, with evictions logged from 12:43:15. Hit rate held at about 95% until 12:40 and dropped to 71.7% at 12:45. Postgres request rate and CPU stepped at 12:45, and user-service request rate was flat, so the added Postgres load is consistent with cache-miss reads. Slow users SELECTs and payment latency follow. H2 is contradicted: redis memory and hit rate show no step at 12:10 when the flag flipped, and the memory ramp starts about 20 minutes later. H3 is contradicted as the primary cause: Postgres p95 is flat, the Redis anomaly precedes the Postgres CPU onset, and the Postgres load step tracks the hit-rate drop. H4 is contradicted: auth, order and payment request rates are flat, and report_rollup ran at 12:32-12:35 with no matching Postgres latency change. Limitation: what drove the Redis memory ramp from 12:30 (which writers added keys) is not identified. That is a deeper trigger outside this round's scope and should be followed up, but it does not undermine the cache-degradation category.",
+    "assessments": [
+      {
+        "hypothesis_id": "H1",
+        "decision": "accept",
+        "reasoning": "Redis memory ramp (12:30 to 100% at 12:45), evictions from 12:43:15, hit-rate drop at 12:45, Postgres request-rate and CPU step at 12:45 with flat user-service traffic, and downstream latency all follow in the right order. The memory growth trigger is unexplained, which is a limitation rather than a reason to reject."
+      },
+      {
+        "hypothesis_id": "H2",
+        "decision": "reject",
+        "reasoning": "Redis memory was flat around 55-60% across 12:10 and showed no step at the flag change. The memory ramp only begins around 12:30. Redis request rate is flat at 12:10 too. The flag is not supported as the cause."
+      },
+      {
+        "hypothesis_id": "H3",
+        "decision": "reject",
+        "reasoning": "Postgres p95 is flat and the Redis anomaly starts before the Postgres CPU onset. The request-rate step at 12:45 aligns with the hit-rate collapse, so the load is explained by cache misses rather than an intrinsic users-table access regression. No index or plan change was found. It may be a secondary amplifier, but not the primary cause."
+      },
+      {
+        "hypothesis_id": "H4",
+        "decision": "reject",
+        "reasoning": "Auth, order and payment request rates are flat through 12:45-12:50. report_rollup ran only at 12:32-12:35, before the onset, and Postgres latency did not change then. No external caller increase is visible."
+      }
+    ],
+    "precheck_issues": [
+      {
+        "hypothesis_id": "H2",
+        "check": "culprit_symptom",
+        "severity": "warning",
+        "detail": "no log/metric evidence cited for culprit user-service"
+      }
+    ],
+    "unsupported_assumptions": [],
+    "alternative_explanations": [],
+    "evidence_requests": [],
+    "round": 1,
+    "rounds_reviewed": 1
+  },
+  "evidence_gaps": [],
+  "probable_root_cause": {
+    "hypothesis_id": "H1",
+    "category": "cache_degradation",
+    "culprit_service": "redis",
+    "description": "Redis memory pressure (maxmemory 8G, allkeys-lru) began evicting user-profile cache keys, causing cache misses that fall back to Postgres 'SELECT * FROM users WHERE id' and overload the DB, which in turn slows user-service and payment-service.",
+    "confidence": 0.88,
+    "label": "ROOT CAUSE IDENTIFIED (critic-approved; still an INFERENCE from evidence)"
+  },
+  "root_cause_statement": "ROOT CAUSE IDENTIFIED (critic-approved; still an INFERENCE from evidence): cache_degradation in redis - Redis memory pressure (maxmemory 8G, allkeys-lru) began evicting user-profile cache keys, causing cache misses that fall back to Postgres 'SELECT * FROM users WHERE id' and overload the DB, which in turn slows user-service and payment-service.",
+  "corrective_actions": [
+    "Immediately reduce Redis memory pressure: identify and evict or expire non-essential large key sets, or temporarily raise maxmemory if host capacity allows, to stop LRU evictions of user-profile keys (logpat-redis-4b4f360d).",
+    "Restore the Redis hit rate for user-profile keys (cache_hit_rate was 37.6% at 12:50Z) by warming or repopulating the most-requested profile keys, which relieves Postgres load (met-redis-cache_hit_rate-1230-1300).",
+    "Reduce Postgres pressure while the cache recovers: apply temporary connection or rate limits on user-service DB fallbacks, and monitor CPU (currently about 60%) and users-table SELECT latency.",
+    "Keep the feature flag feature.profile_v2_cache at its current state until the Redis memory ramp is understood; a rollback decision should be based on evidence, since H2 was rejected (cfg-b6fe4aaf)."
+  ],
+  "preventive_actions": [
+    "Identify which writers drove the Redis memory ramp that began around 12:30Z (memory went from about 53-60% to 74% at 12:35, 95% at 12:40, and 100% at 12:45). This is an open follow-up outside the scope of this investigation and is not yet established.",
+    "Size Redis maxmemory and key TTL policies for peak working set, and avoid allkeys-lru eviction of user-profile keys. Consider a separate Redis instance or eviction policy for critical cache data.",
+    "Add a fallback safeguard in user-service so cache-miss storms are rate-limited or coalesced (single-flight), rather than sending unbounded reads to Postgres.",
+    "Add an index and query-plan review for the users table lookup by id to confirm the normal path stays fast under fallback load. This is a precaution; H3 was rejected as the primary cause."
+  ],
+  "monitoring_recommendations": [
+    "Alert on Redis used_memory above 85% of maxmemory and on any evicted_keys increase (logpat-redis-4b4f360d).",
+    "Alert on Redis cache_hit_rate below 90% sustained for 2 minutes, and on Redis p95 latency above 5 ms (baseline about 1.5 ms).",
+    "Alert on Postgres request_rate more than 1.5x baseline and on Postgres CPU above 50% sustained for 5 minutes.",
+    "Track user-service logs for 'Cache miss for user profile' WARN rate and users-table SELECT duration, and alert on sustained increases.",
+    "Monitor payment-service p95 latency with an alert above 300 ms to catch downstream impact early."
+  ],
+  "limitations": [
+    "Confidence values are rule-based evidence-strength scores, not calibrated probabilities.",
+    "Investigation terminated because: critic verdict APPROVED"
+  ],
+  "final_status": "ROOT_CAUSE_IDENTIFIED",
+  "conclusion": "The most probable root cause of INC-008 is Redis memory pressure at its 8G maxmemory limit under allkeys-lru, which evicted user-profile cache keys. The resulting cache-miss fallbacks overloaded Postgres, slowing user-service and, by inference, payment-service. The root cause is identified at confidence 0.88. The config change (feature.profile_v2_cache, OPS-2229) and a Postgres-internal or non-user-service load cause were both rejected by the evidence. The DBA's bad-query theory is not supported. The open item is what drove the Redis memory ramp from about 12:30Z, which should be investigated as a follow-up.",
+  "statistics": {
+    "rounds": 1,
+    "tool_calls": 19,
+    "tool_failures": 0,
+    "tool_retries": 0,
+    "partial_results": 0,
+    "agent_failures": 0,
+    "agent_retries": 0,
+    "invalid_llm_outputs": 0,
+    "messages_exchanged": 17,
+    "evidence_records": 70,
+    "duration_s": 66.11,
+    "tokens": {
+      "input_tokens": 40,
+      "output_tokens": 19465,
+      "cache_read_tokens": 26475,
+      "cache_write_tokens": 51706,
+      "llm_calls": 13,
+      "cost_usd": 0.016464500000000003
+    },
+    "tokens_by_agent": {
+      "orchestrator": {
+        "input_tokens": 6,
+        "output_tokens": 1014,
+        "cache_read_tokens": 1322,
+        "cache_write_tokens": 2003,
+        "llm_calls": 2,
+        "cost_usd": 0.0007711949999999999
+      },
+      "dependency": {
+        "input_tokens": 6,
+        "output_tokens": 1302,
+        "cache_read_tokens": 3168,
+        "cache_write_tokens": 4016,
+        "llm_calls": 2,
+        "cost_usd": 0.00118528
+      },
+      "observability": {
+        "input_tokens": 14,
+        "output_tokens": 8027,
+        "cache_read_tokens": 13022,
+        "cache_write_tokens": 20454,
+        "llm_calls": 5,
+        "cost_usd": 0.0067018699999999995
+      },
+      "reasoning": {
+        "input_tokens": 4,
+        "output_tokens": 5101,
+        "cache_read_tokens": 0,
+        "cache_write_tokens": 11124,
+        "llm_calls": 1,
+        "cost_usd": 0.0039414
+      },
+      "critic": {
+        "input_tokens": 6,
+        "output_tokens": 2270,
+        "cache_read_tokens": 8963,
+        "cache_write_tokens": 10348,
+        "llm_calls": 2,
+        "cost_usd": 0.0025187300000000003
+      },
+      "reporting": {
+        "input_tokens": 4,
+        "output_tokens": 1751,
+        "cache_read_tokens": 0,
+        "cache_write_tokens": 3761,
+        "llm_calls": 1,
+        "cost_usd": 0.001346025
+      }
+    }
+  }
+}

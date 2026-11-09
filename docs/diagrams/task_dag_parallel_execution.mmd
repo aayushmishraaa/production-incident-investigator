@@ -1,0 +1,12 @@
+flowchart LR
+    subgraph Round1[round 1]
+      O1[observability task] --> R1[reasoning]
+      D1[dependency task] --> R1
+      R1 --> C1[critic]
+    end
+    C1 -- NEEDS_MORE_EVIDENCE --> F2[follow-up tasks<br/>depends_on critic]
+    subgraph Round2[round 2]
+      F2 --> R2[reasoning] --> C2[critic]
+    end
+    C1 -- approved/inconclusive --> REP[reporting]
+    C2 --> REP

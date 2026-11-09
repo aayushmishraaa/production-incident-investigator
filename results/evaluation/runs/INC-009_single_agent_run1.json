@@ -1,0 +1,279 @@
+{
+  "investigation_id": "inv-5247f94cf2",
+  "system": "single_agent",
+  "incident_id": "INC-009",
+  "title": "User API errors during morning peak",
+  "severity": "SEV2",
+  "affected_services": [
+    "api-gateway",
+    "user-service"
+  ],
+  "start_time": "2026-09-26T08:00:00+00:00",
+  "executive_summary": "User API errors during the morning peak (INC-009) began at 07:57-08:00Z, coinciding with the user-service 7.1.3 -> 7.2.0 deployment at 07:56Z (switch ORM to batch loader). user-service error rate rose from ~0.4% to ~23% and api-gateway 5xx rose from ~0.5% to ~7.8%. Logs show a NullPointerException in ProfileBatchLoader.load on v7.2.0 starting 07:57:17Z, consistent with the deployment as the cause. Latency, DB connection utilization, timeouts and request rate were flat, so this is not a capacity or traffic problem.",
+  "timeline": [
+    {
+      "time": "2026-09-26T07:32:16Z",
+      "label": "OBSERVED EVIDENCE",
+      "event": "First log: 3x WARN on postgres: 'duration: 19702 ms statement: SELECT report_rollup()' (first 2026-09-26T07:32:16Z, last 2026-09-26T08:21:19Z)",
+      "evidence_id": "logpat-postgres-44883ca5"
+    },
+    {
+      "time": "2026-09-26T07:33:45Z",
+      "label": "OBSERVED EVIDENCE",
+      "event": "First log: 3x WARN on order-service: 'Inventory reservation retry for sku-69' (first 2026-09-26T07:33:45Z, last 2026-09-26T08:16:55Z)",
+      "evidence_id": "logpat-order-service-95abd1bb"
+    },
+    {
+      "time": "2026-09-26T07:35:33Z",
+      "label": "OBSERVED EVIDENCE",
+      "event": "First log: 4x WARN on user-service: 'Deprecated API /v1/users/legacy called by client web-74' (first 2026-09-26T07:35:33Z, last 2026-09-26T08:16:20Z)",
+      "evidence_id": "logpat-user-service-742b555e"
+    },
+    {
+      "time": "2026-09-26T07:56:00Z",
+      "label": "CONFIRMED FACT",
+      "event": "Deployment of user-service 7.1.3->7.2.0 at 2026-09-26T07:56:00Z (SUCCEEDED): Switch ORM to batch loader",
+      "evidence_id": "dep-c02e51b7"
+    },
+    {
+      "time": "2026-09-26T07:57:00Z",
+      "label": "OBSERVED EVIDENCE",
+      "event": "Anomaly onset: user-service error_rate: baseline 0.41 -> window mean 12.5 (max 26.11, change 2984.9%), onset 2026-09-26T07:57:00Z",
+      "evidence_id": "met-user-service-error_rate-0730-0825"
+    },
+    {
+      "time": "2026-09-26T07:57:00Z",
+      "label": "OBSERVED EVIDENCE",
+      "event": "Anomaly onset: api-gateway error_rate: baseline 0.5 -> window mean 4.25 (max 8.65, change 747.7%), onset 2026-09-26T07:57:00Z",
+      "evidence_id": "met-api-gateway-error_rate-0730-0825"
+    },
+    {
+      "time": "2026-09-26T07:57:17Z",
+      "label": "OBSERVED EVIDENCE",
+      "event": "First log: 10x ERROR on user-service: 'NullPointerException in ProfileBatchLoader.load (user-service v7.2.0) req 18' (first 2026-09-26T07:57:17Z, last 2026-09-26T08:20:12Z)",
+      "evidence_id": "logpat-user-service-2347725d"
+    },
+    {
+      "time": "2026-09-26T08:00:00Z",
+      "label": "CONFIRMED FACT",
+      "event": "Reported symptom start",
+      "evidence_id": null
+    },
+    {
+      "time": "2026-09-26T08:00:08Z",
+      "label": "OBSERVED EVIDENCE",
+      "event": "First log: 6x WARN on api-gateway: 'user-service returned 500 for GET /v1/users/23' (first 2026-09-26T08:00:08Z, last 2026-09-26T08:18:48Z)",
+      "evidence_id": "logpat-api-gateway-c1d874f7"
+    },
+    {
+      "time": "2026-09-26T08:06:00Z",
+      "label": "CONFIRMED FACT",
+      "event": "Incident reported",
+      "evidence_id": null
+    }
+  ],
+  "observed_symptoms": [
+    {
+      "label": "OBSERVED EVIDENCE",
+      "statement": "user-service error_rate: baseline 0.41 -> window mean 12.5 (max 26.11, change 2984.9%), onset 2026-09-26T07:57:00Z",
+      "evidence_ids": [
+        "met-user-service-error_rate-0730-0825"
+      ]
+    },
+    {
+      "label": "OBSERVED EVIDENCE",
+      "statement": "api-gateway error_rate: baseline 0.5 -> window mean 4.25 (max 8.65, change 747.7%), onset 2026-09-26T07:57:00Z",
+      "evidence_ids": [
+        "met-api-gateway-error_rate-0730-0825"
+      ]
+    }
+  ],
+  "investigation_performed": [],
+  "hypotheses": [
+    {
+      "rank": 1,
+      "hypothesis_id": "H1",
+      "category": "deployment_regression",
+      "culprit_service": "user-service",
+      "description": "Regression in user-service v7.2.0 (ORM batch loader change) causes NullPointerException in ProfileBatchLoader.load, producing HTTP 500s that api-gateway surfaces to users. Mechanism: Deployment at 07:56Z introduces batch loader; some requests hit a null in ProfileBatchLoader.load, throwing NPE and returning 500. user-service error rate jumps at 07:57-08:00; api-gateway error rate follows at 08:00 as it proxies the 500s.",
+      "confidence": 0.8,
+      "confidence_explanation": [
+        "self-reported by the single agent"
+      ],
+      "supporting_evidence": [
+        {
+          "evidence_id": "dep-c02e51b7",
+          "strength": "strong",
+          "note": "Deployment 7.1.3->7.2.0 at 07:56Z, 1 minute before error onset",
+          "exists": true,
+          "label": "CONFIRMED FACT",
+          "description": "Deployment of user-service 7.1.3->7.2.0 at 2026-09-26T07:56:00Z (SUCCEEDED): Switch ORM to batch loader"
+        },
+        {
+          "evidence_id": "met-user-service-error_rate-0730-0825",
+          "strength": "strong",
+          "note": "Error rate 0.41% baseline -> ~23% from 08:00; onset 07:57",
+          "exists": true,
+          "label": "OBSERVED EVIDENCE",
+          "description": "user-service error_rate: baseline 0.41 -> window mean 12.5 (max 26.11, change 2984.9%), onset 2026-09-26T07:57:00Z"
+        },
+        {
+          "evidence_id": "logpat-user-service-2347725d",
+          "strength": "strong",
+          "note": "10 NPEs in ProfileBatchLoader.load on v7.2.0, first 07:57:17Z, only on new version",
+          "exists": true,
+          "label": "OBSERVED EVIDENCE",
+          "description": "10x ERROR on user-service: 'NullPointerException in ProfileBatchLoader.load (user-service v7.2.0) req 18' (first 2026-09-26T07:57:17Z, last 2026-09-26T08:20:12Z)"
+        },
+        {
+          "evidence_id": "met-api-gateway-error_rate-0730-0825",
+          "strength": "moderate",
+          "note": "Gateway error rate rises at same time as user-service, consistent with propagation",
+          "exists": true,
+          "label": "OBSERVED EVIDENCE",
+          "description": "api-gateway error_rate: baseline 0.5 -> window mean 4.25 (max 8.65, change 747.7%), onset 2026-09-26T07:57:00Z"
+        },
+        {
+          "evidence_id": "logpat-api-gateway-c1d874f7",
+          "strength": "moderate",
+          "note": "Gateway logs user-service returning 500 starting 08:00:08Z",
+          "exists": true,
+          "label": "OBSERVED EVIDENCE",
+          "description": "6x WARN on api-gateway: 'user-service returned 500 for GET /v1/users/23' (first 2026-09-26T08:00:08Z, last 2026-09-26T08:18:48Z)"
+        }
+      ],
+      "contradicting_evidence": [
+        {
+          "evidence_id": "met-user-service-p99_latency_ms-0730-0825",
+          "strength": "weak",
+          "note": "No latency change, so failures are fast errors rather than timeouts; not contradictory but limits the picture",
+          "exists": true,
+          "label": "OBSERVED EVIDENCE",
+          "description": "user-service p99_latency_ms: baseline 158.68 -> window mean 159.8 (max 170.4, change 0.7%), onset none detected"
+        }
+      ],
+      "missing_evidence": [
+        "Per-endpoint error breakdown and fraction of requests hitting the batch loader",
+        "Log query was partial; the 13 omitted records could change counts",
+        "No code diff of 7.2.0 reviewed",
+        "No rollback test performed"
+      ],
+      "critic_decision": null
+    },
+    {
+      "rank": 2,
+      "hypothesis_id": "H2",
+      "category": "resource_saturation",
+      "culprit_service": "postgres",
+      "description": "Slow report_rollup() queries in postgres create DB contention affecting user-service. Mechanism: Long-running SELECT report_rollup() (16-20s) could hold locks or consume I/O, slowing user queries.",
+      "confidence": 0.1,
+      "confidence_explanation": [
+        "self-reported by the single agent"
+      ],
+      "supporting_evidence": [
+        {
+          "evidence_id": "logpat-postgres-44883ca5",
+          "strength": "weak",
+          "note": "Slow report_rollup starts 07:32, 25 min before error onset",
+          "exists": true,
+          "label": "OBSERVED EVIDENCE",
+          "description": "3x WARN on postgres: 'duration: 19702 ms statement: SELECT report_rollup()' (first 2026-09-26T07:32:16Z, last 2026-09-26T08:21:19Z)"
+        }
+      ],
+      "contradicting_evidence": [
+        {
+          "evidence_id": "met-user-service-db_conn_util_pct-0730-0825",
+          "strength": "strong",
+          "note": "DB connection utilization flat (~30%) across the window",
+          "exists": true,
+          "label": "OBSERVED EVIDENCE",
+          "description": "user-service db_conn_util_pct: baseline 29.75 -> window mean 30.18 (max 33.82, change 1.4%), onset none detected"
+        },
+        {
+          "evidence_id": "met-user-service-p99_latency_ms-0730-0825",
+          "strength": "moderate",
+          "note": "No latency increase in user-service",
+          "exists": true,
+          "label": "OBSERVED EVIDENCE",
+          "description": "user-service p99_latency_ms: baseline 158.68 -> window mean 159.8 (max 170.4, change 0.7%), onset none detected"
+        }
+      ],
+      "missing_evidence": [
+        "postgres metrics not queried",
+        "lock/wait data not available"
+      ],
+      "critic_decision": null
+    }
+  ],
+  "critic_review": {
+    "verdict": "NOT_RUN",
+    "rounds_reviewed": 0
+  },
+  "evidence_gaps": [
+    "[UNKNOWN] query_logs returned incomplete data for all (PARTIAL_DATA)"
+  ],
+  "probable_root_cause": {
+    "hypothesis_id": "H1",
+    "category": "deployment_regression",
+    "culprit_service": "user-service",
+    "description": "Regression in user-service v7.2.0 (ORM batch loader change) causes NullPointerException in ProfileBatchLoader.load, producing HTTP 500s that api-gateway surfaces to users.",
+    "confidence": 0.8,
+    "label": "MOST PROBABLE EXPLANATION (INFERENCE, not confirmed)"
+  },
+  "root_cause_statement": "MOST PROBABLE EXPLANATION (INFERENCE, not confirmed): deployment_regression in user-service - Regression in user-service v7.2.0 (ORM batch loader change) causes NullPointerException in ProfileBatchLoader.load, producing HTTP 500s that api-gateway surfaces to users.",
+  "corrective_actions": [
+    "Roll back user-service from 7.2.0 to 7.1.3 (verify error rate recovers in gateway and user-service)",
+    "Hotfix the null handling in ProfileBatchLoader.load before redeploying"
+  ],
+  "preventive_actions": [
+    "Add pre-prod/canary tests covering null inputs for batch loader paths",
+    "Gate deployments on error-rate canary comparison"
+  ],
+  "monitoring_recommendations": [
+    "Alert on user-service error rate > 2% within 5 minutes of any deployment",
+    "Track NullPointerException count per version"
+  ],
+  "limitations": [
+    "Historical analogy (hist-HIST-2025-022) has low similarity (0.319) and is not evidence",
+    "Logs were partial",
+    "[agent-reported gap] Log query was partial (13 records omitted); counts may be understated",
+    "[agent-reported gap] Postgres service metrics were not queried",
+    "[agent-reported gap] No per-endpoint breakdown of failing requests",
+    "0 tool calls failed and 1 returned partial data; affected areas are treated as unknown, not healthy.",
+    "Confidence values are rule-based evidence-strength scores, not calibrated probabilities.",
+    "Investigation terminated because: agent submitted"
+  ],
+  "final_status": "PROBABLE_ROOT_CAUSE",
+  "conclusion": "Most likely root cause is the user-service 7.2.0 deployment (ProfileBatchLoader NPE) causing 500s that propagate through api-gateway. Rollback is the recommended immediate action. Status is probable rather than confirmed because the log query was incomplete and the code change was not reviewed.",
+  "statistics": {
+    "rounds": 1,
+    "tool_calls": 10,
+    "tool_failures": 3,
+    "tool_retries": 3,
+    "partial_results": 1,
+    "agent_failures": 0,
+    "agent_retries": 0,
+    "invalid_llm_outputs": 0,
+    "messages_exchanged": 0,
+    "evidence_records": 50,
+    "duration_s": 17.28,
+    "tokens": {
+      "input_tokens": 8,
+      "output_tokens": 3287,
+      "cache_read_tokens": 20015,
+      "cache_write_tokens": 7489,
+      "llm_calls": 3,
+      "cost_usd": 0.0027805750000000004
+    },
+    "tokens_by_agent": {
+      "single_agent": {
+        "input_tokens": 8,
+        "output_tokens": 3287,
+        "cache_read_tokens": 20015,
+        "cache_write_tokens": 7489,
+        "llm_calls": 3,
+        "cost_usd": 0.0027805750000000004
+      }
+    }
+  }
+}

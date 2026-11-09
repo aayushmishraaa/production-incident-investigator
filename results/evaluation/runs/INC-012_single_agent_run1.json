@@ -1,0 +1,302 @@
+{
+  "investigation_id": "inv-36a8b654e4",
+  "system": "single_agent",
+  "incident_id": "INC-012",
+  "title": "Payment connection pool timeouts",
+  "severity": "SEV2",
+  "affected_services": [
+    "payment-service"
+  ],
+  "start_time": "2026-10-05T10:10:00+00:00",
+  "executive_summary": "payment-service's DB connection pool (payment-db-pool) was cut from max_size 50 to 10 by a config change at 10:04Z (cfg-56d39584, config-bot, OPS-2669). Pool utilisation hit 100% from 10:05-10:10, and the pool timeout errors began at 10:06, with error rate rising from ~0.8% to ~17% and timeouts from ~0.1% to ~12%. The pool-exhaustion symptom is therefore consistent with the config change, and it precedes the errors. It does not look like last year's connection leak: Postgres connection utilisation dropped rather than rose. The reported latency increase is not visible in the p99 metric (flat at ~300ms), so the impact is errors/timeouts rather than latency.",
+  "timeline": [
+    {
+      "time": "2026-10-05T09:45:26Z",
+      "label": "OBSERVED EVIDENCE",
+      "event": "First log: 7x WARN on payment-service: 'Card network soft decline (code 05) for charge ch_98' (first 2026-10-05T09:45:26Z, last 2026-10-05T10:22:54Z)",
+      "evidence_id": "logpat-payment-service-7e9bf84f"
+    },
+    {
+      "time": "2026-10-05T10:04:00Z",
+      "label": "CONFIRMED FACT",
+      "event": "Config change on payment-service: db.pool.max_size 50 -> 10 at 2026-10-05T10:04:00Z (OPS-2669)",
+      "evidence_id": "cfg-56d39584"
+    },
+    {
+      "time": "2026-10-05T10:05:00Z",
+      "label": "OBSERVED EVIDENCE",
+      "event": "Anomaly onset: payment-service db_conn_util_pct: baseline 34.95 -> window mean 69.43 (max 100.0, change 98.7%), onset 2026-10-05T10:05:00Z",
+      "evidence_id": "met-payment-service-db_conn_util_pct-0940-1035"
+    },
+    {
+      "time": "2026-10-05T10:06:00Z",
+      "label": "OBSERVED EVIDENCE",
+      "event": "Anomaly onset: payment-service error_rate: baseline 0.8 -> window mean 9.17 (max 18.85, change 1040.5%), onset 2026-10-05T10:06:00Z",
+      "evidence_id": "met-payment-service-error_rate-0940-1035"
+    },
+    {
+      "time": "2026-10-05T10:06:00Z",
+      "label": "OBSERVED EVIDENCE",
+      "event": "Anomaly onset: payment-service timeout_rate: baseline 0.1 -> window mean 6.3 (max 13.3, change 6147.1%), onset 2026-10-05T10:06:00Z",
+      "evidence_id": "met-payment-service-timeout_rate-0940-1035"
+    },
+    {
+      "time": "2026-10-05T10:06:13Z",
+      "label": "OBSERVED EVIDENCE",
+      "event": "First log: 29x ERROR on payment-service: 'Timeout acquiring connection from pool payment-db-pool after 5000ms (active=10, idle=0, waiting=29)' (first 2026-10-05T10:06:13Z, last 2026-10-05T10:34:18Z)",
+      "evidence_id": "logpat-payment-service-7d1739af"
+    },
+    {
+      "time": "2026-10-05T10:10:00Z",
+      "label": "CONFIRMED FACT",
+      "event": "Reported symptom start",
+      "evidence_id": null
+    },
+    {
+      "time": "2026-10-05T10:16:00Z",
+      "label": "CONFIRMED FACT",
+      "event": "Incident reported",
+      "evidence_id": null
+    }
+  ],
+  "observed_symptoms": [
+    {
+      "label": "OBSERVED EVIDENCE",
+      "statement": "payment-service db_conn_util_pct: baseline 34.95 -> window mean 69.43 (max 100.0, change 98.7%), onset 2026-10-05T10:05:00Z",
+      "evidence_ids": [
+        "met-payment-service-db_conn_util_pct-0940-1035"
+      ]
+    },
+    {
+      "label": "OBSERVED EVIDENCE",
+      "statement": "payment-service error_rate: baseline 0.8 -> window mean 9.17 (max 18.85, change 1040.5%), onset 2026-10-05T10:06:00Z",
+      "evidence_ids": [
+        "met-payment-service-error_rate-0940-1035"
+      ]
+    },
+    {
+      "label": "OBSERVED EVIDENCE",
+      "statement": "payment-service timeout_rate: baseline 0.1 -> window mean 6.3 (max 13.3, change 6147.1%), onset 2026-10-05T10:06:00Z",
+      "evidence_ids": [
+        "met-payment-service-timeout_rate-0940-1035"
+      ]
+    }
+  ],
+  "investigation_performed": [],
+  "hypotheses": [
+    {
+      "rank": 1,
+      "hypothesis_id": "H1",
+      "category": "configuration_regression",
+      "culprit_service": "payment-service",
+      "description": "Config change reduced db.pool.max_size from 50 to 10 at 10:04Z, starving the payment DB pool under normal load. Mechanism: With max_size=10, active connections saturate at 10 with idle=0 and a growing waiting queue (up to 92). Requests then time out after 5000ms waiting for a connection, producing errors and timeouts. Postgres connection use falls at the same time, consistent with fewer client connections being opened. Request rate is unchanged, so the cause is capacity, not traffic.",
+      "confidence": 0.8,
+      "confidence_explanation": [
+        "self-reported by the single agent"
+      ],
+      "supporting_evidence": [
+        {
+          "evidence_id": "cfg-56d39584",
+          "strength": "strong",
+          "note": "db.pool.max_size 50 -> 10 at 10:04Z, 1 minute before pool utilisation rose",
+          "exists": true,
+          "label": "CONFIRMED FACT",
+          "description": "Config change on payment-service: db.pool.max_size 50 -> 10 at 2026-10-05T10:04:00Z (OPS-2669)"
+        },
+        {
+          "evidence_id": "met-payment-service-db_conn_util_pct-0940-1035",
+          "strength": "strong",
+          "note": "Baseline 35% -> window 69%, reaching 100% from 10:20; onset 10:05",
+          "exists": true,
+          "label": "OBSERVED EVIDENCE",
+          "description": "payment-service db_conn_util_pct: baseline 34.95 -> window mean 69.43 (max 100.0, change 98.7%), onset 2026-10-05T10:05:00Z"
+        },
+        {
+          "evidence_id": "logpat-payment-service-7d1739af",
+          "strength": "strong",
+          "note": "29 'Timeout acquiring connection from pool payment-db-pool' errors, active=10 idle=0 throughout, first at 10:06:13Z",
+          "exists": true,
+          "label": "OBSERVED EVIDENCE",
+          "description": "29x ERROR on payment-service: 'Timeout acquiring connection from pool payment-db-pool after 5000ms (active=10, idle=0, waiting=29)' (first 2026-10-05T10:06:13Z, last 2026-10-05T10:34:18Z)"
+        },
+        {
+          "evidence_id": "met-payment-service-error_rate-0940-1035",
+          "strength": "strong",
+          "note": "Error rate 0.8% -> 9.2% mean, onset 10:06",
+          "exists": true,
+          "label": "OBSERVED EVIDENCE",
+          "description": "payment-service error_rate: baseline 0.8 -> window mean 9.17 (max 18.85, change 1040.5%), onset 2026-10-05T10:06:00Z"
+        },
+        {
+          "evidence_id": "met-payment-service-timeout_rate-0940-1035",
+          "strength": "strong",
+          "note": "Timeout rate 0.1% -> 6.3% mean, onset 10:06",
+          "exists": true,
+          "label": "OBSERVED EVIDENCE",
+          "description": "payment-service timeout_rate: baseline 0.1 -> window mean 6.3 (max 13.3, change 6147.1%), onset 2026-10-05T10:06:00Z"
+        },
+        {
+          "evidence_id": "met-postgres-db_conn_util_pct-0940-1035",
+          "strength": "moderate",
+          "note": "Postgres connection utilisation fell 40% -> 22% from 10:07, consistent with a smaller client pool",
+          "exists": true,
+          "label": "OBSERVED EVIDENCE",
+          "description": "postgres db_conn_util_pct: baseline 39.83 -> window mean 30.56 (max 43.9, change -23.3%), onset 2026-10-05T10:07:00Z"
+        },
+        {
+          "evidence_id": "met-postgres-cpu_pct-0940-1035",
+          "strength": "weak",
+          "note": "Postgres CPU flat, so the DB is not the bottleneck",
+          "exists": true,
+          "label": "OBSERVED EVIDENCE",
+          "description": "postgres cpu_pct: baseline 35.02 -> window mean 35.11 (max 37.77, change 0.3%), onset none detected"
+        }
+      ],
+      "contradicting_evidence": [
+        {
+          "evidence_id": "met-payment-service-p99_latency_ms-0940-1035",
+          "strength": "moderate",
+          "note": "p99 latency flat (299 -> 301ms). The reported latency increase is not reproduced in this metric.",
+          "exists": true,
+          "label": "OBSERVED EVIDENCE",
+          "description": "payment-service p99_latency_ms: baseline 299.15 -> window mean 300.84 (max 325.6, change 0.6%), onset none detected"
+        },
+        {
+          "evidence_id": "met-payment-service-request_rate-0940-1035",
+          "strength": "weak",
+          "note": "Request rate unchanged, so there is no traffic surge (this supports the config explanation rather than contradicting it).",
+          "exists": true,
+          "label": "OBSERVED EVIDENCE",
+          "description": "payment-service request_rate: baseline 300.21 -> window mean 299.16 (max 325.13, change -0.4%), onset none detected"
+        }
+      ],
+      "missing_evidence": [
+        "Change-approval and intent for OPS-2669 (was a 10 value deliberate or a unit/typo error?)",
+        "Pool wait-time and acquisition-latency metrics",
+        "Pre-change pool usage data for the same window"
+      ],
+      "critic_decision": null
+    },
+    {
+      "rank": 2,
+      "hypothesis_id": "H2",
+      "category": "db_connection_pool_exhaustion",
+      "culprit_service": "payment-service",
+      "description": "Connection leak in the payment path (like HIST-2025-014) exhausted the pool independently of the config change. Mechanism: A leak holds pooled connections until the pool is exhausted. Waiting-queue growth and active=10 would look the same.",
+      "confidence": 0.12,
+      "confidence_explanation": [
+        "self-reported by the single agent"
+      ],
+      "supporting_evidence": [
+        {
+          "evidence_id": "hist-HIST-2025-014",
+          "strength": "weak",
+          "note": "Historical analogy only (similarity 0.34): same symptoms, different cause",
+          "exists": true,
+          "label": "INFERENCE",
+          "description": "Past incident HIST-2025-014 'Payment latency from leaked DB connections' (similarity 0.337): Connection leak in refund path held pooled connections; pool exhausted."
+        },
+        {
+          "evidence_id": "logpat-payment-service-7d1739af",
+          "strength": "weak",
+          "note": "Log pattern matches pool exhaustion but does not identify a leak",
+          "exists": true,
+          "label": "OBSERVED EVIDENCE",
+          "description": "29x ERROR on payment-service: 'Timeout acquiring connection from pool payment-db-pool after 5000ms (active=10, idle=0, waiting=29)' (first 2026-10-05T10:06:13Z, last 2026-10-05T10:34:18Z)"
+        }
+      ],
+      "contradicting_evidence": [
+        {
+          "evidence_id": "met-postgres-db_conn_util_pct-0940-1035",
+          "strength": "moderate",
+          "note": "Postgres connection count dropped rather than rising, which argues against held connections piling up on the DB side",
+          "exists": true,
+          "label": "OBSERVED EVIDENCE",
+          "description": "postgres db_conn_util_pct: baseline 39.83 -> window mean 30.56 (max 43.9, change -23.3%), onset 2026-10-05T10:07:00Z"
+        },
+        {
+          "evidence_id": "cfg-56d39584",
+          "strength": "moderate",
+          "note": "Pool exhaustion began within 2 minutes of an explicit cap reduction, making a coincident leak less likely",
+          "exists": true,
+          "label": "CONFIRMED FACT",
+          "description": "Config change on payment-service: db.pool.max_size 50 -> 10 at 2026-10-05T10:04:00Z (OPS-2669)"
+        }
+      ],
+      "missing_evidence": [
+        "Pool checkout/return counts or connection age data",
+        "Leak-detection logs or thread dumps"
+      ],
+      "critic_decision": null
+    }
+  ],
+  "critic_review": {
+    "verdict": "NOT_RUN",
+    "rounds_reviewed": 0
+  },
+  "evidence_gaps": [],
+  "probable_root_cause": {
+    "hypothesis_id": "H1",
+    "category": "configuration_regression",
+    "culprit_service": "payment-service",
+    "description": "Config change reduced db.pool.max_size from 50 to 10 at 10:04Z, starving the payment DB pool under normal load.",
+    "confidence": 0.8,
+    "label": "MOST PROBABLE EXPLANATION (INFERENCE, not confirmed)"
+  },
+  "root_cause_statement": "MOST PROBABLE EXPLANATION (INFERENCE, not confirmed): configuration_regression in payment-service - Config change reduced db.pool.max_size from 50 to 10 at 10:04Z, starving the payment DB pool under normal load.",
+  "corrective_actions": [
+    "Roll back db.pool.max_size from 10 to 50 for payment-service (OPS-2669) and confirm the pool recovers",
+    "Check that the change was intentional with the OPS-2669 owner and config-bot author",
+    "Make sure the rollback restores error and timeout rates to baseline (~0.8% errors, ~0.1% timeouts)"
+  ],
+  "preventive_actions": [
+    "Add validation/guardrails in CI or the config service to flag large pool-size reductions (e.g. >50%) without approval",
+    "Require peer review for automated config-bot changes to database pool settings"
+  ],
+  "monitoring_recommendations": [
+    "Alert on db pool utilisation >80% sustained for 2+ minutes and on pool wait-queue length",
+    "Alert on payment-service timeout_rate >1% and error_rate >2%",
+    "Track config change events for db.pool.* keys as annotations on dashboards"
+  ],
+  "limitations": [
+    "No pool checkout/return or wait-time metrics were available",
+    "Latency p99 did not show the reported increase, so the report's latency claim is not confirmed by telemetry",
+    "No deployments were found in the window; this was checked only for payment-service, api-gateway and postgres",
+    "The tool-call budget was not exhausted; no evidence gaps arose from failed calls",
+    "Confidence values are rule-based evidence-strength scores, not calibrated probabilities.",
+    "Investigation terminated because: agent submitted"
+  ],
+  "final_status": "PROBABLE_ROOT_CAUSE",
+  "conclusion": "The most likely cause is the config change db.pool.max_size 50 -> 10 at 10:04Z (cfg-56d39584). It precedes the pool saturation (10:05), the timeouts (10:06) and the error spike, and no deployment or upstream change explains it. The Postgres side is not saturated and the connection count fell, which argues against last year's leak pattern. Status is PROBABLE rather than CONFIRMED because the intent behind the change is unverified and the latency symptom is not reproduced in p99 metrics. Rolling back the config and checking recovery would confirm it.",
+  "statistics": {
+    "rounds": 1,
+    "tool_calls": 8,
+    "tool_failures": 0,
+    "tool_retries": 0,
+    "partial_results": 0,
+    "agent_failures": 0,
+    "agent_retries": 0,
+    "invalid_llm_outputs": 0,
+    "messages_exchanged": 0,
+    "evidence_records": 37,
+    "duration_s": 19.8,
+    "tokens": {
+      "input_tokens": 8,
+      "output_tokens": 4605,
+      "cache_read_tokens": 18814,
+      "cache_write_tokens": 8242,
+      "llm_calls": 3,
+      "cost_usd": 0.00352169
+    },
+    "tokens_by_agent": {
+      "single_agent": {
+        "input_tokens": 8,
+        "output_tokens": 4605,
+        "cache_read_tokens": 18814,
+        "cache_write_tokens": 8242,
+        "llm_calls": 3,
+        "cost_usd": 0.00352169
+      }
+    }
+  }
+}

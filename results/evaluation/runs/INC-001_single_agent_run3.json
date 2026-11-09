@@ -1,0 +1,381 @@
+{
+  "investigation_id": "inv-40d7137ba9",
+  "system": "single_agent",
+  "incident_id": "INC-001",
+  "title": "Payment API latency spike",
+  "severity": "SEV2",
+  "affected_services": [
+    "api-gateway",
+    "payment-service"
+  ],
+  "start_time": "2026-09-02T14:00:00+00:00",
+  "executive_summary": "Payment API latency and 5xx errors are caused by exhaustion of payment-service's DB connection pool (payment-db-pool). Connections were leaked by RefundService.processPartialRefund starting about 13:45Z, pool utilization climbed from 13:49Z, and from 14:00Z requests timed out acquiring connections. The resulting timeouts propagated to api-gateway. Auth-service, the CPU of payment-service, and the notification-service deploy are not implicated. The leak trigger is not yet confirmed.",
+  "timeline": [
+    {
+      "time": "2026-09-02T13:45:08Z",
+      "label": "OBSERVED EVIDENCE",
+      "event": "First log: 9x WARN on payment-service: 'HikariPool-payment - Connection leak detection triggered for connection conn-98, held > 30000 ms by RefundService.processPartialRefund' (first 2026-09-02T13:45:08Z, last 2026-09-02T14:00:16Z)",
+      "evidence_id": "logpat-payment-service-9d1f3d29"
+    },
+    {
+      "time": "2026-09-02T13:49:00Z",
+      "label": "OBSERVED EVIDENCE",
+      "event": "Anomaly onset: payment-service db_conn_util_pct: baseline 34.95 -> window mean 72.1 (max 100.0, change 106.3%), onset 2026-09-02T13:49:00Z",
+      "evidence_id": "met-payment-service-db_conn_util_pct-1330-1425"
+    },
+    {
+      "time": "2026-09-02T13:49:52Z",
+      "label": "OBSERVED EVIDENCE",
+      "event": "First log: 3x WARN on payment-service: 'Card network soft decline (code 05) for charge ch_33' (first 2026-09-02T13:49:52Z, last 2026-09-02T14:20:23Z)",
+      "evidence_id": "logpat-payment-service-7e9bf84f"
+    },
+    {
+      "time": "2026-09-02T13:54:00Z",
+      "label": "CONFIRMED FACT",
+      "event": "Deployment of notification-service 3.4.0->3.4.1 at 2026-09-02T13:54:00Z (SUCCEEDED): Update email templates for receipts",
+      "evidence_id": "dep-d757f128"
+    },
+    {
+      "time": "2026-09-02T14:00:00Z",
+      "label": "OBSERVED EVIDENCE",
+      "event": "Anomaly onset: payment-service p95_latency_ms: baseline 150.24 -> window mean 1315.14 (max 3018.96, change 775.3%), onset 2026-09-02T14:00:00Z",
+      "evidence_id": "met-payment-service-p95_latency_ms-1330-1425"
+    },
+    {
+      "time": "2026-09-02T14:00:00Z",
+      "label": "OBSERVED EVIDENCE",
+      "event": "Anomaly onset: payment-service error_rate: baseline 0.8 -> window mean 9.93 (max 23.67, change 1139.4%), onset 2026-09-02T14:00:00Z",
+      "evidence_id": "met-payment-service-error_rate-1330-1425"
+    },
+    {
+      "time": "2026-09-02T14:00:00Z",
+      "label": "OBSERVED EVIDENCE",
+      "event": "Anomaly onset: payment-service timeout_rate: baseline 0.1 -> window mean 8.04 (max 19.09, change 7957.0%), onset 2026-09-02T14:00:00Z",
+      "evidence_id": "met-payment-service-timeout_rate-1330-1425"
+    },
+    {
+      "time": "2026-09-02T14:00:00Z",
+      "label": "CONFIRMED FACT",
+      "event": "Reported symptom start",
+      "evidence_id": null
+    },
+    {
+      "time": "2026-09-02T14:00:16Z",
+      "label": "OBSERVED EVIDENCE",
+      "event": "First log: 29x ERROR on payment-service: 'Timeout acquiring connection from pool payment-db-pool after 5000ms (active=50, idle=0, waiting=46)' (first 2026-09-02T14:00:16Z, last 2026-09-02T14:24:16Z)",
+      "evidence_id": "logpat-payment-service-7d1739af"
+    },
+    {
+      "time": "2026-09-02T14:01:00Z",
+      "label": "OBSERVED EVIDENCE",
+      "event": "Anomaly onset: api-gateway p95_latency_ms: baseline 119.71 -> window mean 868.12 (max 2004.12, change 625.2%), onset 2026-09-02T14:01:00Z",
+      "evidence_id": "met-api-gateway-p95_latency_ms-1330-1425"
+    },
+    {
+      "time": "2026-09-02T14:01:00Z",
+      "label": "OBSERVED EVIDENCE",
+      "event": "Anomaly onset: api-gateway error_rate: baseline 0.5 -> window mean 4.05 (max 9.88, change 710.4%), onset 2026-09-02T14:01:00Z",
+      "evidence_id": "met-api-gateway-error_rate-1330-1425"
+    },
+    {
+      "time": "2026-09-02T14:06:00Z",
+      "label": "CONFIRMED FACT",
+      "event": "Incident reported",
+      "evidence_id": null
+    }
+  ],
+  "observed_symptoms": [
+    {
+      "label": "OBSERVED EVIDENCE",
+      "statement": "payment-service p95_latency_ms: baseline 150.24 -> window mean 1315.14 (max 3018.96, change 775.3%), onset 2026-09-02T14:00:00Z",
+      "evidence_ids": [
+        "met-payment-service-p95_latency_ms-1330-1425"
+      ]
+    },
+    {
+      "label": "OBSERVED EVIDENCE",
+      "statement": "payment-service error_rate: baseline 0.8 -> window mean 9.93 (max 23.67, change 1139.4%), onset 2026-09-02T14:00:00Z",
+      "evidence_ids": [
+        "met-payment-service-error_rate-1330-1425"
+      ]
+    },
+    {
+      "label": "OBSERVED EVIDENCE",
+      "statement": "payment-service db_conn_util_pct: baseline 34.95 -> window mean 72.1 (max 100.0, change 106.3%), onset 2026-09-02T13:49:00Z",
+      "evidence_ids": [
+        "met-payment-service-db_conn_util_pct-1330-1425"
+      ]
+    },
+    {
+      "label": "OBSERVED EVIDENCE",
+      "statement": "payment-service timeout_rate: baseline 0.1 -> window mean 8.04 (max 19.09, change 7957.0%), onset 2026-09-02T14:00:00Z",
+      "evidence_ids": [
+        "met-payment-service-timeout_rate-1330-1425"
+      ]
+    },
+    {
+      "label": "OBSERVED EVIDENCE",
+      "statement": "api-gateway p95_latency_ms: baseline 119.71 -> window mean 868.12 (max 2004.12, change 625.2%), onset 2026-09-02T14:01:00Z",
+      "evidence_ids": [
+        "met-api-gateway-p95_latency_ms-1330-1425"
+      ]
+    },
+    {
+      "label": "OBSERVED EVIDENCE",
+      "statement": "api-gateway error_rate: baseline 0.5 -> window mean 4.05 (max 9.88, change 710.4%), onset 2026-09-02T14:01:00Z",
+      "evidence_ids": [
+        "met-api-gateway-error_rate-1330-1425"
+      ]
+    }
+  ],
+  "investigation_performed": [],
+  "hypotheses": [
+    {
+      "rank": 1,
+      "hypothesis_id": "H1",
+      "category": "db_connection_pool_exhaustion",
+      "culprit_service": "payment-service",
+      "description": "Connection leak in the partial-refund code path (RefundService.processPartialRefund) holds pooled DB connections until the payment-db-pool is saturated, causing acquisition timeouts, latency and 5xx. Mechanism: Refund calls leak connections (held >30s, flagged by Hikari leak detection from 13:45Z). Active connections climb to the pool max of 50 with 0 idle; new checkout requests wait up to 5000ms and then fail, which raises payment-service P95 and error rate, and api-gateway P95 follows.",
+      "confidence": 0.8,
+      "confidence_explanation": [
+        "self-reported by the single agent"
+      ],
+      "supporting_evidence": [
+        {
+          "evidence_id": "logpat-payment-service-9d1f3d29",
+          "strength": "strong",
+          "note": "9 leak-detection warnings from 13:45:08Z to 14:00:16Z, all attributed to RefundService.processPartialRefund, holding connections >30s; this precedes the latency onset.",
+          "exists": true,
+          "label": "OBSERVED EVIDENCE",
+          "description": "9x WARN on payment-service: 'HikariPool-payment - Connection leak detection triggered for connection conn-98, held > 30000 ms by RefundService.processPartialRefund' (first 2026-09-02T13:45:08Z, last 2026-09-02T14:00:16Z)"
+        },
+        {
+          "evidence_id": "met-payment-service-db_conn_util_pct-1330-1425",
+          "strength": "strong",
+          "note": "DB connection utilization rose from baseline ~35% with onset 13:49Z, reaching 96-100% from 14:00Z.",
+          "exists": true,
+          "label": "OBSERVED EVIDENCE",
+          "description": "payment-service db_conn_util_pct: baseline 34.95 -> window mean 72.1 (max 100.0, change 106.3%), onset 2026-09-02T13:49:00Z"
+        },
+        {
+          "evidence_id": "logpat-payment-service-7d1739af",
+          "strength": "strong",
+          "note": "29 'Timeout acquiring connection from pool payment-db-pool after 5000ms (active=50, idle=0, waiting=N)' errors from 14:00:16Z onward.",
+          "exists": true,
+          "label": "OBSERVED EVIDENCE",
+          "description": "29x ERROR on payment-service: 'Timeout acquiring connection from pool payment-db-pool after 5000ms (active=50, idle=0, waiting=46)' (first 2026-09-02T14:00:16Z, last 2026-09-02T14:24:16Z)"
+        },
+        {
+          "evidence_id": "met-payment-service-p95_latency_ms-1330-1425",
+          "strength": "strong",
+          "note": "P95 rose from ~150ms to ~2.7-3.0s starting at 14:00Z.",
+          "exists": true,
+          "label": "OBSERVED EVIDENCE",
+          "description": "payment-service p95_latency_ms: baseline 150.24 -> window mean 1315.14 (max 3018.96, change 775.3%), onset 2026-09-02T14:00:00Z"
+        },
+        {
+          "evidence_id": "met-payment-service-timeout_rate-1330-1425",
+          "strength": "strong",
+          "note": "Timeout rate rose from 0.1% to ~18% from 14:00Z.",
+          "exists": true,
+          "label": "OBSERVED EVIDENCE",
+          "description": "payment-service timeout_rate: baseline 0.1 -> window mean 8.04 (max 19.09, change 7957.0%), onset 2026-09-02T14:00:00Z"
+        },
+        {
+          "evidence_id": "met-payment-service-error_rate-1330-1425",
+          "strength": "strong",
+          "note": "Error rate rose from 0.8% to ~20-22% from 14:00Z.",
+          "exists": true,
+          "label": "OBSERVED EVIDENCE",
+          "description": "payment-service error_rate: baseline 0.8 -> window mean 9.93 (max 23.67, change 1139.4%), onset 2026-09-02T14:00:00Z"
+        },
+        {
+          "evidence_id": "met-api-gateway-p95_latency_ms-1330-1425",
+          "strength": "moderate",
+          "note": "api-gateway P95 rose from ~120ms to ~1.8-1.9s from 14:01Z, one minute after payment-service.",
+          "exists": true,
+          "label": "OBSERVED EVIDENCE",
+          "description": "api-gateway p95_latency_ms: baseline 119.71 -> window mean 868.12 (max 2004.12, change 625.2%), onset 2026-09-02T14:01:00Z"
+        },
+        {
+          "evidence_id": "met-api-gateway-error_rate-1330-1425",
+          "strength": "moderate",
+          "note": "api-gateway error rate rose from 0.5% to ~8-9.6%, onset 14:01Z.",
+          "exists": true,
+          "label": "OBSERVED EVIDENCE",
+          "description": "api-gateway error_rate: baseline 0.5 -> window mean 4.05 (max 9.88, change 710.4%), onset 2026-09-02T14:01:00Z"
+        },
+        {
+          "evidence_id": "hist-HIST-2025-014",
+          "strength": "weak",
+          "note": "Historical analogy: refund-path connection leak exhausting the pool; analogy only.",
+          "exists": true,
+          "label": "INFERENCE",
+          "description": "Past incident HIST-2025-014 'Payment latency from leaked DB connections' (similarity 0.362): Connection leak in refund path held pooled connections; pool exhausted."
+        }
+      ],
+      "contradicting_evidence": [
+        {
+          "evidence_id": "met-payment-service-cpu_pct-1330-1425",
+          "strength": "weak",
+          "note": "CPU is flat (~40%), so this is not compute saturation.",
+          "exists": true,
+          "label": "OBSERVED EVIDENCE",
+          "description": "payment-service cpu_pct: baseline 39.9 -> window mean 40.03 (max 44.07, change 0.3%), onset none detected"
+        },
+        {
+          "evidence_id": "met-api-gateway-timeout_rate-1330-1425",
+          "strength": "weak",
+          "note": "Gateway timeout rate is unchanged, so the failures are not gateway-side timeouts.",
+          "exists": true,
+          "label": "OBSERVED EVIDENCE",
+          "description": "api-gateway timeout_rate: baseline 0.1 -> window mean 0.1 (max 0.11, change 0.4%), onset none detected"
+        }
+      ],
+      "missing_evidence": [
+        "Refund request volume or traffic data for the 13:30-14:00 period, to show whether a refund burst or a code change caused the leak",
+        "Postgres-side metrics (active connections, lock waits, query duration), which were not available as a service",
+        "Code or version diff for RefundService; no deployment to payment-service was found in 12:00-14:25Z"
+      ],
+      "critic_decision": null
+    },
+    {
+      "rank": 2,
+      "hypothesis_id": "H2",
+      "category": "upstream_dependency_degradation",
+      "culprit_service": "auth-service",
+      "description": "Auth-service degradation slowed payment calls and caused connection hold times to rise. Mechanism: Slow auth calls would hold request threads and DB connections in payment-service.",
+      "confidence": 0.05,
+      "confidence_explanation": [
+        "self-reported by the single agent"
+      ],
+      "supporting_evidence": [],
+      "contradicting_evidence": [
+        {
+          "evidence_id": "met-auth-service-p95_latency_ms-1330-1425",
+          "strength": "strong",
+          "note": "Auth P95 is flat at ~45ms vs baseline 45ms.",
+          "exists": true,
+          "label": "OBSERVED EVIDENCE",
+          "description": "auth-service p95_latency_ms: baseline 44.97 -> window mean 44.96 (max 49.46, change -0.0%), onset none detected"
+        },
+        {
+          "evidence_id": "met-auth-service-error_rate-1330-1425",
+          "strength": "strong",
+          "note": "Auth error rate is flat at 0.3%.",
+          "exists": true,
+          "label": "OBSERVED EVIDENCE",
+          "description": "auth-service error_rate: baseline 0.3 -> window mean 0.3 (max 0.33, change 1.2%), onset none detected"
+        },
+        {
+          "evidence_id": "met-auth-service-db_conn_util_pct-1330-1425",
+          "strength": "moderate",
+          "note": "Auth DB connection utilization is flat.",
+          "exists": true,
+          "label": "OBSERVED EVIDENCE",
+          "description": "auth-service db_conn_util_pct: baseline 29.53 -> window mean 30.06 (max 32.48, change 1.8%), onset none detected"
+        }
+      ],
+      "missing_evidence": [
+        "Auth-side logs for the window"
+      ],
+      "critic_decision": null
+    },
+    {
+      "rank": 3,
+      "hypothesis_id": "H3",
+      "category": "deployment_regression",
+      "culprit_service": "notification-service",
+      "description": "The notification-service deploy at 13:54Z (3.4.0 to 3.4.1, email templates) caused the incident. Mechanism: Would require a dependency path from notification-service to payment-service.",
+      "confidence": 0.02,
+      "confidence_explanation": [
+        "self-reported by the single agent"
+      ],
+      "supporting_evidence": [],
+      "contradicting_evidence": [
+        {
+          "evidence_id": "dep-d757f128",
+          "strength": "moderate",
+          "note": "Change is limited to email templates. The topology shows no dependency between notification-service and payment-service, and the leak predates the change (13:45Z).",
+          "exists": true,
+          "label": "CONFIRMED FACT",
+          "description": "Deployment of notification-service 3.4.0->3.4.1 at 2026-09-02T13:54:00Z (SUCCEEDED): Update email templates for receipts"
+        }
+      ],
+      "missing_evidence": [],
+      "critic_decision": null
+    }
+  ],
+  "critic_review": {
+    "verdict": "NOT_RUN",
+    "rounds_reviewed": 0
+  },
+  "evidence_gaps": [],
+  "probable_root_cause": {
+    "hypothesis_id": "H1",
+    "category": "db_connection_pool_exhaustion",
+    "culprit_service": "payment-service",
+    "description": "Connection leak in the partial-refund code path (RefundService.processPartialRefund) holds pooled DB connections until the payment-db-pool is saturated, causing acquisition timeouts, latency and 5xx.",
+    "confidence": 0.8,
+    "label": "MOST PROBABLE EXPLANATION (INFERENCE, not confirmed)"
+  },
+  "root_cause_statement": "MOST PROBABLE EXPLANATION (INFERENCE, not confirmed): db_connection_pool_exhaustion in payment-service - Connection leak in the partial-refund code path (RefundService.processPartialRefund) holds pooled DB connections until the payment-db-pool is saturated, causing acquisition timeouts, latency and 5xx.",
+  "corrective_actions": [
+    "Restart payment-service pods to release leaked connections and restore checkout (immediate mitigation).",
+    "Fix the connection leak in RefundService.processPartialRefund (close connections via try-with-resources or equivalent), then redeploy.",
+    "Verify that partial refunds are not blocked or failing in a way that compounds the leak; reprocess any stuck refunds."
+  ],
+  "preventive_actions": [
+    "Alert on Hikari leak detection warnings and on pool utilization above 80% for sustained periods.",
+    "Add a statement or connection-hold timeout on the payment DB pool so leaks fail fast.",
+    "Add a load and soak test for the refund path that checks for connection return."
+  ],
+  "monitoring_recommendations": [
+    "payment-service db_conn_util_pct and active/waiting connection counts on payment-db-pool.",
+    "Count of 'Connection leak detection triggered' warnings by call site.",
+    "payment-service P95 and error rate, with api-gateway P95 as a downstream signal.",
+    "Postgres idle-in-transaction and long-running session counts for the payment database."
+  ],
+  "limitations": [
+    "No Postgres or refund-volume telemetry was available; the refund-path trigger is inferred.",
+    "Historical match HIST-2025-014 is an analogy only (similarity 0.36).",
+    "[agent-reported gap] No refund traffic data to explain why the refund leak began at 13:45Z.",
+    "[agent-reported gap] No code or version diff for RefundService.",
+    "[agent-reported gap] No Postgres-side metrics.",
+    "Confidence values are rule-based evidence-strength scores, not calibrated probabilities.",
+    "Investigation terminated because: agent submitted"
+  ],
+  "final_status": "PROBABLE_ROOT_CAUSE",
+  "conclusion": "The most likely cause is a connection leak in RefundService.processPartialRefund that exhausted payment-service's payment-db-pool (max 50). The leak began about 13:45Z, the pool was saturated by 14:00Z, and connection-acquisition timeouts drove the payment P95, error and timeout spikes, and the api-gateway latency and 5xx that followed. Alternatives (auth-service, CPU saturation, the notification deploy, a gateway-side issue) are contradicted by the evidence. The status is PROBABLE rather than ROOT_CAUSE_IDENTIFIED because the trigger for the leaking refund path (traffic change or code change) has not been confirmed and no Postgres-side data was available.",
+  "statistics": {
+    "rounds": 1,
+    "tool_calls": 11,
+    "tool_failures": 0,
+    "tool_retries": 0,
+    "partial_results": 0,
+    "agent_failures": 0,
+    "agent_retries": 0,
+    "invalid_llm_outputs": 0,
+    "messages_exchanged": 0,
+    "evidence_records": 50,
+    "duration_s": 22.4,
+    "tokens": {
+      "input_tokens": 10,
+      "output_tokens": 5117,
+      "cache_read_tokens": 28965,
+      "cache_write_tokens": 18435,
+      "llm_calls": 4,
+      "cost_usd": 0.005153525000000001
+    },
+    "tokens_by_agent": {
+      "single_agent": {
+        "input_tokens": 10,
+        "output_tokens": 5117,
+        "cache_read_tokens": 28965,
+        "cache_write_tokens": 18435,
+        "llm_calls": 4,
+        "cost_usd": 0.005153525000000001
+      }
+    }
+  }
+}

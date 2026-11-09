@@ -1,0 +1,704 @@
+{
+  "investigation_id": "inv-d4c4127aba",
+  "system": "multi_agent",
+  "incident_id": "INC-012",
+  "title": "Payment connection pool timeouts",
+  "severity": "SEV2",
+  "affected_services": [
+    "payment-service"
+  ],
+  "start_time": "2026-10-05T10:10:00+00:00",
+  "executive_summary": "INC-012 (SEV2) affected payment-service between 10:10Z and the investigation window, with elevated API latency and errors and log entries reporting connection pool timeouts. Final status is ROOT_CAUSE_IDENTIFIED. The leading hypothesis (H1, confidence 0.95) is a configuration regression: change cfg-56d39584 (OPS-2669) reduced payment-service db.pool.max_size from 50 to 10 at 10:04:00Z (cfg-56d39584). Baseline pool use (roughly 17 connections) now exceeds the cap of 10, so requests queue and time out. Pool-acquire timeouts began at 10:06:13Z with active=10 idle=0 and a growing waiting queue (logpat-payment-service-7d1739af). Timeout rate rose from a baseline of 0.1 to a window mean of 6.3 and error rate from 0.8 to 9.17, both with onset at 10:06 (met-payment-service-timeout_rate-0940-1035, met-payment-service-error_rate-0940-1035). Pool utilization rose from 34.95 to 69.43 with onset at 10:05 (met-payment-service-db_conn_util_pct-0940-1035). Request rate was flat (300 vs 299 rps), so load did not change (met-payment-service-request_rate-0940-1035). The critic approved this finding. The explanation is the most probable cause, not a confirmed fact. Two items remain unverified: the intent of OPS-2669 and whether restoring 50 clears the saturation.",
+  "timeline": [
+    {
+      "time": "2026-10-05T09:44:02Z",
+      "label": "OBSERVED EVIDENCE",
+      "event": "First log: 5x WARN on api-gateway: 'Slow client upload from 10.4.85.12 (1.9MB)' (first 2026-10-05T09:44:02Z, last 2026-10-05T10:28:03Z)",
+      "evidence_id": "logpat-api-gateway-88b04940"
+    },
+    {
+      "time": "2026-10-05T09:45:26Z",
+      "label": "OBSERVED EVIDENCE",
+      "event": "First log: 7x WARN on payment-service: 'Card network soft decline (code 05) for charge ch_98' (first 2026-10-05T09:45:26Z, last 2026-10-05T10:22:54Z)",
+      "evidence_id": "logpat-payment-service-7e9bf84f"
+    },
+    {
+      "time": "2026-10-05T10:01:25Z",
+      "label": "OBSERVED EVIDENCE",
+      "event": "First log: 4x WARN on postgres: 'duration: 15802 ms statement: SELECT report_rollup()' (first 2026-10-05T10:01:25Z, last 2026-10-05T10:24:50Z)",
+      "evidence_id": "logpat-postgres-44883ca5"
+    },
+    {
+      "time": "2026-10-05T10:04:00Z",
+      "label": "CONFIRMED FACT",
+      "event": "Config change on payment-service: db.pool.max_size 50 -> 10 at 2026-10-05T10:04:00Z (OPS-2669)",
+      "evidence_id": "cfg-56d39584"
+    },
+    {
+      "time": "2026-10-05T10:05:00Z",
+      "label": "OBSERVED EVIDENCE",
+      "event": "Anomaly onset: payment-service db_conn_util_pct: baseline 34.95 -> window mean 69.43 (max 100.0, change 98.7%), onset 2026-10-05T10:05:00Z",
+      "evidence_id": "met-payment-service-db_conn_util_pct-0940-1035"
+    },
+    {
+      "time": "2026-10-05T10:06:00Z",
+      "label": "OBSERVED EVIDENCE",
+      "event": "Anomaly onset: payment-service timeout_rate: baseline 0.1 -> window mean 6.3 (max 13.3, change 6147.1%), onset 2026-10-05T10:06:00Z",
+      "evidence_id": "met-payment-service-timeout_rate-0940-1035"
+    },
+    {
+      "time": "2026-10-05T10:06:00Z",
+      "label": "OBSERVED EVIDENCE",
+      "event": "Anomaly onset: payment-service error_rate: baseline 0.8 -> window mean 9.17 (max 18.85, change 1040.5%), onset 2026-10-05T10:06:00Z",
+      "evidence_id": "met-payment-service-error_rate-0940-1035"
+    },
+    {
+      "time": "2026-10-05T10:06:13Z",
+      "label": "OBSERVED EVIDENCE",
+      "event": "First log: 29x ERROR on payment-service: 'Timeout acquiring connection from pool payment-db-pool after 5000ms (active=10, idle=0, waiting=29)' (first 2026-10-05T10:06:13Z, last 2026-10-05T10:34:18Z)",
+      "evidence_id": "logpat-payment-service-7d1739af"
+    },
+    {
+      "time": "2026-10-05T10:10:00Z",
+      "label": "CONFIRMED FACT",
+      "event": "Reported symptom start",
+      "evidence_id": null
+    },
+    {
+      "time": "2026-10-05T10:16:00Z",
+      "label": "CONFIRMED FACT",
+      "event": "Incident reported",
+      "evidence_id": null
+    }
+  ],
+  "observed_symptoms": [
+    {
+      "label": "OBSERVED EVIDENCE",
+      "statement": "payment-service db_conn_util_pct: baseline 34.95 -> window mean 69.43 (max 100.0, change 98.7%), onset 2026-10-05T10:05:00Z",
+      "evidence_ids": [
+        "met-payment-service-db_conn_util_pct-0940-1035"
+      ]
+    },
+    {
+      "label": "OBSERVED EVIDENCE",
+      "statement": "payment-service timeout_rate: baseline 0.1 -> window mean 6.3 (max 13.3, change 6147.1%), onset 2026-10-05T10:06:00Z",
+      "evidence_ids": [
+        "met-payment-service-timeout_rate-0940-1035"
+      ]
+    },
+    {
+      "label": "OBSERVED EVIDENCE",
+      "statement": "payment-service error_rate: baseline 0.8 -> window mean 9.17 (max 18.85, change 1040.5%), onset 2026-10-05T10:06:00Z",
+      "evidence_ids": [
+        "met-payment-service-error_rate-0940-1035"
+      ]
+    },
+    {
+      "label": "OBSERVED EVIDENCE",
+      "statement": "[dependency] payment-service (topology-v2, no topology changes listed) has upstream dependencies auth-service, postgres and redis (chains via auth-service to postgres and redis). Its downstream dependents are api-gateway and order-service, both listed as potentially impacted.",
+      "evidence_ids": [
+        "topo-payment-service-both-d3"
+      ]
+    },
+    {
+      "label": "OBSERVED EVIDENCE",
+      "statement": "[dependency] Downstream query for api-gateway returned no downstream dependents and no potentially impacted services, so no transitive callers of api-gateway are visible in the graph.",
+      "evidence_ids": [
+        "topo-api-gateway-downstream-d3"
+      ]
+    },
+    {
+      "label": "OBSERVED EVIDENCE",
+      "statement": "[dependency] order-service downstream dependents are api-gateway only. Topology-v2 (effective 2026-09-15T00:00:00Z) added edge order-service -> redis.",
+      "evidence_ids": [
+        "topo-order-service-downstream-d3"
+      ]
+    },
+    {
+      "label": "OBSERVED EVIDENCE",
+      "statement": "[dependency] Config change cfg-56d39584 (author config-bot, ticket OPS-2669) changed payment-service db.pool.max_size from 50 to 10 (ratio 0.2) at 10:04Z, about 6 minutes before T0.",
+      "evidence_ids": [
+        "cfg-56d39584"
+      ]
+    },
+    {
+      "label": "OBSERVED EVIDENCE",
+      "statement": "[dependency] payment-service db_conn_util_pct rose from baseline mean ~35% to ~69% in the window, onset 10:05Z, reaching 100% by 10:20Z. Sampled values: 10:00 35.8%, 10:05 63.3%, 10:10 93.9%.",
+      "evidence_ids": [
+        "met-payment-service-db_conn_util_pct-0940-1035"
+      ]
+    },
+    {
+      "label": "OBSERVED EVIDENCE",
+      "statement": "[dependency] payment-service timeout_rate and error_rate both began rising at 10:06Z (timeouts ~0.1% -> ~11% at 10:10; errors ~0.8% -> ~17%). p99 latency did not change materially (+0.6%), so the symptom is timeouts/errors rather than latency tail growth in the metrics.",
+      "evidence_ids": [
+        "met-payment-service-timeout_rate-0940-1035",
+        "met-payment-service-error_rate-0940-1035",
+        "met-payment-service-p99_latency_ms-0940-1035"
+      ]
+    },
+    {
+      "label": "OBSERVED EVIDENCE",
+      "statement": "[dependency] Config changes query for 08:10-10:35Z returned only cfg-56d39584 across all services; no config changes to auth-service, postgres or redis appeared in this window.",
+      "evidence_ids": [
+        "cfg-56d39584"
+      ]
+    },
+    {
+      "label": "OBSERVED EVIDENCE",
+      "statement": "[dependency] Dependency graph (topology-v2): payment-service upstream = auth-service, postgres, redis (plus auth-service -> postgres/redis chains); downstream = api-gateway, order-service, which are potentially impacted. No topology changes listed.",
+      "evidence_ids": [
+        "topo-payment-service-both-d2"
+      ]
+    },
+    {
+      "label": "OBSERVED EVIDENCE",
+      "statement": "[observability] Error rate flat across window: mean 0.5% vs baseline 0.5% (change 0.9%), no onset detected; max 0.54% at 10:05. No error spike at T0=10:10.",
+      "evidence_ids": [
+        "met-api-gateway-error_rate-0940-1035"
+      ]
+    },
+    {
+      "label": "OBSERVED EVIDENCE",
+      "statement": "[observability] p99 latency flat: window mean 249.6ms vs baseline 249.1ms (+0.2%), no onset; max 275.5ms.",
+      "evidence_ids": [
+        "met-api-gateway-p99_latency_ms-0940-1035"
+      ]
+    },
+    {
+      "label": "OBSERVED EVIDENCE",
+      "statement": "[observability] Request rate flat: window mean 1202.5 vs baseline 1192.8 (+0.8%), no retry-driven surge visible in 5-min samples (max 1292.6 at 09:45 and 10:35).",
+      "evidence_ids": [
+        "met-api-gateway-request_rate-0940-1035"
+      ]
+    },
+    {
+      "label": "OBSERVED EVIDENCE",
+      "statement": "[observability] Timeout rate flat at ~0.1% (baseline 0.1%, window 0.1%, change 0.2%); no timeouts calling payment-service visible at gateway level.",
+      "evidence_ids": [
+        "met-api-gateway-timeout_rate-0940-1035"
+      ]
+    },
+    {
+      "label": "OBSERVED EVIDENCE",
+      "statement": "[observability] Only WARN logs are 5 'Slow client upload' events (1.9MB uploads) between 09:44 and 10:28; no timeout, upstream error, or payment-service connection errors logged.",
+      "evidence_ids": [
+        "logpat-api-gateway-88b04940"
+      ]
+    },
+    {
+      "label": "OBSERVED EVIDENCE",
+      "statement": "[observability] Error rate flat: window mean 0.6% vs baseline 0.6% (-0.5%), no onset; p99 latency flat (399ms vs 403ms, -0.9%); timeout rate flat ~0.1%.",
+      "evidence_ids": [
+        "met-order-service-error_rate-0940-1035",
+        "met-order-service-p99_latency_ms-0940-1035",
+        "met-order-service-timeout_rate-0940-1035"
+      ]
+    },
+    {
+      "label": "OBSERVED EVIDENCE",
+      "statement": "[observability] Request rate flat: window mean 249.2 vs baseline 251.6 (-1.0%); order creation logs steady (20-76 orders/min); no retry amplification seen.",
+      "evidence_ids": [
+        "met-order-service-request_rate-0940-1035",
+        "logpat-order-service-d19346d9"
+      ]
+    },
+    {
+      "label": "OBSERVED EVIDENCE",
+      "statement": "[observability] Only one WARN in window: 'Inventory reservation retry' at 10:34:47Z (single occurrence). No payment-service timeout or connection pool errors logged in order-service.",
+      "evidence_ids": [
+        "logpat-order-service-95abd1bb",
+        "log-2c9d0f42"
+      ]
+    },
+    {
+      "label": "OBSERVED EVIDENCE",
+      "statement": "[observability] payment-service db_conn_util_pct rose from ~35% baseline to 63% at 10:05 and 94% at 10:10, reaching 100% by 10:20; first onset detected 10:05.",
+      "evidence_ids": [
+        "met-payment-service-db_conn_util_pct-0940-1035"
+      ]
+    },
+    {
+      "label": "OBSERVED EVIDENCE",
+      "statement": "[observability] payment-service error_rate went from ~0.8% baseline to ~17% (onset 10:06) and timeout_rate from ~0.1% to ~11-13% (onset 10:06), sustained through 10:35.",
+      "evidence_ids": [
+        "met-payment-service-error_rate-0940-1035",
+        "met-payment-service-timeout_rate-0940-1035"
+      ]
+    },
+    {
+      "label": "OBSERVED EVIDENCE",
+      "statement": "[observability] 29 ERROR logs 'Timeout acquiring connection from pool payment-db-pool after 5000ms (active=10, idle=0, waiting=N)' between 10:06:13 and 10:34:18; waiting count ranges ~15-92 while active=10 and idle=0, i.e. pool fully saturated at its size of 10.",
+      "evidence_ids": [
+        "logpat-payment-service-7d1739af",
+        "log-945fe4b3",
+        "log-c2630173",
+        "log-41cefacf"
+      ]
+    },
+    {
+      "label": "OBSERVED EVIDENCE",
+      "statement": "[observability] payment-service p99 latency is flat (baseline mean 299ms vs window mean 301ms) and request_rate is unchanged (300 vs 299 rps); CPU flat (~40%).",
+      "evidence_ids": [
+        "met-payment-service-p99_latency_ms-0940-1035",
+        "met-payment-service-request_rate-0940-1035",
+        "met-payment-service-cpu_pct-0940-1035"
+      ]
+    },
+    {
+      "label": "OBSERVED EVIDENCE",
+      "statement": "[observability] postgres db_conn_util_pct FELL from ~40% baseline to ~22% from 10:07 onward (-23%), i.e. postgres-side connection usage decreased while payment pool was saturated. postgres p99 latency (~25ms), CPU (~35%) and disk_io_wait (~2ms) were unchanged.",
+      "evidence_ids": [
+        "met-postgres-db_conn_util_pct-0940-1035",
+        "met-postgres-p99_latency_ms-0940-1035",
+        "met-postgres-cpu_pct-0940-1035",
+        "met-postgres-disk_io_wait_ms-0940-1035"
+      ]
+    },
+    {
+      "label": "OBSERVED EVIDENCE",
+      "statement": "[observability] postgres WARN slow statements 'SELECT report_rollup()' with durations 15.8s-18.7s, first 10:01:25, last 10:24:50 (4 occurrences, around 10:01, 10:06, 10:20, 10:24).",
+      "evidence_ids": [
+        "logpat-postgres-44883ca5",
+        "log-1d49fd67",
+        "log-03fe1680",
+        "log-48f94b94",
+        "log-8498b365"
+      ]
+    },
+    {
+      "label": "ASSUMPTION",
+      "statement": "[critic: unsupported assumption] That 10 was the intended value for OPS-2669 (intent not confirmed).",
+      "evidence_ids": []
+    },
+    {
+      "label": "ASSUMPTION",
+      "statement": "[critic: unsupported assumption] That rolling back to 50 would clear the saturation (not yet tested).",
+      "evidence_ids": []
+    }
+  ],
+  "investigation_performed": [
+    "Round 1 | observability | completed | attempts 1 | 7 tool calls | Characterize pool exhaustion and latency/error patterns from 2026-10-05T10:00Z onward. Determine whether connection pool saturation is in payment-service, and w",
+    "Round 1 | observability | completed | attempts 1 | 4 tool calls | Assess downstream impact and upstream traffic on api-gateway and order-service around the incident start, to see when errors began and whether retries amplified",
+    "Round 1 | dependency | completed | attempts 1 | 4 tool calls | Identify deployments, configuration changes (especially pool sizes, timeouts, DB/redis settings, feature flags) to payment-service, auth-service, postgres, and ",
+    "Round 1 | dependency | completed | attempts 1 | 3 tool calls | Confirm the dependency graph around payment-service, including transitive callers of api-gateway and order-service, to scope blast radius.",
+    "Round 1 | reasoning | completed | attempts 1 | 0 tool calls | Develop and rank competing hypotheses",
+    "Round 1 | critic | completed | attempts 1 | 3 tool calls | Independently review hypotheses",
+    "Round 1 | reporting | completed | attempts 1 | 0 tool calls | Write final report"
+  ],
+  "hypotheses": [
+    {
+      "rank": 1,
+      "hypothesis_id": "H1",
+      "category": "configuration_regression",
+      "culprit_service": "payment-service",
+      "description": "Config change cfg-56d39584 (OPS-2669) reduced payment-service db.pool.max_size from 50 to 10 at 10:04Z, so the pool saturates under unchanged load, causing pool-acquire timeouts and errors. Mechanism: db.pool.max_size 50->10 at 10:04Z -> pool capacity drops ~5x while request rate stays ~300 rps and baseline pool use (~35% of 50, roughly 17 connections) now exceeds 10 -> requests queue (waiting up to ~92), active=10 idle=0 -> 5s acquire timeouts -> timeout_rate ~0.1%->~11-13% and error_rate ~0.8%->~17% from 10:06 -> payment API errors. Postgres connection count falling ~23% is consistent with payment-service now holding fewer connections (cap of 10), not contradictory.",
+      "confidence": 0.95,
+      "confidence_explanation": [
+        "base 0.10",
+        "+0.08 corroboration across >=2 independent source types",
+        "+0.78 supporting evidence (7 refs, reliability-weighted, capped)",
+        "+0.08 proposed cause (10:04) precedes/coincides with first observed anomaly (10:05)",
+        "-0.06 3 acknowledged evidence gaps",
+        "+0.05 critic review adjustment",
+        "= 0.95 (evidence-strength score, not a calibrated probability)"
+      ],
+      "supporting_evidence": [
+        {
+          "evidence_id": "cfg-56d39584",
+          "strength": "strong",
+          "note": "Only config change in window; directly reduces pool max size 5x, ~1 min before onset.",
+          "exists": true,
+          "label": "CONFIRMED FACT",
+          "description": "Config change on payment-service: db.pool.max_size 50 -> 10 at 2026-10-05T10:04:00Z (OPS-2669)"
+        },
+        {
+          "evidence_id": "met-payment-service-db_conn_util_pct-0940-1035",
+          "strength": "strong",
+          "note": "Utilisation onset 10:05 (after change), rising to 100%.",
+          "exists": true,
+          "label": "OBSERVED EVIDENCE",
+          "description": "payment-service db_conn_util_pct: baseline 34.95 -> window mean 69.43 (max 100.0, change 98.7%), onset 2026-10-05T10:05:00Z"
+        },
+        {
+          "evidence_id": "logpat-payment-service-7d1739af",
+          "strength": "strong",
+          "note": "29 pool-timeout errors with active=10 idle=0 \u2014 pool exactly at new max size of 10.",
+          "exists": true,
+          "label": "OBSERVED EVIDENCE",
+          "description": "29x ERROR on payment-service: 'Timeout acquiring connection from pool payment-db-pool after 5000ms (active=10, idle=0, waiting=29)' (first 2026-10-05T10:06:13Z, last 2026-10-05T10:34:18Z)"
+        },
+        {
+          "evidence_id": "met-payment-service-timeout_rate-0940-1035",
+          "strength": "moderate",
+          "note": "Timeout onset at 10:06 follows pool saturation.",
+          "exists": true,
+          "label": "OBSERVED EVIDENCE",
+          "description": "payment-service timeout_rate: baseline 0.1 -> window mean 6.3 (max 13.3, change 6147.1%), onset 2026-10-05T10:06:00Z"
+        },
+        {
+          "evidence_id": "met-payment-service-error_rate-0940-1035",
+          "strength": "moderate",
+          "note": "Error onset 10:06, same timing as pool saturation.",
+          "exists": true,
+          "label": "OBSERVED EVIDENCE",
+          "description": "payment-service error_rate: baseline 0.8 -> window mean 9.17 (max 18.85, change 1040.5%), onset 2026-10-05T10:06:00Z"
+        },
+        {
+          "evidence_id": "met-postgres-p99_latency_ms-0940-1035",
+          "strength": "moderate",
+          "note": "Postgres latency flat: DB server is not slow, consistent with an app-side capacity cap.",
+          "exists": true,
+          "label": "OBSERVED EVIDENCE",
+          "description": "postgres p99_latency_ms: baseline 25.15 -> window mean 25.13 (max 27.03, change -0.1%), onset none detected"
+        },
+        {
+          "evidence_id": "met-payment-service-request_rate-0940-1035",
+          "strength": "moderate",
+          "note": "Load unchanged, so pool shrink alone explains saturation.",
+          "exists": true,
+          "label": "OBSERVED EVIDENCE",
+          "description": "payment-service request_rate: baseline 300.21 -> window mean 299.16 (max 325.13, change -0.4%), onset none detected"
+        }
+      ],
+      "contradicting_evidence": [],
+      "missing_evidence": [
+        "Runtime confirmation that the effective pool max is 10 (config diff / pool gauge max)",
+        "Rationale for OPS-2669 and whether the change was intended",
+        "Per-pool wait-time time series"
+      ],
+      "critic_decision": "accept"
+    },
+    {
+      "rank": 2,
+      "hypothesis_id": "H2",
+      "category": "db_connection_pool_exhaustion",
+      "culprit_service": "postgres",
+      "description": "Long-running report_rollup() statements (15-19s, from 10:01) hold connections or locks that payment-service's pool depends on, causing pool saturation independent of the config change. Mechanism: report_rollup() slow statements from 10:01 -> connections/locks held for tens of seconds -> payment-service connections not returned to pool -> pool active=10 idle=0 and waiting queue grows -> timeouts.",
+      "confidence": 0.0,
+      "confidence_explanation": [
+        "base 0.10",
+        "+0.08 corroboration across >=2 independent source types",
+        "+0.24 supporting evidence (2 refs, reliability-weighted, capped)",
+        "-0.35 contradicting evidence (3 refs, capped 0.45)",
+        "+0.08 proposed cause (10:01) precedes/coincides with first observed anomaly (10:05)",
+        "-0.04 2 acknowledged evidence gaps",
+        "-0.40 critic review adjustment",
+        "= 0.00 (evidence-strength score, not a calibrated probability)"
+      ],
+      "supporting_evidence": [
+        {
+          "evidence_id": "logpat-postgres-44883ca5",
+          "strength": "moderate",
+          "note": "Slow report_rollup statements 15.8-18.7s starting 10:01:25, before pool onset.",
+          "exists": true,
+          "label": "OBSERVED EVIDENCE",
+          "description": "4x WARN on postgres: 'duration: 15802 ms statement: SELECT report_rollup()' (first 2026-10-05T10:01:25Z, last 2026-10-05T10:24:50Z)"
+        },
+        {
+          "evidence_id": "met-payment-service-db_conn_util_pct-0940-1035",
+          "strength": "weak",
+          "note": "Pool saturation coincides in time with rollup activity.",
+          "exists": true,
+          "label": "OBSERVED EVIDENCE",
+          "description": "payment-service db_conn_util_pct: baseline 34.95 -> window mean 69.43 (max 100.0, change 98.7%), onset 2026-10-05T10:05:00Z"
+        }
+      ],
+      "contradicting_evidence": [
+        {
+          "evidence_id": "cfg-56d39584",
+          "strength": "moderate",
+          "note": "A pool shrink to 10 at 10:04 explains saturation without requiring a lock/hold mechanism.",
+          "exists": true,
+          "label": "CONFIRMED FACT",
+          "description": "Config change on payment-service: db.pool.max_size 50 -> 10 at 2026-10-05T10:04:00Z (OPS-2669)"
+        },
+        {
+          "evidence_id": "met-postgres-p99_latency_ms-0940-1035",
+          "strength": "moderate",
+          "note": "Postgres p99 and CPU flat; no lock or IO pressure visible.",
+          "exists": true,
+          "label": "OBSERVED EVIDENCE",
+          "description": "postgres p99_latency_ms: baseline 25.15 -> window mean 25.13 (max 27.03, change -0.1%), onset none detected"
+        },
+        {
+          "evidence_id": "met-postgres-db_conn_util_pct-0940-1035",
+          "strength": "weak",
+          "note": "Postgres connection usage fell, not rose, which is not what a blocked pool would show.",
+          "exists": true,
+          "label": "OBSERVED EVIDENCE",
+          "description": "postgres db_conn_util_pct: baseline 39.83 -> window mean 30.56 (max 43.9, change -23.3%), onset 2026-10-05T10:07:00Z"
+        }
+      ],
+      "missing_evidence": [
+        "Identity of the client issuing report_rollup() (payment-service or other)",
+        "pg_stat_activity / lock-wait data during 10:01-10:35"
+      ],
+      "critic_decision": "reject"
+    },
+    {
+      "rank": 3,
+      "hypothesis_id": "H3",
+      "category": "traffic_surge",
+      "culprit_service": "payment-service",
+      "description": "Increased payment traffic or retries exhausted the pool. Mechanism: Higher request volume -> more concurrent DB checkouts -> pool of fixed size saturates -> timeouts.",
+      "confidence": 0.0,
+      "confidence_explanation": [
+        "base 0.10",
+        "+0.00 supporting evidence (0 refs, reliability-weighted, capped)",
+        "-0.45 contradicting evidence (2 refs, capped 0.45)",
+        "+0.08 proposed cause (10:05) precedes/coincides with first observed anomaly (10:05)",
+        "-0.02 1 acknowledged evidence gaps",
+        "-0.40 critic review adjustment",
+        "= 0.00 (evidence-strength score, not a calibrated probability)"
+      ],
+      "supporting_evidence": [],
+      "contradicting_evidence": [
+        {
+          "evidence_id": "met-payment-service-request_rate-0940-1035",
+          "strength": "strong",
+          "note": "Request rate flat (300 vs 299 rps).",
+          "exists": true,
+          "label": "OBSERVED EVIDENCE",
+          "description": "payment-service request_rate: baseline 300.21 -> window mean 299.16 (max 325.13, change -0.4%), onset none detected"
+        },
+        {
+          "evidence_id": "met-api-gateway-request_rate-0940-1035",
+          "strength": "moderate",
+          "note": "Upstream request rate flat, no retry amplification.",
+          "exists": true,
+          "label": "OBSERVED EVIDENCE",
+          "description": "api-gateway request_rate: baseline 1192.84 -> window mean 1202.52 (max 1292.55, change 0.8%), onset none detected"
+        }
+      ],
+      "missing_evidence": [
+        "Per-route payment request breakdown"
+      ],
+      "critic_decision": "reject"
+    },
+    {
+      "rank": 4,
+      "hypothesis_id": "H4",
+      "category": "cache_degradation",
+      "culprit_service": "redis",
+      "description": "Shared redis (used by payment-service and order-service since 2026-09-15) degraded and caused connections to be held. Mechanism: redis slowness -> payment calls hold DB connections longer -> pool exhaustion.",
+      "confidence": 0.0,
+      "confidence_explanation": [
+        "base 0.10",
+        "+0.04 supporting evidence (1 refs, reliability-weighted, capped)",
+        "-0.45 contradicting evidence (3 refs, capped 0.45)",
+        "+0.08 proposed cause (00:00) precedes/coincides with first observed anomaly (10:05)",
+        "-0.02 1 acknowledged evidence gaps",
+        "-0.40 critic review adjustment",
+        "= 0.00 (evidence-strength score, not a calibrated probability)"
+      ],
+      "supporting_evidence": [
+        {
+          "evidence_id": "topo-order-service-downstream-d3",
+          "strength": "weak",
+          "note": "Structural shared dependency: order-service->redis edge added 2026-09-15.",
+          "exists": true,
+          "label": "CONFIRMED FACT",
+          "description": "order-service depends on ?; called by ['api-gateway'] (graph topology-v2)"
+        }
+      ],
+      "contradicting_evidence": [
+        {
+          "evidence_id": "met-redis-p99_latency_ms-0940-1035",
+          "strength": "strong",
+          "note": "Redis p99 flat (3.0 vs 2.99 ms).",
+          "exists": true,
+          "label": "OBSERVED EVIDENCE",
+          "description": "redis p99_latency_ms: baseline 3.0 -> window mean 2.99 (max 3.35, change -0.3%), onset none detected"
+        },
+        {
+          "evidence_id": "met-redis-cache_hit_rate-0940-1035",
+          "strength": "moderate",
+          "note": "Cache hit rate flat.",
+          "exists": true,
+          "label": "OBSERVED EVIDENCE",
+          "description": "redis cache_hit_rate: baseline 95.14 -> window mean 94.94 (max 95.98, change -0.2%), onset none detected"
+        },
+        {
+          "evidence_id": "met-auth-service-p99_latency_ms-0940-1035",
+          "strength": "weak",
+          "note": "Auth path flat, so upstream chain not degraded.",
+          "exists": true,
+          "label": "OBSERVED EVIDENCE",
+          "description": "auth-service p99_latency_ms: baseline 90.34 -> window mean 89.6 (max 101.39, change -0.8%), onset none detected"
+        }
+      ],
+      "missing_evidence": [
+        "Redis timeout_rate (not collected)"
+      ],
+      "critic_decision": "reject"
+    }
+  ],
+  "critic_review": {
+    "verdict": "APPROVED",
+    "summary": "H1 is well supported and consistent in time. Config change cfg-56d39584 (db.pool.max_size 50->10, OPS-2669) is the only change in the window, and the payment-service log confirms the reload to max_size=10 at 10:04:00Z. Pool-acquire timeouts appear from 10:06:13Z with active=10 idle=0 and a growing waiting queue, meaning the pool is exactly at its new cap. Timeout and error rates move at 10:06, after the reload. Request rate is flat (300 vs 299 rps), so load did not change. Postgres latency is flat and Postgres connection usage fell, which fits an application-side cap rather than a database slowdown. Caveat: the rollback test (restore 50 and check recovery) and the OPS-2669 intent are not yet confirmed. These do not block approval. H2, H3 and H4 are rejected, as detailed below.",
+    "assessments": [
+      {
+        "hypothesis_id": "H1",
+        "decision": "accept",
+        "reasoning": "Config reload to max_size=10 is confirmed in payment-service logs at 10:04:00Z. Pool timeouts start at 10:06:13Z with active=10, idle=0, waiting up to 78, which matches a pool saturated at the new cap. Timeout and error rate onsets follow. Load is flat and Postgres p99 is flat, which rules out a load or DB-slowness cause. The rollback test is still a useful confirmation but is not required for approval."
+      },
+      {
+        "hypothesis_id": "H2",
+        "decision": "reject",
+        "reasoning": "report_rollup() slow statements started at 10:01, but payment pool utilisation was at baseline (~35%) until 10:05, and no pool errors appeared until 10:06, after the config reload at 10:04. Postgres p99, CPU and connection usage show no lock or IO pressure, and Postgres connections fell rather than rose. The rollup is at most a background factor and does not explain the saturation timing. Caller identity is also unknown."
+      },
+      {
+        "hypothesis_id": "H3",
+        "decision": "reject",
+        "reasoning": "Payment request rate is flat (300 vs 299 rps) and upstream api-gateway rate is flat. No surge or retry amplification is evident. The pre-check already flags no valid supporting evidence."
+      },
+      {
+        "hypothesis_id": "H4",
+        "decision": "reject",
+        "reasoning": "Redis p99 (3.0 vs 2.99 ms) and cache hit rate are flat. The only support is a topology edge added 2026-09-15, which is structural and not an anomaly. No redis log or timeout evidence exists. The cited evidence is not a symptom of degradation."
+      }
+    ],
+    "precheck_issues": [
+      {
+        "hypothesis_id": "H3",
+        "check": "has_support",
+        "severity": "blocking",
+        "detail": "no valid supporting evidence"
+      },
+      {
+        "hypothesis_id": "H4",
+        "check": "culprit_symptom",
+        "severity": "warning",
+        "detail": "no log/metric evidence cited for culprit redis"
+      },
+      {
+        "hypothesis_id": "H4",
+        "check": "single_source",
+        "severity": "warning",
+        "detail": "all support comes from one source type (dependency)"
+      }
+    ],
+    "unsupported_assumptions": [
+      "That 10 was the intended value for OPS-2669 (intent not confirmed).",
+      "That rolling back to 50 would clear the saturation (not yet tested)."
+    ],
+    "alternative_explanations": [
+      "Report_rollup() lock or connection holds in Postgres contributing to pool pressure (H2). Not supported by timing or DB metrics, but not fully excluded without pg_stat_activity data.",
+      "Traffic surge (H3): contradicted by flat request rates.",
+      "Redis degradation (H4): contradicted by flat redis latency and hit rate."
+    ],
+    "evidence_requests": [],
+    "round": 1,
+    "rounds_reviewed": 1
+  },
+  "evidence_gaps": [],
+  "probable_root_cause": {
+    "hypothesis_id": "H1",
+    "category": "configuration_regression",
+    "culprit_service": "payment-service",
+    "description": "Config change cfg-56d39584 (OPS-2669) reduced payment-service db.pool.max_size from 50 to 10 at 10:04Z, so the pool saturates under unchanged load, causing pool-acquire timeouts and errors.",
+    "confidence": 0.95,
+    "label": "ROOT CAUSE IDENTIFIED (critic-approved; still an INFERENCE from evidence)"
+  },
+  "root_cause_statement": "ROOT CAUSE IDENTIFIED (critic-approved; still an INFERENCE from evidence): configuration_regression in payment-service - Config change cfg-56d39584 (OPS-2669) reduced payment-service db.pool.max_size from 50 to 10 at 10:04Z, so the pool saturates under unchanged load, causing pool-acquire timeouts and errors.",
+  "corrective_actions": [
+    "Restore payment-service db.pool.max_size to 50 (the pre-change value) as the immediate mitigation, after confirming the intended value with the OPS-2669 owner (cfg-56d39584).",
+    "Verify recovery after the rollback: confirm the waiting queue drains, timeout_rate and error_rate return toward baseline (~0.1% and ~0.8%), and db_conn_util_pct stabilizes.",
+    "Record the rollback test result in the incident timeline so the hypothesis is confirmed or refuted by outcome rather than inference alone.",
+    "If rollback does not clear saturation, collect pg_stat_activity and pool metrics to test the unexcluded alternative of report_rollup() holding connections (H2)."
+  ],
+  "preventive_actions": [
+    "Require review and a staged rollout for changes to database pool settings, including a documented expected value and a check of current pool demand against the new cap.",
+    "Add config-change validation that compares proposed db.pool.max_size against observed peak connection demand and rejects values that would saturate the pool at current traffic.",
+    "Tie every config change to its ticket (OPS-2669) with a stated intent, so that unintended values can be detected in review.",
+    "Review the earlier pool-exhaustion incident from last year to determine whether the same class of config-driven cause was missed and whether the runbook should check config changes first."
+  ],
+  "monitoring_recommendations": [
+    "Alert when payment-service db_conn_util_pct stays above 80% for 5 minutes or when the pool waiting count is greater than 0 for more than 1 minute.",
+    "Alert on any payment-service timeout log matching 'Timeout acquiring connection from pool payment-db-pool' and on timeout_rate above 1% for 5 minutes.",
+    "Emit an event or alert on every config reload that changes db.pool.* values, including old value, new value, and change ticket.",
+    "Track pool active and idle counts and waiting queue length as dashboard metrics, and keep Postgres report_rollup() duration (logpat-postgres-44883ca5) under alert as a secondary signal."
+  ],
+  "limitations": [
+    "The rollback test (restoring 50 and observing recovery) has not yet been performed, so the causal link is inferred from timing and metrics rather than confirmed by outcome.",
+    "The intent behind OPS-2669 (whether 10 was the intended value) has not been confirmed.",
+    "Without pg_stat_activity data, the possibility that report_rollup() lock or connection holds contributed to pool pressure (H2) is not fully excluded, though timing and database metrics do not support it.",
+    "Redis and auth-service metrics were used to reject H4; the analysis covers only the metrics available in the investigation window.",
+    "Confidence values are rule-based evidence-strength scores, not calibrated probabilities.",
+    "Investigation terminated because: critic verdict APPROVED"
+  ],
+  "final_status": "ROOT_CAUSE_IDENTIFIED",
+  "conclusion": "The most probable root cause of INC-012 is configuration regression: the reduction of payment-service db.pool.max_size from 50 to 10 under cfg-56d39584 (OPS-2669) at 10:04Z. Under unchanged request load (about 300 rps), the pool cannot serve baseline demand, which produces acquire timeouts and elevated errors from 10:06Z. Traffic surge, Redis degradation, and Postgres-side saturation were rejected on the evidence (H2, H3, H4). The rollback test and confirmation of intent for OPS-2669 remain outstanding and should be completed to fully close the investigation.",
+  "statistics": {
+    "rounds": 1,
+    "tool_calls": 22,
+    "tool_failures": 0,
+    "tool_retries": 0,
+    "partial_results": 0,
+    "agent_failures": 0,
+    "agent_retries": 0,
+    "invalid_llm_outputs": 0,
+    "messages_exchanged": 20,
+    "evidence_records": 96,
+    "duration_s": 62.41,
+    "tokens": {
+      "input_tokens": 48,
+      "output_tokens": 20240,
+      "cache_read_tokens": 37171,
+      "cache_write_tokens": 58163,
+      "llm_calls": 16,
+      "cost_usd": 0.017766885
+    },
+    "tokens_by_agent": {
+      "orchestrator": {
+        "input_tokens": 6,
+        "output_tokens": 1032,
+        "cache_read_tokens": 2989,
+        "cache_write_tokens": 0,
+        "llm_calls": 2,
+        "cost_usd": 0.00054649
+      },
+      "dependency": {
+        "input_tokens": 14,
+        "output_tokens": 3980,
+        "cache_read_tokens": 10350,
+        "cache_write_tokens": 9504,
+        "llm_calls": 5,
+        "cost_usd": 0.0032829
+      },
+      "observability": {
+        "input_tokens": 14,
+        "output_tokens": 7279,
+        "cache_read_tokens": 16242,
+        "cache_write_tokens": 23212,
+        "llm_calls": 5,
+        "cost_usd": 0.00670482
+      },
+      "reasoning": {
+        "input_tokens": 4,
+        "output_tokens": 3978,
+        "cache_read_tokens": 0,
+        "cache_write_tokens": 12387,
+        "llm_calls": 1,
+        "cost_usd": 0.003537775
+      },
+      "critic": {
+        "input_tokens": 6,
+        "output_tokens": 2211,
+        "cache_read_tokens": 7590,
+        "cache_write_tokens": 9537,
+        "llm_calls": 2,
+        "cost_usd": 0.0023741250000000004
+      },
+      "reporting": {
+        "input_tokens": 4,
+        "output_tokens": 1760,
+        "cache_read_tokens": 0,
+        "cache_write_tokens": 3523,
+        "llm_calls": 1,
+        "cost_usd": 0.0013207750000000002
+      }
+    }
+  }
+}

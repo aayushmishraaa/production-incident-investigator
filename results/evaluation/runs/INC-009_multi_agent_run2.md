@@ -1,0 +1,264 @@
+# Production Incident Investigation Report
+
+## Incident Information
+- **Incident ID:** INC-009
+- **Title:** User API errors during morning peak
+- **Severity:** SEV2
+- **Affected services:** api-gateway, user-service
+- **Start time:** 2026-09-26T08:00:00+00:00
+- **Investigation ID:** inv-6e16e936e8 (multi_agent)
+- **Final status:** `PROBABLE_ROOT_CAUSE`
+
+## Executive Summary
+INC-009 (SEV2): elevated 5xx errors on user endpoints from ~07:57Z to at least 08:25Z on 2026-09-26, affecting user-service and api-gateway. Final status is PROBABLE_ROOT_CAUSE, not a confirmed root cause. The leading hypothesis (H1, confidence 0.555) is that the user-service 7.2.0 deployment (dep-c02e51b7, "Switch ORM to batch loader", 07:56:00Z) introduced a ProfileBatchLoader defect. The user-service error rate stepped from a 0.41% baseline to a window mean of 19.79% (max 26.11%) with onset at 07:57:00Z (met-user-service-error_rate-0750-0830). api-gateway error rate rose from 0.5% to a mean of 5.89% (max 8.65%) at the same minute (met-api-gateway-error_rate-0745-0830). Traffic, latency, CPU, DB connections and timeouts stayed flat, which fits fast-failing errors rather than saturation. The critic returned NEEDS_MORE_EVIDENCE: the mechanism is not yet proven. Only about 11 ERROR records match the ProfileBatchLoader NPE pattern (logpat-user-service-2347725d), which is far fewer than the observed error volume, and the log query was partial. H3 (an unlogged non-NPE failure path in user-service) remains a live alternative. H2 (postgres report_rollup contention) is rejected.
+
+## Incident Timeline
+| Time (UTC) | Label | Event | Evidence |
+|---|---|---|---|
+| 2026-09-26T07:56:00Z | CONFIRMED FACT | Deployment of user-service 7.1.3->7.2.0 at 2026-09-26T07:56:00Z (SUCCEEDED): Switch ORM to batch loader | dep-c02e51b7 |
+| 2026-09-26T07:57:00Z | OBSERVED EVIDENCE | Anomaly onset: user-service error_rate: baseline 0.41 -> window mean 12.5 (max 26.11, change 2984.9%), onset 2026-09-26T07:57:00Z | met-user-service-error_rate-0730-0825 |
+| 2026-09-26T07:57:00Z | OBSERVED EVIDENCE | Anomaly onset: user-service p95_latency_ms: baseline 80.09 -> window mean 383.28 (max 748.48, change 378.5%), onset 2026-09-26T07:57:00Z | met-user-service-p95_latency_ms-0730-0825 |
+| 2026-09-26T07:57:00Z | OBSERVED EVIDENCE | Anomaly onset: api-gateway error_rate: baseline 0.5 -> window mean 5.89 (max 8.65, change 1073.2%), onset 2026-09-26T07:57:00Z | met-api-gateway-error_rate-0745-0830 |
+| 2026-09-26T07:57:00Z | OBSERVED EVIDENCE | Anomaly onset: user-service error_rate: baseline 0.41 -> window mean 17.68 (max 26.11, change 4264.4%), onset 2026-09-26T07:57:00Z | met-user-service-error_rate-0745-0830 |
+| 2026-09-26T07:57:00Z | OBSERVED EVIDENCE | Anomaly onset: user-service p95_latency_ms: baseline 80.09 -> window mean 410.38 (max 753.5, change 412.4%), onset 2026-09-26T07:57:00Z | met-user-service-p95_latency_ms-0730-0830 |
+| 2026-09-26T07:57:00Z | OBSERVED EVIDENCE | Anomaly onset: user-service error_rate: baseline 0.41 -> window mean 13.43 (max 26.11, change 3215.8%), onset 2026-09-26T07:57:00Z | met-user-service-error_rate-0730-0830 |
+| 2026-09-26T07:57:00Z | OBSERVED EVIDENCE | Anomaly onset: user-service error_rate: baseline 0.41 -> window mean 19.79 (max 26.11, change 4781.5%), onset 2026-09-26T07:57:00Z | met-user-service-error_rate-0750-0830 |
+| 2026-09-26T07:57:00Z | OBSERVED EVIDENCE | Anomaly onset: user-service error_rate: baseline 0.41 -> window mean 18.53 (max 26.11, change 4472.7%), onset 2026-09-26T07:57:00Z | met-user-service-error_rate-0750-0820 |
+| 2026-09-26T07:57:00Z | OBSERVED EVIDENCE | Anomaly onset: api-gateway error_rate: baseline 0.5 -> window mean 6.54 (max 8.65, change 1206.1%), onset 2026-09-26T07:57:00Z | met-api-gateway-error_rate-0750-0830 |
+| 2026-09-26T07:57:17Z | OBSERVED EVIDENCE | First log: 11x ERROR on user-service: 'NullPointerException in ProfileBatchLoader.load (user-service v7.2.0) req 18' (first 2026-09-26T07:57:17Z, last 2026-09-26T08:25:02Z) | logpat-user-service-2347725d |
+| 2026-09-26T08:00:00Z | CONFIRMED FACT | Reported symptom start |  |
+| 2026-09-26T08:00:08Z | OBSERVED EVIDENCE | First log: 4x WARN on api-gateway: 'user-service returned 500 for GET /v1/users/23' (first 2026-09-26T08:00:08Z, last 2026-09-26T08:18:48Z) | logpat-api-gateway-c1d874f7 |
+| 2026-09-26T08:06:00Z | CONFIRMED FACT | Incident reported |  |
+
+## Observed Symptoms
+- **OBSERVED EVIDENCE:** user-service error_rate: baseline 0.41 -> window mean 12.5 (max 26.11, change 2984.9%), onset 2026-09-26T07:57:00Z (met-user-service-error_rate-0730-0825)
+- **OBSERVED EVIDENCE:** user-service p95_latency_ms: baseline 80.09 -> window mean 383.28 (max 748.48, change 378.5%), onset 2026-09-26T07:57:00Z (met-user-service-p95_latency_ms-0730-0825)
+- **OBSERVED EVIDENCE:** api-gateway error_rate: baseline 0.5 -> window mean 5.89 (max 8.65, change 1073.2%), onset 2026-09-26T07:57:00Z (met-api-gateway-error_rate-0745-0830)
+- **OBSERVED EVIDENCE:** user-service error_rate: baseline 0.41 -> window mean 17.68 (max 26.11, change 4264.4%), onset 2026-09-26T07:57:00Z (met-user-service-error_rate-0745-0830)
+- **OBSERVED EVIDENCE:** user-service p95_latency_ms: baseline 80.09 -> window mean 410.38 (max 753.5, change 412.4%), onset 2026-09-26T07:57:00Z (met-user-service-p95_latency_ms-0730-0830)
+- **OBSERVED EVIDENCE:** user-service error_rate: baseline 0.41 -> window mean 13.43 (max 26.11, change 3215.8%), onset 2026-09-26T07:57:00Z (met-user-service-error_rate-0730-0830)
+- **OBSERVED EVIDENCE:** user-service error_rate: baseline 0.41 -> window mean 19.79 (max 26.11, change 4781.5%), onset 2026-09-26T07:57:00Z (met-user-service-error_rate-0750-0830)
+- **OBSERVED EVIDENCE:** user-service error_rate: baseline 0.41 -> window mean 18.53 (max 26.11, change 4472.7%), onset 2026-09-26T07:57:00Z (met-user-service-error_rate-0750-0820)
+- **OBSERVED EVIDENCE:** api-gateway error_rate: baseline 0.5 -> window mean 6.54 (max 8.65, change 1206.1%), onset 2026-09-26T07:57:00Z (met-api-gateway-error_rate-0750-0830)
+- **OBSERVED EVIDENCE:** [dependency] user-service upstream dependencies are postgres and redis only. Downstream dependents (potentially impacted) are api-gateway, notification-service and order-service. (topo-user-service-both-d3)
+- **OBSERVED EVIDENCE:** [dependency] The only topology change listed for user-service is an added edge notification-service -> user-service, effective 2026-09-15T00:00:00Z, which is about two weeks before the incident. No topology change falls in the incident window. (topo-user-service-both-d3)
+- **OBSERVED EVIDENCE:** [dependency] api-gateway calls auth-service, order-service, payment-service and user-service directly. It has no downstream dependents in the graph, so it is the entry point. Its transitive dependencies include postgres and redis via each of those services, and message-queue via order-service. (topo-api-gateway-both-d2)
+- **OBSERVED EVIDENCE:** [dependency] order-service upstream dependencies are message-queue, payment-service, postgres, redis and user-service. Its only downstream dependent is api-gateway. Its topology change is an added edge order-service -> redis, effective 2026-09-15, outside the incident window. (topo-order-service-both-d2)
+- **OBSERVED EVIDENCE:** [dependency] payment-service upstream dependencies are auth-service, postgres and redis. Its downstream dependents are api-gateway and order-service. It has no topology changes. (topo-payment-service-both-d2)
+- **OBSERVED EVIDENCE:** [dependency] Deployment dep-c02e51b7 moved user-service 7.1.3 -> 7.2.0 (SUCCEEDED, ci-pipeline), described as 'Switch ORM to batch loader'. It is the only deployment in the 24h window across the queried scope. (dep-c02e51b7)
+- **OBSERVED EVIDENCE:** [dependency] user-service error_rate onset at 07:57Z: baseline mean 0.41% -> window mean 12.5% (max 26.1%); sampled 07:55 = 0.41%, 08:00 = 22.8%. Baseline was flat before the deployment. (met-user-service-error_rate-0730-0825)
+- **OBSERVED EVIDENCE:** [dependency] user-service p95 latency onset 07:57Z: baseline 80ms -> window mean 383ms (max 748ms); sampled 07:55 = 73ms, 08:00 = 669ms. Step change coincides with the deployment. (met-user-service-p95_latency_ms-0730-0825)
+- **OBSERVED EVIDENCE:** [dependency] user-service db_conn_util_pct did not change (baseline 29.8% vs window 30.2%), suggesting the connection pool is not saturated; no evidence of DB connection exhaustion in user-service. (met-user-service-db_conn_util_pct-0730-0825)
+- **OBSERVED EVIDENCE:** [dependency] Dependency graph (topology-v2, effective 2026-09-15): user-service upstream = postgres, redis; downstream = api-gateway, notification-service, order-service. Added edge notification-service -> user-service on 09-15 (predates the incident by 11 days, so not a fresh topology change). (topo-user-service-both-d2)
+- **INFERENCE:** [dependency] The ORM batch-loader change in 7.2.0 may have introduced query behaviour changes (e.g., N+1 or larger batch queries) causing latency and errors; this is correlation only and needs query-level or trace evidence. (dep-c02e51b7, met-user-service-p95_latency_ms-0730-0825)
+- **OBSERVED EVIDENCE:** [observability] DB connection utilisation flat: mean 40.0% in window vs 40.08% baseline (-0.2%), no onset detected, no missing points. (met-postgres-db_conn_util_pct-0730-0825)
+- **OBSERVED EVIDENCE:** [observability] Postgres p95 latency flat: 12.01 ms window vs 11.98 ms baseline (+0.2%), no onset. Error rate flat at ~0.05%. CPU flat (34.9% vs 35.0%). (met-postgres-p95_latency_ms-0730-0825, met-postgres-error_rate-0730-0825, met-postgres-cpu_pct-0730-0825)
+- **OBSERVED EVIDENCE:** [observability] Postgres WARN logs show slow statement 'SELECT report_rollup()' (durations 13.9s to 19.7s), 5 occurrences from 07:32:16Z to 08:21:19Z. Onset is before T0 and the pattern spans the baseline and window, so it is not clearly tied to 08:00. (logpat-postgres-44883ca5, log-348354c3, log-aac4fdaa, log-2c1c2d4d)
+- **OBSERVED EVIDENCE:** [observability] Redis is healthy: p95 latency 1.49 ms vs 1.5 ms baseline, cache hit rate 95.06% vs 94.81%, error rate ~0.01%, memory 59.9% vs 59.7%. No evictions metric was available in the query set. (met-redis-p95_latency_ms-0730-0825, met-redis-cache_hit_rate-0730-0825, met-redis-error_rate-0730-0825, met-redis-memory_pct-0730-0825)
+- **OBSERVED EVIDENCE:** [observability] Auth-service is flat: error rate 0.3% vs 0.3% baseline (-0.9%), p95 latency 45.0 ms vs 44.8 ms (+0.5%), timeout rate 0.05% (+1.6%), request rate +0.7%. No onset. (met-auth-service-error_rate-0730-0825, met-auth-service-p95_latency_ms-0730-0825, met-auth-service-timeout_rate-0730-0825, met-auth-service-request_rate-0730-0825)
+- **ASSUMPTION:** [critic: unsupported assumption] That the ~12 logged NPEs represent the full failure volume (the log query was partial). 
+- **ASSUMPTION:** [critic: unsupported assumption] That the deploy caused the error step, rather than merely preceding it by one minute. 
+- **ASSUMPTION:** [critic: unsupported assumption] That the 07:57:17Z NPE timestamp is authoritative, since other pulls gave later times (07:59:37Z, 08:00:53Z). 
+- **ASSUMPTION:** [critic: unsupported assumption] That the report_rollup slow statements are unrelated, which is supported only by flat postgres metrics, not by any lock or table-overlap evidence. 
+
+## Investigation Performed
+- Round 1 | observability | completed | attempts 1 | 6 tool calls | Assess error rates, latency, saturation for api-gateway and user-service from 07:45Z to 08:30Z; identify first error onset relative to 08:00Z.
+- Round 1 | observability | completed | attempts 1 | 5 tool calls | Check backend data stores that user-service relies on for signs of degradation starting around 08:00Z.
+- Round 1 | dependency | completed | attempts 1 | 4 tool calls | Identify deployments, config changes, or feature flag changes to api-gateway, user-service, notification-service, and shared data stores in the 24 hours before 
+- Round 1 | dependency | completed | attempts 1 | 4 tool calls | Map downstream and upstream blast radius of user-service and api-gateway to determine other impacted services and shared dependencies.
+- Round 1 | reasoning | completed | attempts 1 | 0 tool calls | Develop and rank competing hypotheses
+- Round 1 | critic | completed | attempts 1 | 3 tool calls | Independently review hypotheses
+- Round 2 | observability | completed | attempts 1 | 2 tool calls | FOLLOW-UP requested by critic: Unfiltered user-service ERROR/WARN log breakdown by exception type and message pattern for 2026-09-26T07:50Z to 08:30Z. Confirm w
+- Round 2 | observability | completed | attempts 1 | 1 tool calls | FOLLOW-UP requested by critic: Re-pull user-service p95 and p99 latency for 07:30Z to 08:30Z at 1-minute granularity, and check whether the p99 series is aggreg
+- Round 2 | reasoning | completed | attempts 1 | 0 tool calls | Develop and rank competing hypotheses
+- Round 2 | critic | completed | attempts 1 | 3 tool calls | Independently review hypotheses
+- Round 3 | observability | completed | attempts 1 | 2 tool calls | FOLLOW-UP requested by critic: Pull user-service logs 07:50-08:30Z with NO severity filter (or all levels) and count every exception type and status-500 record,
+- Round 3 | observability | completed | attempts 1 | 3 tool calls | FOLLOW-UP requested by critic: Compare error_rate and NPE log counts by instance/version (7.2.0 vs any remaining 7.1.3 instances) for 07:50-08:30Z, if available
+- Round 3 | reasoning | completed | attempts 1 | 0 tool calls | Develop and rank competing hypotheses
+- Round 3 | critic | completed | attempts 1 | 2 tool calls | Independently review hypotheses
+- Round 3 | reporting | completed | attempts 1 | 0 tool calls | Write final report
+
+## Root-Cause Hypotheses (ranked by evidence strength)
+### 1. H1 - `deployment_regression` in `user-service` (confidence 0.56, critic: needs_evidence)
+**INFERENCE:** user-service 7.2.0 (dep-c02e51b7, 'Switch ORM to batch loader') introduced a ProfileBatchLoader defect that fails requests, producing the user-service 5xx step that propagates to api-gateway. Mechanism: Deploy 7.1.3->7.2.0 at 07:56Z -> ProfileBatchLoader.load throws NPEs on v7.2.0 from 07:57:17Z -> user-service returns 5xx on affected requests (error_rate 0.41% -> ~23%) -> api-gateway forwards user-service 500s (error_rate 0.5% -> ~7.8%). Latency, CPU, DB connections and traffic stay flat, consistent with fast-failing errors rather than saturation.
+
+Confidence breakdown: base 0.10; +0.08 corroboration across >=2 independent source types; +0.68 supporting evidence (6 refs, reliability-weighted, capped); -0.12 contradicting evidence (2 refs, capped 0.45); +0.08 proposed cause (07:56) precedes/coincides with first observed anomaly (07:57); -0.05 tool failures/partial data for user-service; -0.08 4 acknowledged evidence gaps; (reliability discount already applied: 0.06); -0.05 critic review adjustment; = 0.56 (evidence-strength score, not a calibrated probability)
+
+Supporting evidence:
+- [CONFIRMED FACT] `dep-c02e51b7` (moderate): Deployment of user-service 7.1.3->7.2.0 at 2026-09-26T07:56:00Z (SUCCEEDED): Switch ORM to batch loader
+- [OBSERVED EVIDENCE] `met-user-service-error_rate-0750-0830` (strong): user-service error_rate: baseline 0.41 -> window mean 19.79 (max 26.11, change 4781.5%), onset 2026-09-26T07:57:00Z
+- [OBSERVED EVIDENCE] `logpat-user-service-2347725d` (moderate): 11x ERROR on user-service: 'NullPointerException in ProfileBatchLoader.load (user-service v7.2.0) req 18' (first 2026-09-26T07:57:17Z, last 2026-09-26T08:25:02Z)
+- [OBSERVED EVIDENCE] `met-api-gateway-error_rate-0745-0830` (moderate): api-gateway error_rate: baseline 0.5 -> window mean 5.89 (max 8.65, change 1073.2%), onset 2026-09-26T07:57:00Z
+- [CONFIRMED FACT] `topo-user-service-both-d3` (weak): user-service depends on ['postgres', 'redis']; called by ['api-gateway', 'notification-service', 'order-service'] (graph topology-v2)
+- [OBSERVED EVIDENCE] `met-user-service-db_conn_util_pct-0745-0830` (weak): user-service db_conn_util_pct: baseline 29.75 -> window mean 29.92 (max 33.82, change 0.6%), onset none detected
+
+Contradicting evidence:
+- [OBSERVED EVIDENCE] `logpat-user-service-2347725d` (moderate): 11x ERROR on user-service: 'NullPointerException in ProfileBatchLoader.load (user-service v7.2.0) req 18' (first 2026-09-26T07:57:17Z, last 2026-09-26T08:25:02Z)
+- [OBSERVED EVIDENCE] `met-user-service-p95_latency_ms-0730-0830` (weak): user-service p95_latency_ms: baseline 80.09 -> window mean 410.38 (max 753.5, change 412.4%), onset 2026-09-26T07:57:00Z
+
+Remaining uncertainties / missing evidence:
+- [UNKNOWN] Unfiltered 5xx count by status and exception type for 07:50-08:30Z (log query is partial and severity filter not applied).
+- [UNKNOWN] Per-version (7.1.3 vs 7.2.0) or per-instance error-rate split.
+- [UNKNOWN] Canary or rollback comparison showing error rate falls on 7.1.3 instances.
+- [UNKNOWN] Config/feature-flag store coverage (zero rows returned, unverified).
+
+### 2. H3 - `unknown` in `user-service` (confidence 0.43, critic: needs_evidence)
+**INFERENCE:** A non-NPE user-service failure path (unlogged or not returned by the partial log query) produces most of the 5xx volume; the deploy may be coincident or may trigger it. Mechanism: Some change at or after 07:56Z causes a user-service request path to return 5xx without ERROR-level logging (or logs that are dropped by the pipeline). Errors reach api-gateway as upstream 500s, producing the observed step. Because the NPE logs are too few to explain the volume, the dominant failure mode is still unidentified.
+
+Confidence breakdown: base 0.10; +0.08 corroboration across >=2 independent source types; +0.44 supporting evidence (3 refs, reliability-weighted, capped); -0.05 contradicting evidence (1 refs, capped 0.45); +0.08 proposed cause (07:56) precedes/coincides with first observed anomaly (07:57); -0.05 tool failures/partial data for user-service; -0.04 2 acknowledged evidence gaps; (reliability discount already applied: 0.02); -0.05 critic review adjustment; = 0.43 (evidence-strength score, not a calibrated probability)
+
+Supporting evidence:
+- [OBSERVED EVIDENCE] `met-user-service-error_rate-0750-0830` (strong): user-service error_rate: baseline 0.41 -> window mean 19.79 (max 26.11, change 4781.5%), onset 2026-09-26T07:57:00Z
+- [OBSERVED EVIDENCE] `met-user-service-timeout_rate-0745-0830` (moderate): user-service timeout_rate: baseline 0.05 -> window mean 0.05 (max 0.05, change 0.4%), onset none detected
+- [OBSERVED EVIDENCE] `logpat-user-service-2347725d` (weak): 11x ERROR on user-service: 'NullPointerException in ProfileBatchLoader.load (user-service v7.2.0) req 18' (first 2026-09-26T07:57:17Z, last 2026-09-26T08:25:02Z)
+
+Contradicting evidence:
+- [OBSERVED EVIDENCE] `met-user-service-request_rate-0750-0820` (weak): user-service request_rate: baseline 495.82 -> window mean 501.47 (max 541.07, change 1.1%), onset none detected
+
+Remaining uncertainties / missing evidence:
+- [UNKNOWN] Any non-NPE exception or 5xx log record in the window (keyword '500' search returned nothing but was partial).
+- [UNKNOWN] Per-status and per-endpoint breakdown of user-service errors.
+
+### 3. H2 - `resource_saturation` in `postgres` (confidence 0.00, critic: reject)
+**INFERENCE:** Slow report_rollup() statements on postgres contend with user-service queries and cause user-service failures. Mechanism: report_rollup() runs for 13.9-19.7s -> locks or I/O contention on postgres -> user-service queries slow or fail -> user-service 5xx.
+
+Confidence breakdown: base 0.10; +0.02 supporting evidence (1 refs, reliability-weighted, capped); -0.45 contradicting evidence (4 refs, capped 0.45); +0.08 proposed cause (07:49) precedes/coincides with first observed anomaly (07:57); -0.04 2 acknowledged evidence gaps; (reliability discount already applied: 0.02); -0.40 critic review adjustment; = 0.00 (evidence-strength score, not a calibrated probability)
+
+Supporting evidence:
+- [OBSERVED EVIDENCE] `logpat-postgres-44883ca5` (weak): 2x WARN on postgres: 'duration: 13902 ms statement: SELECT report_rollup()' (first 2026-09-26T07:49:53Z, last 2026-09-26T08:14:06Z)
+
+Contradicting evidence:
+- [OBSERVED EVIDENCE] `met-postgres-p95_latency_ms-0730-0825` (strong): postgres p95_latency_ms: baseline 11.98 -> window mean 12.01 (max 13.12, change 0.2%), onset none detected
+- [OBSERVED EVIDENCE] `met-postgres-cpu_pct-0730-0825` (moderate): postgres cpu_pct: baseline 35.04 -> window mean 34.87 (max 38.21, change -0.5%), onset none detected
+- [OBSERVED EVIDENCE] `met-user-service-db_conn_util_pct-0745-0830` (moderate): user-service db_conn_util_pct: baseline 29.75 -> window mean 29.92 (max 33.82, change 0.6%), onset none detected
+- [OBSERVED EVIDENCE] `met-postgres-error_rate-0730-0825` (moderate): postgres error_rate: baseline 0.05 -> window mean 0.05 (max 0.06, change -0.9%), onset none detected
+
+Remaining uncertainties / missing evidence:
+- [UNKNOWN] Lock-wait and connection-error metrics for postgres.
+- [UNKNOWN] Evidence that report_rollup() touches user-service tables.
+
+## Critic Review
+- **Verdict:** `NEEDS_MORE_EVIDENCE` (rounds reviewed: 3)
+- **Reasoning:** H1 (user-service 7.2.0 regression) has the best temporal fit: the deployment at 07:56:00Z precedes the user-service error step (0.41% to ~19.8% mean, onset 07:57:00Z) with flat traffic, and api-gateway error rate steps at the same minute. However, the only error signal tied to the deploy is the ProfileBatchLoader NPE pattern, which totals about 12 ERROR records over 07:57-08:25Z. That is far too few to explain a 20%+ 5xx rate, and the log query is PARTIAL, so absence elsewhere cannot be concluded. The mechanism is therefore not yet proven. H2 is rejected: its onset (07:49:53Z) has no matching metric change on postgres (p95, CPU and error rate all flat) or on user-service DB connections, and its only support is a single log pattern. H3 is a valid unknown but is not yet supported by any identified error type; it stays open as the main alternative. A split of user-service 5xx by version/instance, or a rollback comparison, would settle H1 versus H3.
+- H1: **needs_evidence** - Strong timing and a sharp, sustained step in user-service and api-gateway error rate at the deploy. The NPE log count (about 12) cannot account for the 5xx volume, and the log set is partial. Need per-version or per-instance error split, or rollback comparison, to confirm the 7.2.0 instances carry the errors.
+- H2: **reject** - Postgres p95 latency, CPU and error rate are flat across the window, and user-service DB connection utilisation is flat. The report_rollup warning starts 8 minutes before onset with no metric correlate. Single-source (log) support only.
+- H3: **needs_evidence** - Plausible given the volume gap between the NPE logs and the 5xx rate, but no non-NPE error type has been identified. Flat timeouts and p99 are compatible with fast failures. Needs complete logs or a per-status breakdown to be testable.
+- pre-check warning `single_source` on H2: all support comes from one source type (log)
+- alternative: Non-NPE user-service failure path that is unlogged or dropped by the log pipeline (H3).
+- alternative: A deploy-coincident configuration or feature-flag change not covered by the config store (coverage unverified, zero rows returned).
+
+## Probable Root Cause
+MOST PROBABLE EXPLANATION (INFERENCE, not confirmed): deployment_regression in user-service - user-service 7.2.0 (dep-c02e51b7, 'Switch ORM to batch loader') introduced a ProfileBatchLoader defect that fails requests, producing the user-service 5xx step that propagates to api-gateway.
+
+## Corrective Actions
+- Roll back user-service from 7.2.0 to 7.1.3 as the immediate mitigation, since the deployment is the leading and most time-aligned change. Confirm user-service and api-gateway error rates return to baseline (~0.41% and ~0.5%).
+- If rollback is delayed or does not restore error rates, treat H3 as the active path: pull full, unpartitioned user-service logs and 5xx traces for 07:50Z-08:30Z to identify the non-NPE failure type.
+- Verify whether any configuration or feature-flag change occurred around 07:56Z outside the config store, since its coverage was unverified (zero rows returned).
+
+## Preventive Actions
+- Add a pre-release test covering ProfileBatchLoader.load with null and empty inputs and batch edge cases, and require it to pass before the 7.2.0-style ORM change ships.
+- Require canary or progressive rollout for user-service deploys, with automated rollback when 5xx rate exceeds baseline by a set threshold within the first 10 minutes.
+- Ensure log ingestion for user-service is complete and that error logs are not dropped, so that future investigations are not limited by partial query results.
+
+## Monitoring Recommendations
+- Alert on user-service 5xx error_rate above 1% for 2 consecutive minutes, and on api-gateway 5xx rate for upstream user-service routes.
+- Split user-service error_rate by version and instance label to directly compare 7.2.0 against 7.1.3 and separate H1 from H3.
+- Create a log alert on 'NullPointerException in ProfileBatchLoader' and track its count against the 5xx count to test whether the NPEs account for the full error volume.
+- Monitor user-service timeout_rate, db_conn_util_pct and p95 latency to confirm the fast-failing pattern persists and no saturation develops.
+- Track postgres p95 latency and report_rollup duration to keep H2 closed, and watch for any change in lock wait time.
+
+## Evidence Gaps
+- [UNKNOWN] query_logs returned incomplete data for all (PARTIAL_DATA)
+- [UNKNOWN] query_logs returned incomplete data for service=user-service (PARTIAL_DATA)
+- [UNKNOWN] query_logs returned incomplete data for service=user-service, keyword=500 (PARTIAL_DATA)
+- [UNKNOWN] query_metrics failed for service=user-service, metrics=['error_rate', 'p99_latency_ms', 'request_rate', 'timeout_rate', 'cpu_pct', 'memory_pct', 'db_conn_util_pct']: metrics: List should have at most 6 items after validation, not 7 (INVALID_QUERY)
+
+## Limitations
+- Log queries returned incomplete data for all services and for user-service, so absence of other error types cannot be concluded.
+- The metrics query for user-service failed because it requested 7 metrics against a limit of 6, so some metrics (including p99 latency, cpu and memory) were not retrieved in that pull.
+- Timestamps for the first NPE differ across pulls (07:57:17Z, 07:59:37Z, 08:00:53Z), so the exact onset relative to the deployment is uncertain.
+- Only about 11 NPE log records were found, which is far fewer than the 5xx volume, so the NPE pattern may be incomplete or not the main failure path.
+- Config-store coverage for the 07:56Z window was unverified (zero rows returned).
+- 1 tool calls failed and 9 returned partial data; affected areas are treated as unknown, not healthy.
+- Confidence values are rule-based evidence-strength scores, not calibrated probabilities.
+- Investigation terminated because: critic verdict NEEDS_MORE_EVIDENCE; maximum investigation rounds (3) reached
+
+## Final Status
+`PROBABLE_ROOT_CAUSE`
+
+The most probable explanation is the user-service 7.2.0 deployment (dep-c02e51b7), which fits the timing and the error step in user-service and api-gateway. It is not confirmed: the logged NPE count is too small to account for the full 5xx volume, the log data is partial, and an unlogged non-NPE failure path (H3) has not been ruled out. Immediate action should be rollback, followed by a version-split comparison and complete log retrieval to confirm or reject H1 versus H3. The postgres report_rollup hypothesis (H2) is rejected based on flat database metrics.
+
+## Execution Statistics
+```json
+{
+  "rounds": 3,
+  "tool_calls": 39,
+  "tool_failures": 3,
+  "tool_retries": 3,
+  "partial_results": 9,
+  "agent_failures": 0,
+  "agent_retries": 0,
+  "invalid_llm_outputs": 1,
+  "messages_exchanged": 51,
+  "evidence_records": 128,
+  "duration_s": 155.66,
+  "tokens": {
+    "input_tokens": 94,
+    "output_tokens": 47014,
+    "cache_read_tokens": 67847,
+    "cache_write_tokens": 152936,
+    "llm_calls": 31,
+    "cost_usd": 0.04331186999999999
+  },
+  "tokens_by_agent": {
+    "orchestrator": {
+      "input_tokens": 8,
+      "output_tokens": 2121,
+      "cache_read_tokens": 5738,
+      "cache_write_tokens": 1049,
+      "llm_calls": 3,
+      "cost_usd": 0.001249805
+    },
+    "dependency": {
+      "input_tokens": 14,
+      "output_tokens": 4760,
+      "cache_read_tokens": 10301,
+      "cache_write_tokens": 10070,
+      "llm_calls": 5,
+      "cost_usd": 0.0037431599999999997
+    },
+    "observability": {
+      "input_tokens": 38,
+      "output_tokens": 18779,
+      "cache_read_tokens": 28458,
+      "cache_write_tokens": 47332,
+      "llm_calls": 13,
+      "cost_usd": 0.015594380000000001
+    },
+    "reasoning": {
+      "input_tokens": 12,
+      "output_tokens": 12084,
+      "cache_read_tokens": 0,
+      "cache_write_tokens": 58291,
+      "llm_calls": 3,
+      "cost_usd": 0.013329575
+    },
+    "critic": {
+      "input_tokens": 18,
+      "output_tokens": 7509,
+      "cache_read_tokens": 23350,
+      "cache_write_tokens": 32645,
+      "llm_calls": 6,
+      "cost_usd": 0.008070425
+    },
+    "reporting": {
+      "input_tokens": 4,
+      "output_tokens": 1761,
+      "cache_read_tokens": 0,
+      "cache_write_tokens": 3549,
+      "llm_calls": 1,
+      "cost_usd": 0.001324525
+    }
+  }
+}
+```

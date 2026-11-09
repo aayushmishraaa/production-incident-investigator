@@ -1,0 +1,335 @@
+{
+  "investigation_id": "inv-1f276bd125",
+  "system": "single_agent",
+  "incident_id": "INC-007",
+  "title": "Order checkout failing",
+  "severity": "SEV2",
+  "affected_services": [
+    "order-service"
+  ],
+  "start_time": "2026-09-20T15:25:00+00:00",
+  "executive_summary": "INC-007 checkout failures are caused by a configuration change in order-service that lowered payment_client.timeout_ms from 3000 ms to 300 ms at 15:22Z (OPS-2375, config-bot). Starting at 15:23Z, order-service's calls to payment-service began timing out at 300 ms, error rate rose from ~0.6% to ~29-32%, and the payment-service circuit breaker opened. payment-service itself shows no error or latency regression; the payment team's \"healthy\" assessment is consistent with its own metrics.",
+  "timeline": [
+    {
+      "time": "2026-09-20T14:40:00Z",
+      "label": "CONFIRMED FACT",
+      "event": "Deployment of payment-service 5.8.0->5.8.1 at 2026-09-20T14:40:00Z (SUCCEEDED): Improve charge idempotency",
+      "evidence_id": "dep-7cf38f2d"
+    },
+    {
+      "time": "2026-09-20T14:55:41Z",
+      "label": "OBSERVED EVIDENCE",
+      "event": "First log: 6x WARN on order-service: 'Inventory reservation retry for sku-75' (first 2026-09-20T14:55:41Z, last 2026-09-20T15:47:11Z)",
+      "evidence_id": "logpat-order-service-95abd1bb"
+    },
+    {
+      "time": "2026-09-20T15:00:17Z",
+      "label": "OBSERVED EVIDENCE",
+      "event": "First log: 3x WARN on payment-service: 'Card network soft decline (code 05) for charge ch_30' (first 2026-09-20T15:00:17Z, last 2026-09-20T15:37:11Z)",
+      "evidence_id": "logpat-payment-service-7e9bf84f"
+    },
+    {
+      "time": "2026-09-20T15:22:00Z",
+      "label": "CONFIRMED FACT",
+      "event": "Config change on order-service: payment_client.timeout_ms 3000 -> 300 at 2026-09-20T15:22:00Z (OPS-2375)",
+      "evidence_id": "cfg-7f81d14a"
+    },
+    {
+      "time": "2026-09-20T15:23:00Z",
+      "label": "OBSERVED EVIDENCE",
+      "event": "Anomaly onset: order-service error_rate: baseline 0.6 -> window mean 14.54 (max 31.99, change 2328.5%), onset 2026-09-20T15:23:00Z",
+      "evidence_id": "met-order-service-error_rate-1455-1550"
+    },
+    {
+      "time": "2026-09-20T15:23:00Z",
+      "label": "OBSERVED EVIDENCE",
+      "event": "Anomaly onset: order-service timeout_rate: baseline 0.1 -> window mean 16.87 (max 35.8, change 16649.6%), onset 2026-09-20T15:23:00Z",
+      "evidence_id": "met-order-service-timeout_rate-1455-1550"
+    },
+    {
+      "time": "2026-09-20T15:23:20Z",
+      "label": "OBSERVED EVIDENCE",
+      "event": "First log: 29x ERROR on order-service: 'PaymentClient: request to payment-service timed out after 300ms (POST /v1/charges, req 30)' (first 2026-09-20T15:23:20Z, last 2026-09-20T15:49:24Z)",
+      "evidence_id": "logpat-order-service-f003ad98"
+    },
+    {
+      "time": "2026-09-20T15:24:10Z",
+      "label": "OBSERVED EVIDENCE",
+      "event": "First log: 7x WARN on order-service: 'Circuit breaker payment-service OPEN (failure ratio 0.64)' (first 2026-09-20T15:24:10Z, last 2026-09-20T15:46:21Z)",
+      "evidence_id": "logpat-order-service-e2b30f44"
+    },
+    {
+      "time": "2026-09-20T15:25:00Z",
+      "label": "CONFIRMED FACT",
+      "event": "Reported symptom start",
+      "evidence_id": null
+    },
+    {
+      "time": "2026-09-20T15:25:13Z",
+      "label": "OBSERVED EVIDENCE",
+      "event": "First log: 5x WARN on order-service: 'Retry budget exhausted for payment calls' (first 2026-09-20T15:25:13Z, last 2026-09-20T15:45:20Z)",
+      "evidence_id": "logpat-order-service-809f4936"
+    },
+    {
+      "time": "2026-09-20T15:31:00Z",
+      "label": "CONFIRMED FACT",
+      "event": "Incident reported",
+      "evidence_id": null
+    }
+  ],
+  "observed_symptoms": [
+    {
+      "label": "OBSERVED EVIDENCE",
+      "statement": "order-service error_rate: baseline 0.6 -> window mean 14.54 (max 31.99, change 2328.5%), onset 2026-09-20T15:23:00Z",
+      "evidence_ids": [
+        "met-order-service-error_rate-1455-1550"
+      ]
+    },
+    {
+      "label": "OBSERVED EVIDENCE",
+      "statement": "order-service timeout_rate: baseline 0.1 -> window mean 16.87 (max 35.8, change 16649.6%), onset 2026-09-20T15:23:00Z",
+      "evidence_ids": [
+        "met-order-service-timeout_rate-1455-1550"
+      ]
+    }
+  ],
+  "investigation_performed": [],
+  "hypotheses": [
+    {
+      "rank": 1,
+      "hypothesis_id": "H1",
+      "category": "configuration_regression",
+      "culprit_service": "order-service",
+      "description": "Misconfigured payment client timeout (3000 -> 300 ms) in order-service causes premature timeouts on POST /v1/charges. Mechanism: At 15:22Z payment_client.timeout_ms was changed to 300. From 15:23Z, order-service logged PaymentClient timeouts after 300ms; timeout_rate went from 0.1% to ~35%, error_rate from 0.6% to ~30%, the payment circuit breaker opened (failure ratio 0.64), and retry budget was exhausted. Payment-service's p50 (~60ms) and p99 (~300ms) are unchanged, so a large share of calls that previously completed within the 3s budget now exceed 300ms.",
+      "confidence": 0.9,
+      "confidence_explanation": [
+        "self-reported by the single agent"
+      ],
+      "supporting_evidence": [
+        {
+          "evidence_id": "cfg-7f81d14a",
+          "strength": "strong",
+          "note": "timeout 3000 -> 300 one minute before onset",
+          "exists": true,
+          "label": "CONFIRMED FACT",
+          "description": "Config change on order-service: payment_client.timeout_ms 3000 -> 300 at 2026-09-20T15:22:00Z (OPS-2375)"
+        },
+        {
+          "evidence_id": "logpat-order-service-f003ad98",
+          "strength": "strong",
+          "note": "29 timeouts 'after 300ms' on POST /v1/charges, first 15:23:20Z",
+          "exists": true,
+          "label": "OBSERVED EVIDENCE",
+          "description": "29x ERROR on order-service: 'PaymentClient: request to payment-service timed out after 300ms (POST /v1/charges, req 30)' (first 2026-09-20T15:23:20Z, last 2026-09-20T15:49:24Z)"
+        },
+        {
+          "evidence_id": "met-order-service-error_rate-1455-1550",
+          "strength": "strong",
+          "note": "onset 15:23Z, baseline 0.6% -> 14.5% mean, peak 32%",
+          "exists": true,
+          "label": "OBSERVED EVIDENCE",
+          "description": "order-service error_rate: baseline 0.6 -> window mean 14.54 (max 31.99, change 2328.5%), onset 2026-09-20T15:23:00Z"
+        },
+        {
+          "evidence_id": "met-order-service-timeout_rate-1455-1550",
+          "strength": "strong",
+          "note": "onset 15:23Z, 0.1% -> 16.9% mean",
+          "exists": true,
+          "label": "OBSERVED EVIDENCE",
+          "description": "order-service timeout_rate: baseline 0.1 -> window mean 16.87 (max 35.8, change 16649.6%), onset 2026-09-20T15:23:00Z"
+        },
+        {
+          "evidence_id": "logpat-order-service-e2b30f44",
+          "strength": "moderate",
+          "note": "payment-service circuit breaker OPEN from 15:24:10Z",
+          "exists": true,
+          "label": "OBSERVED EVIDENCE",
+          "description": "7x WARN on order-service: 'Circuit breaker payment-service OPEN (failure ratio 0.64)' (first 2026-09-20T15:24:10Z, last 2026-09-20T15:46:21Z)"
+        },
+        {
+          "evidence_id": "logpat-order-service-809f4936",
+          "strength": "moderate",
+          "note": "retry budget exhausted for payment calls from 15:25:13Z",
+          "exists": true,
+          "label": "OBSERVED EVIDENCE",
+          "description": "5x WARN on order-service: 'Retry budget exhausted for payment calls' (first 2026-09-20T15:25:13Z, last 2026-09-20T15:45:20Z)"
+        }
+      ],
+      "contradicting_evidence": [
+        {
+          "evidence_id": "met-payment-service-p99_latency_ms-1455-1550",
+          "strength": "weak",
+          "note": "payment p99 ~300ms implies a 300ms client timeout would cut off only the tail, not ~30% of calls; server-side metric does not capture network or queueing overhead, so the magnitude is not fully explained",
+          "exists": true,
+          "label": "OBSERVED EVIDENCE",
+          "description": "payment-service p99_latency_ms: baseline 299.35 -> window mean 300.26 (max 321.35, change 0.3%), onset none detected"
+        },
+        {
+          "evidence_id": "met-payment-service-error_rate-1455-1550",
+          "strength": "weak",
+          "note": "payment error rate unchanged; consistent with calls being cut off client-side rather than failing server-side",
+          "exists": true,
+          "label": "OBSERVED EVIDENCE",
+          "description": "payment-service error_rate: baseline 0.8 -> window mean 0.8 (max 0.88, change 0.7%), onset none detected"
+        }
+      ],
+      "missing_evidence": [
+        "Client-side latency distribution for order->payment calls (not server-side only)",
+        "Confirmation that the config change was applied to all order-service instances and its rollout time"
+      ],
+      "critic_decision": null
+    },
+    {
+      "rank": 2,
+      "hypothesis_id": "H2",
+      "category": "upstream_dependency_degradation",
+      "culprit_service": "payment-service",
+      "description": "payment-service degraded (latency or capacity), causing order-service timeouts. Mechanism: If payment-service slowed, order calls would time out at any timeout value.",
+      "confidence": 0.05,
+      "confidence_explanation": [
+        "self-reported by the single agent"
+      ],
+      "supporting_evidence": [],
+      "contradicting_evidence": [
+        {
+          "evidence_id": "met-payment-service-p50_latency_ms-1455-1550",
+          "strength": "strong",
+          "note": "p50 flat at ~60ms vs baseline 60ms",
+          "exists": true,
+          "label": "OBSERVED EVIDENCE",
+          "description": "payment-service p50_latency_ms: baseline 60.17 -> window mean 60.25 (max 65.57, change 0.1%), onset none detected"
+        },
+        {
+          "evidence_id": "met-payment-service-p99_latency_ms-1455-1550",
+          "strength": "strong",
+          "note": "p99 flat at ~300ms vs baseline 299ms",
+          "exists": true,
+          "label": "OBSERVED EVIDENCE",
+          "description": "payment-service p99_latency_ms: baseline 299.35 -> window mean 300.26 (max 321.35, change 0.3%), onset none detected"
+        },
+        {
+          "evidence_id": "met-payment-service-error_rate-1455-1550",
+          "strength": "strong",
+          "note": "error rate flat at ~0.8%",
+          "exists": true,
+          "label": "OBSERVED EVIDENCE",
+          "description": "payment-service error_rate: baseline 0.8 -> window mean 0.8 (max 0.88, change 0.7%), onset none detected"
+        },
+        {
+          "evidence_id": "logpat-payment-service-0e974150",
+          "strength": "moderate",
+          "note": "normal charge processing logs through 15:42Z",
+          "exists": true,
+          "label": "OBSERVED EVIDENCE",
+          "description": "5x INFO on payment-service: 'Processed 46 charges in last minute' (first 2026-09-20T15:04:38Z, last 2026-09-20T15:42:11Z)"
+        }
+      ],
+      "missing_evidence": [
+        "Payment-service-side CPU/DB metrics were not queried"
+      ],
+      "critic_decision": null
+    },
+    {
+      "rank": 3,
+      "hypothesis_id": "H3",
+      "category": "deployment_regression",
+      "culprit_service": "payment-service",
+      "description": "payment-service 5.8.1 deployment at 14:40Z (charge idempotency change) introduced a regression. Mechanism: A code change could add latency or errors to charges.",
+      "confidence": 0.05,
+      "confidence_explanation": [
+        "self-reported by the single agent"
+      ],
+      "supporting_evidence": [],
+      "contradicting_evidence": [
+        {
+          "evidence_id": "dep-7cf38f2d",
+          "strength": "moderate",
+          "note": "deployed 45 min before onset with no metric change through the deploy window",
+          "exists": true,
+          "label": "CONFIRMED FACT",
+          "description": "Deployment of payment-service 5.8.0->5.8.1 at 2026-09-20T14:40:00Z (SUCCEEDED): Improve charge idempotency"
+        },
+        {
+          "evidence_id": "met-payment-service-error_rate-1455-1550",
+          "strength": "strong",
+          "note": "no error or latency change at or after 14:40 or 15:23",
+          "exists": true,
+          "label": "OBSERVED EVIDENCE",
+          "description": "payment-service error_rate: baseline 0.8 -> window mean 0.8 (max 0.88, change 0.7%), onset none detected"
+        }
+      ],
+      "missing_evidence": [],
+      "critic_decision": null
+    }
+  ],
+  "critic_review": {
+    "verdict": "NOT_RUN",
+    "rounds_reviewed": 0
+  },
+  "evidence_gaps": [],
+  "probable_root_cause": {
+    "hypothesis_id": "H1",
+    "category": "configuration_regression",
+    "culprit_service": "order-service",
+    "description": "Misconfigured payment client timeout (3000 -> 300 ms) in order-service causes premature timeouts on POST /v1/charges.",
+    "confidence": 0.9,
+    "label": "ROOT CAUSE IDENTIFIED (critic-approved; still an INFERENCE from evidence)"
+  },
+  "root_cause_statement": "ROOT CAUSE IDENTIFIED (critic-approved; still an INFERENCE from evidence): configuration_regression in order-service - Misconfigured payment client timeout (3000 -> 300 ms) in order-service causes premature timeouts on POST /v1/charges.",
+  "corrective_actions": [
+    "Revert payment_client.timeout_ms in order-service from 300 back to 3000 ms (OPS-2375), verify on all instances.",
+    "Once reverted, confirm the payment circuit breaker closes and error_rate returns to ~0.6%.",
+    "Retry or replay failed checkouts from the 15:23Z-revert window if the payment charges are idempotent-safe."
+  ],
+  "preventive_actions": [
+    "Require review and a canary for timeout changes on payment-facing clients; reject changes that drop timeouts by more than 50% without a load test.",
+    "Add config validation bounds for payment_client.timeout_ms relative to payment-service p99 latency plus margin."
+  ],
+  "monitoring_recommendations": [
+    "Alert on order-service PaymentClient timeout rate > 2% and on the payment circuit breaker opening.",
+    "Alert on config changes to timeout keys in order-service.",
+    "Track order->payment client-side latency histograms, not only server-side payment latency."
+  ],
+  "limitations": [
+    "Server-side payment metrics cannot fully explain a ~30% client timeout rate at a 300 ms threshold; the magnitude needs client-side traces to confirm.",
+    "Payment-service request_rate dropped ~14% from 15:37Z; cause unknown but likely downstream of order-service failures.",
+    "[agent-reported gap] No client-side latency histograms for order->payment calls",
+    "[agent-reported gap] Rollout scope of the config change across order-service instances not confirmed",
+    "[agent-reported gap] No historical incident search performed",
+    "Confidence values are rule-based evidence-strength scores, not calibrated probabilities.",
+    "Investigation terminated because: agent submitted"
+  ],
+  "final_status": "ROOT_CAUSE_IDENTIFIED",
+  "conclusion": "The checkout outage is best explained by the 15:22Z order-service config change that cut payment_client.timeout_ms from 3000 to 300 ms. The timing matches onset within about one minute, the log messages name the 300 ms timeout, and payment-service shows no internal regression. Revert the timeout to restore checkout.",
+  "statistics": {
+    "rounds": 1,
+    "tool_calls": 7,
+    "tool_failures": 0,
+    "tool_retries": 0,
+    "partial_results": 0,
+    "agent_failures": 0,
+    "agent_retries": 0,
+    "invalid_llm_outputs": 0,
+    "messages_exchanged": 0,
+    "evidence_records": 44,
+    "duration_s": 18.73,
+    "tokens": {
+      "input_tokens": 8,
+      "output_tokens": 4473,
+      "cache_read_tokens": 18278,
+      "cache_write_tokens": 8148,
+      "llm_calls": 3,
+      "cost_usd": 0.00343858
+    },
+    "tokens_by_agent": {
+      "single_agent": {
+        "input_tokens": 8,
+        "output_tokens": 4473,
+        "cache_read_tokens": 18278,
+        "cache_write_tokens": 8148,
+        "llm_calls": 3,
+        "cost_usd": 0.00343858
+      }
+    }
+  }
+}

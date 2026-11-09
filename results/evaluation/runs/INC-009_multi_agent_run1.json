@@ -1,0 +1,701 @@
+{
+  "investigation_id": "inv-733a402dd7",
+  "system": "multi_agent",
+  "incident_id": "INC-009",
+  "title": "User API errors during morning peak",
+  "severity": "SEV2",
+  "affected_services": [
+    "api-gateway",
+    "user-service"
+  ],
+  "start_time": "2026-09-26T08:00:00+00:00",
+  "executive_summary": "INC-009 (SEV2, user API errors during the morning peak, affecting api-gateway and user-service) is assessed as ROOT_CAUSE_IDENTIFIED. The leading hypothesis (H1, confidence 0.855) is a deployment regression: user-service 7.1.3 to 7.2.0 (ORM switch to batch loader, deployed 07:56Z, SUCCEEDED) introduced a defect in ProfileBatchLoader that throws NullPointerExceptions and returns HTTP 500s on GET /v1/users/{id} (dep-c02e51b7, logpat-user-service-2347725d). Error rate on user-service rose from a baseline of about 0.41% to a window mean of 13.43% (max 26.11%) starting 07:57Z, and p95 latency rose from about 80 ms to about 410 ms (max 754 ms) (met-user-service-error_rate-0730-0900, met-user-service-p95_latency_ms-0730-0900). API gateway 5xx responses from user-service began at 07:57:09Z (logpat-api-gateway-c1d874f7). Request rate, CPU and DB connection utilisation stayed flat, which points away from load and connection-pool exhaustion. Alternative hypotheses were rejected: a slow postgres report query (H2) and a notification-service traffic surge (H3). The conclusion is the most probable explanation, not a confirmed fact. Log coverage was partial for all queries.",
+  "timeline": [
+    {
+      "time": "2026-09-26T07:33:45Z",
+      "label": "OBSERVED EVIDENCE",
+      "event": "First log: 3x WARN on order-service: 'Inventory reservation retry for sku-69' (first 2026-09-26T07:33:45Z, last 2026-09-26T07:46:48Z)",
+      "evidence_id": "logpat-order-service-95abd1bb"
+    },
+    {
+      "time": "2026-09-26T07:35:17Z",
+      "label": "OBSERVED EVIDENCE",
+      "event": "First log: 4x WARN on auth-service: 'Login rate limit hit for user id u-78' (first 2026-09-26T07:35:17Z, last 2026-09-26T08:23:33Z)",
+      "evidence_id": "logpat-auth-service-cc8d3b87"
+    },
+    {
+      "time": "2026-09-26T07:35:24Z",
+      "label": "OBSERVED EVIDENCE",
+      "event": "First log: 3x WARN on api-gateway: 'Slow client upload from 10.4.53.12 (1.9MB)' (first 2026-09-26T07:35:24Z, last 2026-09-26T08:21:04Z)",
+      "evidence_id": "logpat-api-gateway-88b04940"
+    },
+    {
+      "time": "2026-09-26T07:46:02Z",
+      "label": "OBSERVED EVIDENCE",
+      "event": "First log: 4x WARN on postgres: 'duration: 16102 ms statement: SELECT report_rollup()' (first 2026-09-26T07:46:02Z, last 2026-09-26T08:21:19Z)",
+      "evidence_id": "logpat-postgres-44883ca5"
+    },
+    {
+      "time": "2026-09-26T07:56:00Z",
+      "label": "CONFIRMED FACT",
+      "event": "Deployment of user-service 7.1.3->7.2.0 at 2026-09-26T07:56:00Z (SUCCEEDED): Switch ORM to batch loader",
+      "evidence_id": "dep-c02e51b7"
+    },
+    {
+      "time": "2026-09-26T07:57:00Z",
+      "label": "OBSERVED EVIDENCE",
+      "event": "Anomaly onset: user-service error_rate: baseline 0.41 -> window mean 12.5 (max 26.11, change 2984.9%), onset 2026-09-26T07:57:00Z",
+      "evidence_id": "met-user-service-error_rate-0730-0825"
+    },
+    {
+      "time": "2026-09-26T07:57:00Z",
+      "label": "OBSERVED EVIDENCE",
+      "event": "Anomaly onset: api-gateway error_rate: baseline 0.5 -> window mean 4.56 (max 8.65, change 809.4%), onset 2026-09-26T07:57:00Z",
+      "evidence_id": "met-api-gateway-error_rate-0730-0900"
+    },
+    {
+      "time": "2026-09-26T07:57:00Z",
+      "label": "OBSERVED EVIDENCE",
+      "event": "Anomaly onset: user-service error_rate: baseline 0.41 -> window mean 13.43 (max 26.11, change 3215.8%), onset 2026-09-26T07:57:00Z",
+      "evidence_id": "met-user-service-error_rate-0730-0900"
+    },
+    {
+      "time": "2026-09-26T07:57:00Z",
+      "label": "OBSERVED EVIDENCE",
+      "event": "Anomaly onset: user-service p95_latency_ms: baseline 80.09 -> window mean 410.38 (max 753.5, change 412.4%), onset 2026-09-26T07:57:00Z",
+      "evidence_id": "met-user-service-p95_latency_ms-0730-0900"
+    },
+    {
+      "time": "2026-09-26T07:57:00Z",
+      "label": "OBSERVED EVIDENCE",
+      "event": "Anomaly onset: user-service p95_latency_ms: baseline 80.09 -> window mean 383.28 (max 748.48, change 378.5%), onset 2026-09-26T07:57:00Z",
+      "evidence_id": "met-user-service-p95_latency_ms-0730-0825"
+    },
+    {
+      "time": "2026-09-26T08:00:00Z",
+      "label": "CONFIRMED FACT",
+      "event": "Reported symptom start",
+      "evidence_id": null
+    },
+    {
+      "time": "2026-09-26T08:00:53Z",
+      "label": "OBSERVED EVIDENCE",
+      "event": "First log: 12x ERROR on user-service: 'NullPointerException in ProfileBatchLoader.load (user-service v7.2.0) req 49' (first 2026-09-26T08:00:53Z, last 2026-09-26T08:23:59Z)",
+      "evidence_id": "logpat-user-service-2347725d"
+    },
+    {
+      "time": "2026-09-26T08:06:00Z",
+      "label": "CONFIRMED FACT",
+      "event": "Incident reported",
+      "evidence_id": null
+    }
+  ],
+  "observed_symptoms": [
+    {
+      "label": "OBSERVED EVIDENCE",
+      "statement": "user-service error_rate: baseline 0.41 -> window mean 12.5 (max 26.11, change 2984.9%), onset 2026-09-26T07:57:00Z",
+      "evidence_ids": [
+        "met-user-service-error_rate-0730-0825"
+      ]
+    },
+    {
+      "label": "OBSERVED EVIDENCE",
+      "statement": "api-gateway error_rate: baseline 0.5 -> window mean 4.56 (max 8.65, change 809.4%), onset 2026-09-26T07:57:00Z",
+      "evidence_ids": [
+        "met-api-gateway-error_rate-0730-0900"
+      ]
+    },
+    {
+      "label": "OBSERVED EVIDENCE",
+      "statement": "user-service error_rate: baseline 0.41 -> window mean 13.43 (max 26.11, change 3215.8%), onset 2026-09-26T07:57:00Z",
+      "evidence_ids": [
+        "met-user-service-error_rate-0730-0900"
+      ]
+    },
+    {
+      "label": "OBSERVED EVIDENCE",
+      "statement": "user-service p95_latency_ms: baseline 80.09 -> window mean 410.38 (max 753.5, change 412.4%), onset 2026-09-26T07:57:00Z",
+      "evidence_ids": [
+        "met-user-service-p95_latency_ms-0730-0900"
+      ]
+    },
+    {
+      "label": "OBSERVED EVIDENCE",
+      "statement": "user-service p95_latency_ms: baseline 80.09 -> window mean 383.28 (max 748.48, change 378.5%), onset 2026-09-26T07:57:00Z",
+      "evidence_ids": [
+        "met-user-service-p95_latency_ms-0730-0825"
+      ]
+    },
+    {
+      "label": "OBSERVED EVIDENCE",
+      "statement": "[dependency] user-service deployed 7.1.3 -> 7.2.0 (ci-pipeline, status SUCCEEDED), change described as 'Switch ORM to batch loader'.",
+      "evidence_ids": [
+        "dep-c02e51b7"
+      ]
+    },
+    {
+      "label": "OBSERVED EVIDENCE",
+      "statement": "[dependency] user-service error_rate onset at 07:57 (~3 min after deploy): baseline 0.41% -> window mean 12.5% (max 26.1%). Samples at 07:55 ~0.41%, 08:00 ~22.8%. p95 latency 80ms -> 383ms mean (onset 07:57; 07:55 ~73ms, 08:00 ~669ms). p99 unchanged (~159ms). db_conn_util flat (~30%), request_rate flat (~499 rps).",
+      "evidence_ids": [
+        "met-user-service-error_rate-0730-0825",
+        "met-user-service-p95_latency_ms-0730-0825",
+        "met-user-service-p99_latency_ms-0730-0825",
+        "met-user-service-db_conn_util_pct-0730-0825",
+        "met-user-service-request_rate-0730-0825"
+      ]
+    },
+    {
+      "label": "OBSERVED EVIDENCE",
+      "statement": "[dependency] Topology graph topology-v2 (effective 2026-09-15) added edge notification-service -> user-service. user-service upstream dependencies: postgres, redis. Downstream dependents: api-gateway, notification-service, order-service.",
+      "evidence_ids": [
+        "topo-user-service-both-d2"
+      ]
+    },
+    {
+      "label": "OBSERVED EVIDENCE",
+      "statement": "[dependency] user-service error_rate jumped from baseline ~0.41% to ~12.5% window mean (max 26.1%), with detected onset 07:57Z; the 5-minute series steps from 0.41% at 07:55 to 22.8% at 08:00. Latency p99 and timeout_rate did not change materially (p99 +0.7%, timeout ~0%).",
+      "evidence_ids": [
+        "met-user-service-error_rate-0730-0825",
+        "met-user-service-p99_latency_ms-0730-0825",
+        "met-user-service-timeout_rate-0730-0825"
+      ]
+    },
+    {
+      "label": "OBSERVED EVIDENCE",
+      "statement": "[dependency] order-service error_rate (~0.6%), p99 latency (~401ms) and timeout_rate (~0.1%) were flat versus baseline across 07:30-08:25; no onset detected.",
+      "evidence_ids": [
+        "met-order-service-error_rate-0730-0825",
+        "met-order-service-p99_latency_ms-0730-0825",
+        "met-order-service-timeout_rate-0730-0825"
+      ]
+    },
+    {
+      "label": "OBSERVED EVIDENCE",
+      "statement": "[dependency] notification-service error_rate (~0.2%), p99 (~202ms vs 200ms) and timeout_rate (~5%) were flat; no onset detected.",
+      "evidence_ids": [
+        "met-notification-service-error_rate-0730-0825",
+        "met-notification-service-p99_latency_ms-0730-0825",
+        "met-notification-service-timeout_rate-0730-0825"
+      ]
+    },
+    {
+      "label": "OBSERVED EVIDENCE",
+      "statement": "[dependency] auth-service error_rate (~0.3%), p99 (~90ms) and timeout_rate (~5%) were flat; no onset detected.",
+      "evidence_ids": [
+        "met-auth-service-error_rate-0730-0825",
+        "met-auth-service-p99_latency_ms-0730-0825",
+        "met-auth-service-timeout_rate-0730-0825"
+      ]
+    },
+    {
+      "label": "OBSERVED EVIDENCE",
+      "statement": "[dependency] Topology (topology-v2) shows user-service upstream dependencies are postgres and redis; downstream dependents are api-gateway, notification-service and order-service. Topology change: added edge notification-service -> user-service effective 2026-09-15.",
+      "evidence_ids": [
+        "topo-user-service-both-d2"
+      ]
+    },
+    {
+      "label": "OBSERVED EVIDENCE",
+      "statement": "[dependency] api-gateway upstream includes auth-service, order-service, payment-service and user-service; it has no downstream dependents in the graph. No topology changes listed.",
+      "evidence_ids": [
+        "topo-api-gateway-both-d2"
+      ]
+    },
+    {
+      "label": "OBSERVED EVIDENCE",
+      "statement": "[observability] user-service error_rate onset detected at 07:57Z: baseline mean 0.41% vs window mean 12.5% (max 26.11%). Sampled series is ~0.4% through 07:55 and jumps to ~22.8% at 08:00, staying 22-26% through 08:25.",
+      "evidence_ids": [
+        "met-user-service-error_rate-0730-0825"
+      ]
+    },
+    {
+      "label": "OBSERVED EVIDENCE",
+      "statement": "[observability] user-service CPU, memory, DB connection utilisation, p99 latency and timeout_rate are flat vs baseline (cpu -0.6%, mem 0%, db_conn_util +1.4%, p99 +0.7%, timeout_rate -0.0%).",
+      "evidence_ids": [
+        "met-user-service-cpu_pct-0730-0825",
+        "met-user-service-memory_pct-0730-0825",
+        "met-user-service-db_conn_util_pct-0730-0825",
+        "met-user-service-p99_latency_ms-0730-0825",
+        "met-user-service-timeout_rate-0730-0825"
+      ]
+    },
+    {
+      "label": "OBSERVED EVIDENCE",
+      "statement": "[observability] postgres CPU, memory, DB connection utilisation (~40%), p95 latency (~12ms), disk IO wait (~2ms) and error rate are unchanged vs baseline in the 07:30-08:25 window; no saturation signal.",
+      "evidence_ids": [
+        "met-postgres-cpu_pct-0730-0825",
+        "met-postgres-memory_pct-0730-0825",
+        "met-postgres-db_conn_util_pct-0730-0825",
+        "met-postgres-p95_latency_ms-0730-0825",
+        "met-postgres-disk_io_wait_ms-0730-0825",
+        "met-postgres-error_rate-0730-0825"
+      ]
+    },
+    {
+      "label": "OBSERVED EVIDENCE",
+      "statement": "[observability] redis memory (~60%), cache hit rate (~95%), p95 latency (~1.5ms), CPU (~15%) and error rate are unchanged vs baseline; no evictions metric available in this query.",
+      "evidence_ids": [
+        "met-redis-memory_pct-0730-0825",
+        "met-redis-cache_hit_rate-0730-0825",
+        "met-redis-p95_latency_ms-0730-0825",
+        "met-redis-cpu_pct-0730-0825",
+        "met-redis-error_rate-0730-0825"
+      ]
+    },
+    {
+      "label": "OBSERVED EVIDENCE",
+      "statement": "[observability] notification-service request rate (~151 vs 150 rps), error rate (0.2%), timeout rate (0.05%), CPU and p95 latency are unchanged vs baseline; no retry spike observed.",
+      "evidence_ids": [
+        "met-notification-service-request_rate-0730-0825",
+        "met-notification-service-error_rate-0730-0825",
+        "met-notification-service-timeout_rate-0730-0825",
+        "met-notification-service-cpu_pct-0730-0825",
+        "met-notification-service-p95_latency_ms-0730-0825"
+      ]
+    },
+    {
+      "label": "OBSERVED EVIDENCE",
+      "statement": "[observability] First user-service ERROR: NullPointerException in ProfileBatchLoader.load (v7.2.0), 8 occurrences between 07:59:37Z and 08:23:59Z. Not a DB/redis connection error message.",
+      "evidence_ids": [
+        "logpat-user-service-2347725d",
+        "log-a52c3c27"
+      ]
+    },
+    {
+      "label": "OBSERVED EVIDENCE",
+      "statement": "[observability] api-gateway WARN 'user-service returned 500 for GET /v1/users/*' first seen 08:00:08Z, 4 occurrences through 08:18:48Z.",
+      "evidence_ids": [
+        "logpat-api-gateway-c1d874f7"
+      ]
+    },
+    {
+      "label": "OBSERVED EVIDENCE",
+      "statement": "[observability] postgres WARN slow statement 'SELECT report_rollup()' (e.g. 16102 ms), 4 occurrences 07:46:02Z to 08:21:19Z. Not aligned with the user-service error onset and no matching postgres latency change.",
+      "evidence_ids": [
+        "logpat-postgres-44883ca5"
+      ]
+    },
+    {
+      "label": "OBSERVED EVIDENCE",
+      "statement": "[observability] user-service error_rate onset at 07:57Z per metric detector; sampled 5m series shows 0.41% baseline mean rising to ~22.8% at 08:00 and 22\u201326% through 08:30 (window mean 13.43%, max 26.11%, baseline mean 0.41%).",
+      "evidence_ids": [
+        "met-user-service-error_rate-0730-0900"
+      ]
+    },
+    {
+      "label": "OBSERVED EVIDENCE",
+      "statement": "[observability] user-service p95 latency onset 07:57Z; baseline mean 80ms rising to ~670\u2013750ms from 08:00 onward (window mean 410ms, max 753ms). p99 latency essentially unchanged (baseline 158.7ms vs window 159.7ms).",
+      "evidence_ids": [
+        "met-user-service-p95_latency_ms-0730-0900",
+        "met-user-service-p99_latency_ms-0730-0900"
+      ]
+    },
+    {
+      "label": "OBSERVED EVIDENCE",
+      "statement": "[observability] api-gateway error_rate onset 07:57Z; baseline mean 0.5% rising to ~7.8% at 08:00 and ~7.4\u20138.3% through 08:30 (window mean 4.56%, max 8.65%). Error rise coincides with user-service error rise.",
+      "evidence_ids": [
+        "met-api-gateway-error_rate-0730-0900"
+      ]
+    },
+    {
+      "label": "ASSUMPTION",
+      "statement": "[critic: unsupported assumption] That all user-service 500s come from the ProfileBatchLoader path (no per-endpoint or per-error-type breakdown).",
+      "evidence_ids": []
+    },
+    {
+      "label": "ASSUMPTION",
+      "statement": "[critic: unsupported assumption] That the rollout was complete at 07:56 on all instances (no per-instance deployment data).",
+      "evidence_ids": []
+    },
+    {
+      "label": "ASSUMPTION",
+      "statement": "[critic: unsupported assumption] The retry/fallback explanation for the p95 rise.",
+      "evidence_ids": []
+    }
+  ],
+  "investigation_performed": [
+    "Round 1 | observability | completed | attempts 1 | 4 tool calls | Characterize error rate, latency, and traffic for api-gateway and user-service from 07:30Z to 09-26 09:00Z; identify when errors began relative to 08:00Z and wh",
+    "Round 1 | observability | completed | attempts 1 | 5 tool calls | Check resource health of user-service data-path dependencies (postgres, redis) and the observability backend for saturation or connection issues in the same win",
+    "Round 1 | dependency | completed | attempts 1 | 4 tool calls | Identify any deployments, config changes, or feature flag changes to user-service, api-gateway, notification-service, postgres, or redis in the 24 hours before ",
+    "Round 1 | dependency | completed | attempts 1 | 6 tool calls | Map downstream/upstream blast radius of user-service and api-gateway to confirm which other services (order-service, notification-service) may be impacted and w",
+    "Round 1 | reasoning | completed | attempts 1 | 0 tool calls | Develop and rank competing hypotheses",
+    "Round 1 | critic | completed | attempts 1 | 3 tool calls | Independently review hypotheses",
+    "Round 1 | reporting | completed | attempts 1 | 0 tool calls | Write final report"
+  ],
+  "hypotheses": [
+    {
+      "rank": 1,
+      "hypothesis_id": "H1",
+      "category": "deployment_regression",
+      "culprit_service": "user-service",
+      "description": "user-service 7.2.0 (ORM switch to batch loader) introduced a defect in ProfileBatchLoader that causes NullPointerException failures and 500s on GET /v1/users/{id}, which propagate to api-gateway as 5xx. Mechanism: Deploy 7.1.3->7.2.0 at 07:56 -> ProfileBatchLoader.load NPEs on some requests -> user-service returns 500 (error rate 0.4% -> ~23-26%) and p95 latency rises (80ms -> ~400-750ms, likely retries/fallback work on failing batch path) -> api-gateway sees 500s from user-service (0.5% -> ~8%). p99, timeouts, request rate, CPU and DB connection utilisation stay flat, consistent with fast-failing errors on a code path rather than load or pool exhaustion.",
+      "confidence": 0.855,
+      "confidence_explanation": [
+        "base 0.10",
+        "+0.08 corroboration across >=2 independent source types",
+        "+0.78 supporting evidence (7 refs, reliability-weighted, capped)",
+        "-0.03 contradicting evidence (1 refs, capped 0.45)",
+        "+0.08 proposed cause (07:56) precedes/coincides with first observed anomaly (07:57)",
+        "-0.05 tool failures/partial data for user-service",
+        "-0.08 4 acknowledged evidence gaps",
+        "(reliability discount already applied: 0.12)",
+        "+0.05 critic review adjustment",
+        "= 0.85 (evidence-strength score, not a calibrated probability)"
+      ],
+      "supporting_evidence": [
+        {
+          "evidence_id": "dep-c02e51b7",
+          "strength": "strong",
+          "note": "7.2.0 deployed 07:56 (SUCCEEDED), ORM batch loader change; only change in 24h among focus services",
+          "exists": true,
+          "label": "CONFIRMED FACT",
+          "description": "Deployment of user-service 7.1.3->7.2.0 at 2026-09-26T07:56:00Z (SUCCEEDED): Switch ORM to batch loader"
+        },
+        {
+          "evidence_id": "met-user-service-error_rate-0730-0900",
+          "strength": "strong",
+          "note": "error onset 07:57, one minute after deploy; step from 0.41% to ~23%",
+          "exists": true,
+          "label": "OBSERVED EVIDENCE",
+          "description": "user-service error_rate: baseline 0.41 -> window mean 13.43 (max 26.11, change 3215.8%), onset 2026-09-26T07:57:00Z"
+        },
+        {
+          "evidence_id": "logpat-user-service-2347725d",
+          "strength": "moderate",
+          "note": "12x NPE in ProfileBatchLoader.load tagged v7.2.0, direct code-path defect signature",
+          "exists": true,
+          "label": "OBSERVED EVIDENCE",
+          "description": "12x ERROR on user-service: 'NullPointerException in ProfileBatchLoader.load (user-service v7.2.0) req 49' (first 2026-09-26T08:00:53Z, last 2026-09-26T08:23:59Z)"
+        },
+        {
+          "evidence_id": "met-user-service-p95_latency_ms-0730-0900",
+          "strength": "moderate",
+          "note": "p95 onset 07:57 with p99 flat; consistent with a subset of requests affected",
+          "exists": true,
+          "label": "OBSERVED EVIDENCE",
+          "description": "user-service p95_latency_ms: baseline 80.09 -> window mean 410.38 (max 753.5, change 412.4%), onset 2026-09-26T07:57:00Z"
+        },
+        {
+          "evidence_id": "logpat-api-gateway-c1d874f7",
+          "strength": "moderate",
+          "note": "gateway logs 'user-service returned 500 for GET /v1/users/*' from 07:57:09, matching user-service error path",
+          "exists": true,
+          "label": "OBSERVED EVIDENCE",
+          "description": "2x WARN on api-gateway: 'user-service returned 500 for GET /v1/users/81' (first 2026-09-26T07:57:09Z, last 2026-09-26T08:09:39Z)"
+        },
+        {
+          "evidence_id": "met-user-service-db_conn_util_pct-0730-0825",
+          "strength": "moderate",
+          "note": "DB connection utilisation flat; argues against pool exhaustion as the mechanism",
+          "exists": true,
+          "label": "OBSERVED EVIDENCE",
+          "description": "user-service db_conn_util_pct: baseline 29.75 -> window mean 30.18 (max 33.82, change 1.4%), onset none detected"
+        },
+        {
+          "evidence_id": "met-user-service-request_rate-0730-0900",
+          "strength": "moderate",
+          "note": "request rate flat (+1.1%); argues against traffic surge",
+          "exists": true,
+          "label": "OBSERVED EVIDENCE",
+          "description": "user-service request_rate: baseline 494.44 -> window mean 499.97 (max 541.07, change 1.1%), onset none detected"
+        }
+      ],
+      "contradicting_evidence": [
+        {
+          "evidence_id": "logpat-user-service-2347725d",
+          "strength": "weak",
+          "note": "First NPE log is 08:00:53 (per observability round 1 log pattern) though metric onset is 07:57; log set is PARTIAL and the other round cites 07:59:37 - timing of first NPE is inconsistent across sources, gap not explained",
+          "exists": true,
+          "label": "OBSERVED EVIDENCE",
+          "description": "12x ERROR on user-service: 'NullPointerException in ProfileBatchLoader.load (user-service v7.2.0) req 49' (first 2026-09-26T08:00:53Z, last 2026-09-26T08:23:59Z)"
+        }
+      ],
+      "missing_evidence": [
+        "Error-type and per-endpoint breakdown of user-service 500s",
+        "Deploy rollout timing (whether 7.2.0 instances all went live at 07:56 or partially)",
+        "Complete (non-partial) user-service error logs covering 07:55-08:02",
+        "Diff of 7.2.0 ProfileBatchLoader change"
+      ],
+      "critic_decision": "accept"
+    },
+    {
+      "rank": 2,
+      "hypothesis_id": "H2",
+      "category": "upstream_dependency_degradation",
+      "culprit_service": "postgres",
+      "description": "A slow analytical query (SELECT report_rollup(), ~16s) on postgres contends with user-service queries and causes user-service failures. Mechanism: report_rollup() long-running statements -> lock/resource contention on postgres -> user-service queries fail or time out -> user-service 500s. Would require postgres latency/error/resource degradation to be visible.",
+      "confidence": 0.0,
+      "confidence_explanation": [
+        "base 0.10",
+        "+0.02 supporting evidence (1 refs, reliability-weighted, capped)",
+        "-0.45 contradicting evidence (3 refs, capped 0.45)",
+        "+0.08 proposed cause (07:46) precedes/coincides with first observed anomaly (07:57)",
+        "-0.06 3 acknowledged evidence gaps",
+        "(reliability discount already applied: 0.02)",
+        "-0.40 critic review adjustment",
+        "= 0.00 (evidence-strength score, not a calibrated probability)"
+      ],
+      "supporting_evidence": [
+        {
+          "evidence_id": "logpat-postgres-44883ca5",
+          "strength": "weak",
+          "note": "4 slow statements 07:46-08:21, temporally overlapping the window; no alignment with user-service onset",
+          "exists": true,
+          "label": "OBSERVED EVIDENCE",
+          "description": "4x WARN on postgres: 'duration: 16102 ms statement: SELECT report_rollup()' (first 2026-09-26T07:46:02Z, last 2026-09-26T08:21:19Z)"
+        }
+      ],
+      "contradicting_evidence": [
+        {
+          "evidence_id": "met-postgres-p95_latency_ms-0730-0825",
+          "strength": "strong",
+          "note": "postgres p95 latency flat (12.0 vs 12.0ms) through the window, no onset",
+          "exists": true,
+          "label": "OBSERVED EVIDENCE",
+          "description": "postgres p95_latency_ms: baseline 11.98 -> window mean 12.01 (max 13.12, change 0.2%), onset none detected"
+        },
+        {
+          "evidence_id": "met-postgres-db_conn_util_pct-0730-0825",
+          "strength": "moderate",
+          "note": "postgres connection utilisation flat at ~40%",
+          "exists": true,
+          "label": "OBSERVED EVIDENCE",
+          "description": "postgres db_conn_util_pct: baseline 40.08 -> window mean 40.0 (max 42.77, change -0.2%), onset none detected"
+        },
+        {
+          "evidence_id": "logpat-user-service-2347725d",
+          "strength": "moderate",
+          "note": "user-service errors are NullPointerExceptions in application code, not DB/connection errors",
+          "exists": true,
+          "label": "OBSERVED EVIDENCE",
+          "description": "12x ERROR on user-service: 'NullPointerException in ProfileBatchLoader.load (user-service v7.2.0) req 49' (first 2026-09-26T08:00:53Z, last 2026-09-26T08:23:59Z)"
+        }
+      ],
+      "missing_evidence": [
+        "Whether report_rollup() touches tables used by user-service",
+        "postgres lock-wait / pg_stat_activity data",
+        "Error-type breakdown of user-service failures"
+      ],
+      "critic_decision": "reject"
+    },
+    {
+      "rank": 3,
+      "hypothesis_id": "H3",
+      "category": "traffic_surge",
+      "culprit_service": "notification-service",
+      "description": "Notification-service calls to user-service (edge added in topology-v2 on 2026-09-15) increased and overloaded user-service endpoints. Mechanism: notification-service -> user-service call volume increases -> user-service saturation -> errors. Would show as load/latency increase on user-service.",
+      "confidence": 0.0,
+      "confidence_explanation": [
+        "base 0.10",
+        "+0.04 supporting evidence (1 refs, reliability-weighted, capped)",
+        "-0.45 contradicting evidence (2 refs, capped 0.45)",
+        "+0.08 proposed cause (00:00) precedes/coincides with first observed anomaly (07:57)",
+        "-0.04 2 acknowledged evidence gaps",
+        "-0.40 critic review adjustment",
+        "= 0.00 (evidence-strength score, not a calibrated probability)"
+      ],
+      "supporting_evidence": [
+        {
+          "evidence_id": "topo-user-service-both-d2",
+          "strength": "weak",
+          "note": "edge notification-service -> user-service exists; caller relationship is a plausible but unmeasured path",
+          "exists": true,
+          "label": "CONFIRMED FACT",
+          "description": "user-service depends on ['postgres', 'redis']; called by ['api-gateway', 'notification-service', 'order-service'] (graph topology-v2)"
+        }
+      ],
+      "contradicting_evidence": [
+        {
+          "evidence_id": "met-notification-service-request_rate-0730-0825",
+          "strength": "moderate",
+          "note": "notification-service request rate flat (151 vs 150 rps); no evidence of new outbound volume",
+          "exists": true,
+          "label": "OBSERVED EVIDENCE",
+          "description": "notification-service request_rate: baseline 150.03 -> window mean 151.65 (max 165.94, change 1.1%), onset none detected"
+        },
+        {
+          "evidence_id": "met-user-service-request_rate-0730-0900",
+          "strength": "strong",
+          "note": "user-service total request rate flat (+1.1%) and CPU flat; no load surge",
+          "exists": true,
+          "label": "OBSERVED EVIDENCE",
+          "description": "user-service request_rate: baseline 494.44 -> window mean 499.97 (max 541.07, change 1.1%), onset none detected"
+        }
+      ],
+      "missing_evidence": [
+        "Whether notification-service actually calls user-service and at what rate",
+        "Per-caller breakdown of user-service traffic"
+      ],
+      "critic_decision": "reject"
+    }
+  ],
+  "critic_review": {
+    "verdict": "APPROVED",
+    "summary": "H1 (user-service 7.2.0 ProfileBatchLoader defect) is well supported and consistent in time. The 7.1.3->7.2.0 deploy at 07:56 (SUCCEEDED, the only config/deploy change in the window) precedes the user-service error_rate and p95 onset at 07:57. A fresh log query, though partial, returned NPEs in ProfileBatchLoader.load tagged v7.2.0 starting 07:58:29, which resolves the earlier 08:00:53 vs 07:59:37 discrepancy: the earlier 08:00:53 timestamp came from a partial log set. Gateway 500s from user-service begin 07:57:09, matching. Request rate (+1.1%), CPU, and DB connection utilisation are flat, so load and pool exhaustion are contradicted. H2 is rejected: postgres p95 latency and connection utilisation are flat, and user-service errors are application NPEs rather than DB errors. H3 is rejected: notification-service request rate is flat and user-service total load is unchanged. The config-change query returned nothing for the window.",
+    "assessments": [
+      {
+        "hypothesis_id": "H1",
+        "decision": "accept",
+        "reasoning": "Deploy at 07:56 precedes error and p95 onset at 07:57. Version-tagged NPEs in ProfileBatchLoader.load appear from 07:58:29 onward. Gateway 500s track from 07:57:09. Load, CPU, and DB pool metrics are flat, which fits a code-path defect. Unverified: the per-instance rollout and the exact retry mechanism behind the p95 rise. These are minor and do not change the culprit."
+      },
+      {
+        "hypothesis_id": "H2",
+        "decision": "reject",
+        "reasoning": "Postgres p95 latency (12.0 vs 12.0 ms) and connection utilisation (~40%) are flat across the window. The slow report_rollup statements predate and do not align with the user-service onset. User-service failures are NPEs in application code, not DB errors."
+      },
+      {
+        "hypothesis_id": "H3",
+        "decision": "reject",
+        "reasoning": "Notification-service request rate is flat (+1.1%). User-service total request rate and CPU are flat, so there is no overload. The topology edge dates from 09-15 with no change, and no log or metric links notification-service to the failures."
+      }
+    ],
+    "precheck_issues": [
+      {
+        "hypothesis_id": "H2",
+        "check": "single_source",
+        "severity": "warning",
+        "detail": "all support comes from one source type (log)"
+      },
+      {
+        "hypothesis_id": "H3",
+        "check": "culprit_symptom",
+        "severity": "warning",
+        "detail": "no log/metric evidence cited for culprit notification-service"
+      },
+      {
+        "hypothesis_id": "H3",
+        "check": "single_source",
+        "severity": "warning",
+        "detail": "all support comes from one source type (dependency)"
+      }
+    ],
+    "unsupported_assumptions": [
+      "That all user-service 500s come from the ProfileBatchLoader path (no per-endpoint or per-error-type breakdown).",
+      "That the rollout was complete at 07:56 on all instances (no per-instance deployment data).",
+      "The retry/fallback explanation for the p95 rise."
+    ],
+    "alternative_explanations": [
+      "Partial log coverage may hide other error types on user-service, but the version-tagged NPE signature and the metric step make the 7.2.0 defect the most parsimonious explanation.",
+      "The p95 increase may be fallback or retry work on the failing batch path, as H1 suggests; this is unverified but does not change the culprit."
+    ],
+    "evidence_requests": [],
+    "round": 1,
+    "rounds_reviewed": 1
+  },
+  "evidence_gaps": [
+    "[UNKNOWN] query_logs returned incomplete data for all (PARTIAL_DATA)",
+    "[UNKNOWN] query_logs returned incomplete data for service=api-gateway (PARTIAL_DATA)",
+    "[UNKNOWN] query_logs returned incomplete data for service=user-service (PARTIAL_DATA)"
+  ],
+  "probable_root_cause": {
+    "hypothesis_id": "H1",
+    "category": "deployment_regression",
+    "culprit_service": "user-service",
+    "description": "user-service 7.2.0 (ORM switch to batch loader) introduced a defect in ProfileBatchLoader that causes NullPointerException failures and 500s on GET /v1/users/{id}, which propagate to api-gateway as 5xx.",
+    "confidence": 0.855,
+    "label": "ROOT CAUSE IDENTIFIED (critic-approved; still an INFERENCE from evidence)"
+  },
+  "root_cause_statement": "ROOT CAUSE IDENTIFIED (critic-approved; still an INFERENCE from evidence): deployment_regression in user-service - user-service 7.2.0 (ORM switch to batch loader) introduced a defect in ProfileBatchLoader that causes NullPointerException failures and 500s on GET /v1/users/{id}, which propagate to api-gateway as 5xx.",
+  "corrective_actions": [
+    "Roll back user-service from 7.2.0 to 7.1.3 (the last known-good version) to restore error rate and latency, then confirm recovery in error_rate and p95 metrics.",
+    "Verify the rollback on all instances, since per-instance deployment state was not confirmed (critic assumption).",
+    "Check whether api-gateway retries or circuit breakers are masking or amplifying failures, and keep the rollback under observation until the 5xx rate returns to baseline (about 0.5%)."
+  ],
+  "preventive_actions": [
+    "Fix the null-handling defect in ProfileBatchLoader.load for the 7.2.0 code path and add regression tests covering null or missing profile inputs on GET /v1/users/{id}.",
+    "Gate the ORM and batch-loader change behind a canary or feature flag with automated error-rate and latency rollback thresholds before full rollout.",
+    "Require pre-production load and error-path testing for data-access layer changes.",
+    "Improve deployment traceability by recording per-instance rollout state and version tags on all log lines."
+  ],
+  "monitoring_recommendations": [
+    "Alert when user-service error_rate exceeds 2% for 5 minutes, and page when it exceeds 5%.",
+    "Alert on user-service p95 latency above 200 ms sustained for 5 minutes.",
+    "Add a log alert on 'NullPointerException in ProfileBatchLoader' and track it by version tag.",
+    "Track api-gateway 5xx rate by upstream service (user-service) with an alert above 1%.",
+    "Keep the postgres slow-query alert (statements over 5 s, such as report_rollup) active to catch H2-type contention.",
+    "Restore complete log ingestion for api-gateway, user-service and postgres so future investigations are not limited by partial data."
+  ],
+  "limitations": [
+    "Log queries returned incomplete data for all sources, including api-gateway and user-service, so the error sample may not be complete.",
+    "No per-endpoint or per-error-type breakdown was available, so it is not confirmed that all user-service 500s come from the ProfileBatchLoader path.",
+    "No per-instance deployment data was available to confirm the rollout was complete at 07:56.",
+    "The explanation for the p95 increase (retries or fallback work on the failing path) is unverified.",
+    "The configuration-change query returned no results for the window.",
+    "0 tool calls failed and 4 returned partial data; affected areas are treated as unknown, not healthy.",
+    "Confidence values are rule-based evidence-strength scores, not calibrated probabilities.",
+    "Investigation terminated because: critic verdict APPROVED"
+  ],
+  "final_status": "ROOT_CAUSE_IDENTIFIED",
+  "conclusion": "The most probable root cause of INC-009 is the user-service 7.2.0 deployment, specifically a NullPointerException defect in ProfileBatchLoader that produces 500 errors and latency growth on GET /v1/users/{id}, which propagate to api-gateway. The timing of the deploy, error and latency onset, and log signatures all support this. Load, database connection pool and postgres contention were ruled out. Rollback to 7.1.3 is the priority mitigation, and a defect fix with canary gating is the long-term remedy.",
+  "statistics": {
+    "rounds": 1,
+    "tool_calls": 27,
+    "tool_failures": 3,
+    "tool_retries": 3,
+    "partial_results": 4,
+    "agent_failures": 0,
+    "agent_retries": 0,
+    "invalid_llm_outputs": 0,
+    "messages_exchanged": 20,
+    "evidence_records": 97,
+    "duration_s": 54.42,
+    "tokens": {
+      "input_tokens": 46,
+      "output_tokens": 20444,
+      "cache_read_tokens": 24736,
+      "cache_write_tokens": 64866,
+      "llm_calls": 15,
+      "cost_usd": 0.01858221
+    },
+    "tokens_by_agent": {
+      "orchestrator": {
+        "input_tokens": 6,
+        "output_tokens": 1160,
+        "cache_read_tokens": 1318,
+        "cache_write_tokens": 2210,
+        "llm_calls": 2,
+        "cost_usd": 0.0008700299999999999
+      },
+      "dependency": {
+        "input_tokens": 14,
+        "output_tokens": 5411,
+        "cache_read_tokens": 10304,
+        "cache_write_tokens": 14195,
+        "llm_calls": 5,
+        "cost_usd": 0.004584315
+      },
+      "observability": {
+        "input_tokens": 12,
+        "output_tokens": 6582,
+        "cache_read_tokens": 5722,
+        "cache_write_tokens": 22371,
+        "llm_calls": 4,
+        "cost_usd": 0.006145795
+      },
+      "reasoning": {
+        "input_tokens": 4,
+        "output_tokens": 3933,
+        "cache_read_tokens": 0,
+        "cache_write_tokens": 14017,
+        "llm_calls": 1,
+        "cost_usd": 0.003719025
+      },
+      "critic": {
+        "input_tokens": 6,
+        "output_tokens": 1784,
+        "cache_read_tokens": 7392,
+        "cache_write_tokens": 8588,
+        "llm_calls": 2,
+        "cost_usd": 0.00204002
+      },
+      "reporting": {
+        "input_tokens": 4,
+        "output_tokens": 1574,
+        "cache_read_tokens": 0,
+        "cache_write_tokens": 3485,
+        "llm_calls": 1,
+        "cost_usd": 0.0012230250000000002
+      }
+    }
+  }
+}

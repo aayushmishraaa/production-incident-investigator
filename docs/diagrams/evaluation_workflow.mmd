@@ -1,0 +1,9 @@
+flowchart LR
+    I[12 incident reports] --> J[jobs: incident x system x run<br/>shuffled, concurrency 4]
+    J --> M[multi-agent] & S[single-agent]
+    M & S --> ST[InvestigationState + report]
+    ST --> RR[metrics.run_record]
+    GT[(ground_truth/*.json<br/>read ONLY here)] --> RR
+    ST --> JU[LLM judge 1-5<br/>explanation quality]
+    RR & JU --> AGG[summarize]
+    AGG --> OUT[evaluation_results.json, evaluation_runs.csv,<br/>summary_table.md, charts/*.png]

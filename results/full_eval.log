@@ -1,0 +1,181 @@
+[1/72] single_agent INC-004 run1: PROBABLE_ROOT_CAUSE    pred=resource_saturation              gt=resource_saturation              OK  21.0s spend=$0.182
+[2/72] single_agent INC-001 run3: PROBABLE_ROOT_CAUSE    pred=db_connection_pool_exhaustion    gt=db_connection_pool_exhaustion    OK  22.4s spend=$0.183
+WARNING agents: single_agent invalid submission: corrective_actions: Input should be a valid list; preventive_actions: Field required; monitoring_recommendations: Field required
+[3/72] single_agent INC-008 run1: PROBABLE_ROOT_CAUSE    pred=configuration_regression         gt=cache_degradation                BAD 22.9s spend=$0.212
+[4/72] multi_agent  INC-004 run2: ROOT_CAUSE_IDENTIFIED  pred=resource_saturation              gt=resource_saturation              OK  59.1s spend=$0.233
+[5/72] multi_agent  INC-012 run2: ROOT_CAUSE_IDENTIFIED  pred=configuration_regression         gt=configuration_regression         OK  59.7s spend=$0.234
+[6/72] single_agent INC-005 run2: PROBABLE_ROOT_CAUSE    pred=infrastructure_degradation       gt=infrastructure_degradation       OK  36.8s spend=$0.235
+WARNING tools: tool query_metrics attempt 1 failed: INVALID_QUERY
+WARNING agents: reasoning invalid submission: hypotheses.1.hypothesis_id: Field required; hypotheses.2.hypothesis_id: Field required
+[7/72] multi_agent  INC-011 run1: PROBABLE_ROOT_CAUSE    pred=traffic_surge                    gt=traffic_surge                    OK  108.4s spend=$0.325
+[8/72] multi_agent  INC-003 run3: ROOT_CAUSE_IDENTIFIED  pred=upstream_dependency_degradation  gt=upstream_dependency_degradation  OK  61.1s spend=$0.329
+[9/72] multi_agent  INC-003 run1: ROOT_CAUSE_IDENTIFIED  pred=upstream_dependency_degradation  gt=upstream_dependency_degradation  OK  59.7s spend=$0.337
+WARNING tools: tool get_deployments attempt 1 failed: SERVICE_UNAVAILABLE
+[10/72] single_agent INC-010 run2: INCONCLUSIVE           pred=inconclusive                     gt=inconclusive                     OK  20.6s spend=$0.360
+WARNING agents: observability invalid submission: findings: List should have at most 15 items after validation, not 16
+WARNING tools: tool query_metrics attempt 1 failed: TOOL_TIMEOUT
+WARNING tools: tool query_metrics attempt 1 failed: TOOL_TIMEOUT
+[11/72] multi_agent  INC-010 run1: INCONCLUSIVE           pred=inconclusive                     gt=inconclusive                     OK  151.0s spend=$0.387
+[12/72] single_agent INC-005 run3: PROBABLE_ROOT_CAUSE    pred=infrastructure_degradation       gt=infrastructure_degradation       OK  23.6s spend=$0.397
+WARNING tools: tool query_metrics attempt 1 failed: INVALID_QUERY
+WARNING agents: single_agent invalid submission: executive_summary: Field required
+[13/72] multi_agent  INC-009 run1: ROOT_CAUSE_IDENTIFIED  pred=deployment_regression            gt=deployment_regression            OK  54.4s spend=$0.437
+[14/72] multi_agent  INC-001 run3: ROOT_CAUSE_IDENTIFIED  pred=db_connection_pool_exhaustion    gt=db_connection_pool_exhaustion    OK  72.8s spend=$0.448
+[15/72] single_agent INC-003 run2: PROBABLE_ROOT_CAUSE    pred=upstream_dependency_degradation  gt=upstream_dependency_degradation  OK  35.3s spend=$0.452
+WARNING agents: reasoning invalid submission: hypotheses.1.hypothesis_id: Field required; hypotheses.1.category: Field required; hypotheses.1.description: Field required; hypotheses.1.mechanism: Field required; hypotheses.3.hypothesis_id: Field required
+WARNING agents: observability invalid submission: findings: List should have at most 15 items after validation, not 16
+[16/72] single_agent INC-003 run3: PROBABLE_ROOT_CAUSE    pred=upstream_dependency_degradation  gt=upstream_dependency_degradation  OK  25.5s spend=$0.500
+[17/72] multi_agent  INC-010 run2: INCONCLUSIVE           pred=inconclusive                     gt=inconclusive                     OK  153.0s spend=$0.500
+[18/72] multi_agent  INC-007 run2: ROOT_CAUSE_IDENTIFIED  pred=configuration_regression         gt=configuration_regression         OK  165.6s spend=$0.509
+[19/72] multi_agent  INC-005 run3: ROOT_CAUSE_IDENTIFIED  pred=infrastructure_degradation       gt=infrastructure_degradation       OK  74.6s spend=$0.523
+[20/72] single_agent INC-008 run2: PROBABLE_ROOT_CAUSE    pred=configuration_regression         gt=cache_degradation                BAD 26.2s spend=$0.538
+[21/72] single_agent INC-012 run2: PROBABLE_ROOT_CAUSE    pred=configuration_regression         gt=configuration_regression         OK  17.5s spend=$0.538
+[22/72] multi_agent  INC-008 run3: ROOT_CAUSE_IDENTIFIED  pred=cache_degradation                gt=cache_degradation                OK  66.1s spend=$0.548
+[23/72] single_agent INC-012 run1: PROBABLE_ROOT_CAUSE    pred=configuration_regression         gt=configuration_regression         OK  19.8s spend=$0.549
+WARNING agents: dependency invalid submission: uncertainties: Input should be a valid list
+[24/72] single_agent INC-004 run3: PROBABLE_ROOT_CAUSE    pred=resource_saturation              gt=resource_saturation              OK  20.5s spend=$0.568
+[25/72] single_agent INC-001 run2: PROBABLE_ROOT_CAUSE    pred=db_connection_pool_exhaustion    gt=db_connection_pool_exhaustion    OK  24.1s spend=$0.573
+WARNING agents: single_agent invalid submission: corrective_actions: Field required
+WARNING tools: tool get_deployments attempt 1 failed: SERVICE_UNAVAILABLE
+WARNING tools: tool query_metrics attempt 1 failed: TOOL_TIMEOUT
+WARNING tools: tool query_metrics attempt 1 failed: TOOL_TIMEOUT
+[26/72] multi_agent  INC-012 run3: ROOT_CAUSE_IDENTIFIED  pred=configuration_regression         gt=configuration_regression         OK  62.4s spend=$0.587
+[27/72] single_agent INC-010 run1: INCONCLUSIVE           pred=inconclusive                     gt=inconclusive                     OK  28.6s spend=$0.595
+[28/72] single_agent INC-002 run3: PROBABLE_ROOT_CAUSE    pred=deployment_regression            gt=deployment_regression            OK  16.6s spend=$0.603
+[29/72] multi_agent  INC-011 run3: ROOT_CAUSE_IDENTIFIED  pred=traffic_surge                    gt=traffic_surge                    OK  130.7s spend=$0.628
+WARNING agents: single_agent invalid submission: executive_summary: Field required
+[30/72] multi_agent  INC-005 run1: ROOT_CAUSE_IDENTIFIED  pred=infrastructure_degradation       gt=infrastructure_degradation       OK  61.2s spend=$0.641
+[31/72] single_agent INC-008 run3: PROBABLE_ROOT_CAUSE    pred=configuration_regression         gt=cache_degradation                BAD 35.7s spend=$0.655
+WARNING agents: reasoning invalid submission: hypotheses.1.hypothesis_id: Field required; hypotheses.2.hypothesis_id: Field required
+WARNING agents: orchestrator invalid submission: unknown services ['observability-backend']; valid: ['api-gateway', 'auth-service', 'message-queue', 'notification-service', 'order-service', 'payment-service', 'postgres', 'redis', 'user-service']
+WARNING tools: tool get_deployments attempt 1 failed: SERVICE_UNAVAILABLE
+WARNING agents: observability invalid submission: findings: Input should be a valid list
+WARNING agents: observability invalid submission: uncertainties: Input should be a valid list
+WARNING tools: tool query_metrics attempt 1 failed: TOOL_TIMEOUT
+WARNING tools: tool query_metrics attempt 1 failed: TOOL_TIMEOUT
+[32/72] multi_agent  INC-012 run1: ROOT_CAUSE_IDENTIFIED  pred=configuration_regression         gt=configuration_regression         OK  61.4s spend=$0.693
+WARNING tools: tool query_metrics attempt 1 failed: INVALID_QUERY
+[33/72] single_agent INC-006 run3: PROBABLE_ROOT_CAUSE    pred=infrastructure_degradation       gt=infrastructure_degradation       OK  22.0s spend=$0.731
+[34/72] multi_agent  INC-004 run1: ROOT_CAUSE_IDENTIFIED  pred=resource_saturation              gt=resource_saturation              OK  59.7s spend=$0.749
+[35/72] multi_agent  INC-009 run3: ROOT_CAUSE_IDENTIFIED  pred=deployment_regression            gt=deployment_regression            OK  116.2s spend=$0.753
+WARNING agents: reasoning invalid submission: hypotheses.1.hypothesis_id: Field required; hypotheses.2.hypothesis_id: Field required
+[36/72] single_agent INC-005 run1: PROBABLE_ROOT_CAUSE    pred=infrastructure_degradation       gt=infrastructure_degradation       OK  23.2s spend=$0.767
+[37/72] single_agent INC-002 run2: ROOT_CAUSE_IDENTIFIED  pred=deployment_regression            gt=deployment_regression            OK  18.5s spend=$0.794
+[38/72] single_agent INC-011 run1: PROBABLE_ROOT_CAUSE    pred=traffic_surge                    gt=traffic_surge                    OK  25.0s spend=$0.796
+[39/72] multi_agent  INC-007 run3: ROOT_CAUSE_IDENTIFIED  pred=configuration_regression         gt=configuration_regression         OK  110.5s spend=$0.814
+WARNING agents: observability invalid submission: findings: List should have at most 15 items after validation, not 18
+WARNING agents: observability invalid submission: these evidence_ids do not exist in collected evidence: ['met-auth-service-cache_hit_rate-1330-1425'] (cite only ids returned by tools)
+[40/72] multi_agent  INC-002 run3: ROOT_CAUSE_IDENTIFIED  pred=deployment_regression            gt=deployment_regression            OK  59.8s spend=$0.845
+WARNING agents: observability invalid submission: findings: List should have at most 15 items after validation, not 17
+[41/72] single_agent INC-007 run2: ROOT_CAUSE_IDENTIFIED  pred=configuration_regression         gt=configuration_regression         OK  18.8s spend=$0.882
+WARNING agents: critic invalid submission: assessments.2.reasoning: Field required
+[42/72] multi_agent  INC-001 run2: PROBABLE_ROOT_CAUSE    pred=db_connection_pool_exhaustion    gt=db_connection_pool_exhaustion    OK  180.8s spend=$0.894
+[43/72] multi_agent  INC-009 run2: PROBABLE_ROOT_CAUSE    pred=deployment_regression            gt=deployment_regression            OK  155.7s spend=$0.914
+[44/72] single_agent INC-010 run3: INCONCLUSIVE           pred=inconclusive                     gt=inconclusive                     OK  25.2s spend=$0.925
+WARNING agents: observability invalid submission: findings: Input should be a valid list
+WARNING agents: observability invalid submission: findings: List should have at most 15 items after validation, not 16
+WARNING agents: observability invalid submission: these evidence_ids do not exist in collected evidence: ['met-redis-timeout_rate'] (cite only ids returned by tools)
+WARNING tools: tool query_logs attempt 1 failed: INVALID_QUERY
+WARNING tools: tool get_service_dependencies attempt 1 failed: INVALID_QUERY
+[45/72] multi_agent  INC-002 run2: ROOT_CAUSE_IDENTIFIED  pred=deployment_regression            gt=deployment_regression            OK  56.6s spend=$1.016
+WARNING tools: tool query_logs attempt 1 failed: INVALID_QUERY
+WARNING tools: tool query_metrics attempt 1 failed: INVALID_QUERY
+[46/72] multi_agent  INC-006 run1: INCONCLUSIVE           pred=inconclusive                     gt=infrastructure_degradation       BAD 154.8s spend=$1.068
+WARNING tools: tool get_deployments attempt 1 failed: SERVICE_UNAVAILABLE
+WARNING tools: tool query_metrics attempt 1 failed: TOOL_TIMEOUT
+WARNING tools: tool query_metrics attempt 1 failed: TOOL_TIMEOUT
+[47/72] multi_agent  INC-001 run1: PROBABLE_ROOT_CAUSE    pred=db_connection_pool_exhaustion    gt=db_connection_pool_exhaustion    OK  167.7s spend=$1.081
+[48/72] single_agent INC-009 run2: PROBABLE_ROOT_CAUSE    pred=deployment_regression            gt=deployment_regression            OK  19.7s spend=$1.103
+[49/72] multi_agent  INC-010 run3: INCONCLUSIVE           pred=inconclusive                     gt=inconclusive                     OK  180.4s spend=$1.116
+WARNING agents: reporting invalid submission: corrective_actions: Input should be a valid list; preventive_actions: Field required; monitoring_recommendations: Field required; conclusion: Field required
+WARNING agents: single_agent invalid submission: final_status: Field required
+WARNING agents: observability invalid submission: uncertainties: Input should be a valid list
+WARNING agents: dependency invalid submission: uncertainties: Input should be a valid list
+WARNING agents: reporting invalid submission: corrective_actions: Field required
+WARNING agents: observability invalid submission: these evidence_ids do not exist in collected evidence: ['query_metrics:postgres:db_conn_util_pct', 'query_metrics:postgres:error_rate', 'query_metrics:postgres:p95_latency_ms'] (cite only ids returned by tools)
+WARNING agents: reporting invalid submission: corrective_actions: Field required
+WARNING recovery: agent reporting task task-65b4d7b834 attempt 1 failed: AgentOutputError('reporting exceeded 2 steps without a valid submission')
+[50/72] single_agent INC-011 run2: PROBABLE_ROOT_CAUSE    pred=traffic_surge                    gt=traffic_surge                    OK  33.7s spend=$1.140
+[51/72] multi_agent  INC-011 run2: ROOT_CAUSE_IDENTIFIED  pred=traffic_surge                    gt=traffic_surge                    OK  82.6s spend=$1.153
+[52/72] single_agent INC-011 run3: PROBABLE_ROOT_CAUSE    pred=traffic_surge                    gt=traffic_surge                    OK  23.1s spend=$1.156
+[53/72] single_agent INC-007 run3: PROBABLE_ROOT_CAUSE    pred=configuration_regression         gt=configuration_regression         OK  18.8s spend=$1.169
+[54/72] multi_agent  INC-006 run3: INCONCLUSIVE           pred=inconclusive                     gt=infrastructure_degradation       BAD 167.8s spend=$1.181
+WARNING tools: tool get_deployments attempt 1 failed: SERVICE_UNAVAILABLE
+WARNING tools: tool query_metrics attempt 1 failed: TOOL_TIMEOUT
+WARNING tools: tool query_metrics attempt 1 failed: TOOL_TIMEOUT
+WARNING agents: observability invalid submission: these evidence_ids do not exist in collected evidence: ['met-redis-timeout_rate-1110-1205'] (cite only ids returned by tools)
+[55/72] single_agent INC-012 run3: ROOT_CAUSE_IDENTIFIED  pred=configuration_regression         gt=configuration_regression         OK  20.2s spend=$1.206
+WARNING agents: single_agent invalid submission: hypotheses: Field required
+[56/72] multi_agent  INC-006 run2: INCONCLUSIVE           pred=inconclusive                     gt=infrastructure_degradation       BAD 170.2s spend=$1.210
+WARNING agents: single_agent invalid submission: hypotheses: Field required
+WARNING agents: observability invalid submission: uncertainties: Input should be a valid list
+[57/72] single_agent INC-009 run3: PROBABLE_ROOT_CAUSE    pred=deployment_regression            gt=deployment_regression            OK  34.7s spend=$1.238
+[58/72] single_agent INC-001 run1: PROBABLE_ROOT_CAUSE    pred=db_connection_pool_exhaustion    gt=db_connection_pool_exhaustion    OK  19.3s spend=$1.241
+WARNING agents: single_agent invalid submission: hypotheses: Input should be a valid list
+[59/72] multi_agent  INC-005 run2: ROOT_CAUSE_IDENTIFIED  pred=infrastructure_degradation       gt=infrastructure_degradation       OK  68.6s spend=$1.267
+WARNING agents: observability invalid submission: uncertainties: Input should be a valid list
+[60/72] single_agent INC-003 run1: PROBABLE_ROOT_CAUSE    pred=upstream_dependency_degradation  gt=upstream_dependency_degradation  OK  39.2s spend=$1.277
+WARNING tools: tool query_metrics attempt 1 failed: INVALID_QUERY
+WARNING tools: tool query_logs attempt 1 failed: INVALID_QUERY
+[61/72] single_agent INC-007 run1: ROOT_CAUSE_IDENTIFIED  pred=configuration_regression         gt=configuration_regression         OK  18.7s spend=$1.300
+WARNING tools: tool get_deployments attempt 1 failed: SERVICE_UNAVAILABLE
+[62/72] single_agent INC-006 run1: PROBABLE_ROOT_CAUSE    pred=infrastructure_degradation       gt=infrastructure_degradation       OK  24.2s spend=$1.306
+WARNING tools: tool query_metrics attempt 1 failed: TOOL_TIMEOUT
+WARNING tools: tool query_metrics attempt 1 failed: TOOL_TIMEOUT
+[63/72] multi_agent  INC-002 run1: ROOT_CAUSE_IDENTIFIED  pred=deployment_regression            gt=deployment_regression            OK  54.6s spend=$1.322
+[64/72] single_agent INC-009 run1: PROBABLE_ROOT_CAUSE    pred=deployment_regression            gt=deployment_regression            OK  17.3s spend=$1.330
+WARNING tools: tool query_metrics attempt 1 failed: INVALID_QUERY
+WARNING tools: tool query_logs attempt 1 failed: INVALID_QUERY
+[65/72] multi_agent  INC-004 run3: ROOT_CAUSE_IDENTIFIED  pred=resource_saturation              gt=resource_saturation              OK  63.1s spend=$1.346
+WARNING agents: single_agent invalid submission: executive_summary: Field required
+WARNING agents: dependency invalid submission: uncertainties: Input should be a valid list
+[66/72] single_agent INC-006 run2: PROBABLE_ROOT_CAUSE    pred=infrastructure_degradation       gt=infrastructure_degradation       OK  23.0s spend=$1.367
+WARNING agents: reporting invalid submission: corrective_actions: Input should be a valid list; preventive_actions: Field required; monitoring_recommendations: Field required; conclusion: Field required
+WARNING agents: single_agent invalid submission: hypotheses: Field required
+[67/72] single_agent INC-004 run2: PROBABLE_ROOT_CAUSE    pred=resource_saturation              gt=resource_saturation              OK  30.7s spend=$1.373
+WARNING agents: reporting invalid submission: corrective_actions: Input should be a valid list; preventive_actions: Field required; monitoring_recommendations: Field required; conclusion: Field required
+[68/72] single_agent INC-002 run1: PROBABLE_ROOT_CAUSE    pred=deployment_regression            gt=deployment_regression            OK  25.8s spend=$1.384
+[69/72] multi_agent  INC-007 run1: INCONCLUSIVE           pred=inconclusive                     gt=configuration_regression         BAD 188.9s spend=$1.389
+[70/72] multi_agent  INC-008 run2: INCONCLUSIVE           pred=inconclusive                     gt=cache_degradation                BAD 191.3s spend=$1.425
+WARNING tools: tool query_metrics attempt 1 failed: INVALID_QUERY
+[71/72] multi_agent  INC-008 run1: ROOT_CAUSE_IDENTIFIED  pred=cache_degradation                gt=cache_degradation                OK  66.4s spend=$1.433
+WARNING agents: reporting invalid submission: corrective_actions: Input should be a valid list; preventive_actions: Field required; monitoring_recommendations: Field required; limitations: Input should be a valid list; conclusion: Field required
+[72/72] multi_agent  INC-003 run2: PROBABLE_ROOT_CAUSE    pred=upstream_dependency_degradation  gt=upstream_dependency_degradation  OK  169.3s spend=$1.449
+| Metric | multi_agent | single_agent |
+|---|---|---|
+| Root-cause accuracy (category) | 0.861 | 0.917 |
+| Accuracy std across runs | 0.039 | 0.000 |
+| Strict accuracy (category+service) | 0.861 | 0.889 |
+| Expected-behaviour accuracy | 0.944 | 0.917 |
+| Coverage (diagnosis produced) | 0.778 | 0.917 |
+| Accuracy when diagnosed | 1.000 | 0.909 |
+| Correct | 31 | 33 |
+| Incorrect (wrong diagnosis) | 0 | 3 |
+| Inconclusive | 8 | 3 |
+| Macro precision | 1.000 | 0.952 |
+| Macro recall | 0.875 | 0.875 |
+| Macro F1 | 0.922 | 0.971 |
+| Evidence citation validity | 1.000 | 0.995 |
+| Hallucinated citations | 0 | 3 |
+| Top-hypothesis citation accuracy | 0.688 | 0.751 |
+| Unsupported hypotheses rate | 0.008 | 0.211 |
+| Ground-truth key evidence recall | 0.735 | 0.694 |
+| Decoy/misleading evidence handled | 1.000 | 1.000 |
+| Hypotheses with contradicting evidence | 0.992 | 1.000 |
+| Investigation completeness | 0.956 | 0.967 |
+| LLM-judge explanation score (1-5) | 4.528 | 4.694 |
+| Tool calls / investigation | 32.310 | 9.780 |
+| Tool calls total | 1163 | 352 |
+| Failed tool calls | 15 | 15 |
+| Retried tool calls | 9 | 9 |
+| Tool calls / successful investigation | 29.350 | 9.790 |
+| Latency mean (s) | 107.398 | 24.388 |
+| Latency median (s) | 78.647 | 23.058 |
+| Latency P95 (s) | 182.816 | 35.969 |
+| LLM calls / investigation | 22.810 | 3.970 |
+| Tokens / investigation | 191977.200 | 49022.800 |
+| Input tokens total | 5647618 | 1555581 |
+| Output tokens total | 1263561 | 209240 |
+| Cost total (USD) | 1.111 | 0.173 |
+
+Results: /Users/aayush/Repos/Personal/production-incident-investigator/results/evaluation/evaluation_results.json, evaluation_runs.csv; charts: /Users/aayush/Repos/Personal/production-incident-investigator/results/charts

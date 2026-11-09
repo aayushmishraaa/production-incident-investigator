@@ -129,7 +129,8 @@ async def list_investigations(limit: int = 50) -> list[dict[str, Any]]:
 @app.get("/investigations/{inv_id}")
 async def get_investigation(inv_id: str) -> dict[str, Any]:
     s = _get(inv_id)
-    return {"investigation_id": s.investigation_id, "status": s.final_status.value, "round": s.round,
+    status = s.final_status.value if s.report else FinalStatus.RUNNING.value   # done only once the report exists
+    return {"investigation_id": s.investigation_id, "status": status, "round": s.round,
             "state": json.loads(s.model_dump_json(exclude={"report"}))}
 
 

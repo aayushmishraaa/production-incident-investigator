@@ -1,0 +1,9 @@
+flowchart TD
+    X[agent task] --> TRY[attempt]
+    TRY -- success --> DONE[COMPLETED]
+    TRY -- invalid JSON / schema / unknown evidence ids --> FB[error fed back to LLM<br/>inside the loop, bounded]
+    FB --> TRY
+    TRY -- exception: LLM error, crash, step limit --> RET{agent retries left?}
+    RET -- yes --> TRY
+    RET -- no --> FAIL[FAILED: recorded in state,<br/>ERROR message, investigation continues]
+    TRY -- BudgetStop / global cost cap --> STOP[graceful termination -> report]
