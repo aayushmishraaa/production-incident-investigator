@@ -9,3 +9,5 @@ results/investigations.db
 results/cost_ledger.json
 results/reports/*_stub_*
 results/api_server.log
+demo/build/
+demo/check/

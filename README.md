@@ -30,6 +30,7 @@ compares the two systems across 12 synthetic incidents.
 - `results/charts/`: accuracy, grounding, latency, tool-call and token charts, plus confusion matrices
 - `results/coverage_html/`: the test coverage report
 - `transcript/`: the coding-assistant transcript (required by the assignment)
+- `demo/walkthrough.mp4`: a 4.5-minute narrated walkthrough built from real runs (`scripts/demo_live.py`, `scripts/make_demo_video.py`)
 
 ## Setup
 
