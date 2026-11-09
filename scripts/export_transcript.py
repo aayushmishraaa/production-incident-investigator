@@ -10,11 +10,35 @@ import sys
 from pathlib import Path
 
 SECRET = re.compile(r"sk-ant-[A-Za-z0-9_\-]{10,}")
+# Tool outputs that expose unrelated private local files / personal notes are replaced wholesale.
+PRIVATE_RESULT_MARKERS = ("jayesh/", "Statements_", "DEED NO", "ZenLegal", "Godrej", "ryvos-github-account",
+                          "-Users-aayush-Repos-Personal/memory", "OD32935", ".gitconfig-personal")
+PRIVATE_WORDS = {"Ryvos": "[personal org]", "jayesh": "[other folder]", "aayush-zenalyst": "[work account]", "zenalyst": "[work]"}
 MAX_TOOL_OUTPUT = 4000
 
 
+def _key_fragments() -> list[str]:
+    """Load the real key from the (gitignored) .env so even partial fragments of it are redacted."""
+    import os
+    key = os.getenv("ANTHROPIC_API_KEY", "")
+    env = Path(__file__).resolve().parent.parent / ".env"
+    if not key and env.exists():
+        for line in env.read_text().splitlines():
+            if line.startswith("ANTHROPIC_API_KEY="):
+                key = line.split("=", 1)[1].strip()
+    return [key[i:i + 9] for i in range(0, max(0, len(key) - 8))] if len(key) > 20 else []
+
+
+KEY_FRAGMENTS = _key_fragments()
+
+
 def redact(text: str) -> str:
-    return SECRET.sub("sk-ant-[REDACTED]", text)
+    text = SECRET.sub("sk-ant-[REDACTED]", text)
+    for frag in KEY_FRAGMENTS:
+        text = text.replace(frag, "[REDACTED]")
+    for w, rep in PRIVATE_WORDS.items():
+        text = text.replace(w, rep)
+    return text
 
 
 def render_block(block: dict) -> str:
@@ -31,6 +55,8 @@ def render_block(block: dict) -> str:
         if isinstance(content, list):
             content = "\n".join(c.get("text", "") for c in content if isinstance(c, dict))
         content = str(content or "")
+        if any(m in content for m in PRIVATE_RESULT_MARKERS):
+            return "<details><summary>Tool result</summary>\n\n```\n[redacted: output listed unrelated private local files or personal notes]\n```\n</details>"
         if len(content) > MAX_TOOL_OUTPUT:
             content = content[:MAX_TOOL_OUTPUT] + "\n... [truncated]"
         return f"<details><summary>Tool result</summary>\n\n```\n{content}\n```\n</details>"
