@@ -1,0 +1,202 @@
+[
+  {
+    "id": "HIST-2025-014",
+    "title": "Payment latency from leaked DB connections",
+    "services": [
+      "payment-service",
+      "postgres"
+    ],
+    "symptoms": [
+      "high latency",
+      "connection acquisition timeout",
+      "db connection pool saturated",
+      "error rate increase"
+    ],
+    "root_cause": "Connection leak in refund path held pooled connections; pool exhausted.",
+    "root_cause_category": "db_connection_pool_exhaustion",
+    "remediation": [
+      "Restart payment-service pods to release connections",
+      "Fix leak (try-with-resources)",
+      "Enable leak detection alerting"
+    ]
+  },
+  {
+    "id": "HIST-2025-022",
+    "title": "Auth outage after JWT library upgrade",
+    "services": [
+      "auth-service",
+      "api-gateway"
+    ],
+    "symptoms": [
+      "error rate spike",
+      "500 errors",
+      "token validation failure",
+      "after deployment"
+    ],
+    "root_cause": "New release mis-parsed JWKS keys.",
+    "root_cause_category": "deployment_regression",
+    "remediation": [
+      "Roll back auth-service",
+      "Add contract tests for JWKS key types"
+    ]
+  },
+  {
+    "id": "HIST-2025-031",
+    "title": "Checkout slow due to slow identity calls",
+    "services": [
+      "auth-service",
+      "payment-service"
+    ],
+    "symptoms": [
+      "high latency",
+      "upstream timeout",
+      "slow downstream calls"
+    ],
+    "root_cause": "auth-service degraded by slow identity-provider JWKS refresh.",
+    "root_cause_category": "upstream_dependency_degradation",
+    "remediation": [
+      "Increase JWKS cache TTL",
+      "Add timeouts and circuit breaker around auth calls"
+    ]
+  },
+  {
+    "id": "HIST-2025-040",
+    "title": "Order service CPU saturation from batch job",
+    "services": [
+      "order-service"
+    ],
+    "symptoms": [
+      "high cpu",
+      "high latency",
+      "gc pauses",
+      "thread pool saturation"
+    ],
+    "root_cause": "Reconciliation batch job scheduled on serving nodes.",
+    "root_cause_category": "resource_saturation",
+    "remediation": [
+      "Move batch jobs to dedicated workers",
+      "Throttle batch size"
+    ]
+  },
+  {
+    "id": "HIST-2025-047",
+    "title": "Database storage latency degradation",
+    "services": [
+      "postgres",
+      "payment-service",
+      "order-service"
+    ],
+    "symptoms": [
+      "slow queries",
+      "high latency",
+      "statement timeout",
+      "io wait"
+    ],
+    "root_cause": "Cloud block storage volume degraded.",
+    "root_cause_category": "infrastructure_degradation",
+    "remediation": [
+      "Fail over to replica",
+      "Migrate volume",
+      "Alert on disk IO wait"
+    ]
+  },
+  {
+    "id": "HIST-2025-055",
+    "title": "Timeouts after client timeout misconfiguration",
+    "services": [
+      "order-service",
+      "payment-service"
+    ],
+    "symptoms": [
+      "timeout rate spike",
+      "circuit breaker open",
+      "error rate increase"
+    ],
+    "root_cause": "Client timeout configured in seconds instead of milliseconds.",
+    "root_cause_category": "configuration_regression",
+    "remediation": [
+      "Revert configuration",
+      "Validate config ranges in CI"
+    ]
+  },
+  {
+    "id": "HIST-2025-061",
+    "title": "Redis evictions overloaded database",
+    "services": [
+      "redis",
+      "postgres",
+      "user-service"
+    ],
+    "symptoms": [
+      "cache hit rate drop",
+      "evictions",
+      "database cpu high",
+      "high latency"
+    ],
+    "root_cause": "Redis reached maxmemory; LRU eviction caused cache misses and DB load.",
+    "root_cause_category": "cache_degradation",
+    "remediation": [
+      "Increase Redis memory",
+      "Reduce cached payload size",
+      "Alert on hit rate"
+    ]
+  },
+  {
+    "id": "HIST-2025-068",
+    "title": "Retry storm from mobile client",
+    "services": [
+      "api-gateway",
+      "auth-service"
+    ],
+    "symptoms": [
+      "request rate spike",
+      "high cpu",
+      "429 errors",
+      "high latency"
+    ],
+    "root_cause": "Mobile release ignored Retry-After causing retry storm.",
+    "root_cause_category": "traffic_surge",
+    "remediation": [
+      "Block/limit offending client version",
+      "Enforce server-side backoff"
+    ]
+  },
+  {
+    "id": "HIST-2025-073",
+    "title": "User service DB errors from node network issue",
+    "services": [
+      "user-service",
+      "postgres"
+    ],
+    "symptoms": [
+      "connection refused",
+      "connection reset",
+      "database errors"
+    ],
+    "root_cause": "Node conntrack table exhaustion dropped DB packets for one service.",
+    "root_cause_category": "infrastructure_degradation",
+    "remediation": [
+      "Raise nf_conntrack_max",
+      "Reschedule pods",
+      "Alert on conntrack usage"
+    ]
+  },
+  {
+    "id": "HIST-2025-080",
+    "title": "Notification backlog after deploy",
+    "services": [
+      "notification-service",
+      "message-queue"
+    ],
+    "symptoms": [
+      "queue depth increase",
+      "consumer lag"
+    ],
+    "root_cause": "Deployment reduced consumer concurrency.",
+    "root_cause_category": "deployment_regression",
+    "remediation": [
+      "Roll back",
+      "Alert on consumer lag"
+    ]
+  }
+]

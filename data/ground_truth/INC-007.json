@@ -1,0 +1,54 @@
+{
+  "incident_id": "INC-007",
+  "root_cause_category": "configuration_regression",
+  "culprit_service": "order-service",
+  "description": "Config change set order-service payment_client.timeout_ms 3000->300; calls to healthy payment-service time out.",
+  "expected_behaviour": "Tie timeout spike to config change; payment-service metrics healthy; older payment deploy unrelated.",
+  "expected_inconclusive": false,
+  "acceptable_inconclusive": false,
+  "key_evidence_ids": [
+    "log-827fcb9e",
+    "log-847007fd",
+    "log-ce6f1f7d",
+    "log-eea7487d",
+    "log-e8f83337",
+    "log-fbbfeeee",
+    "log-f8c26494",
+    "log-67487f2d",
+    "log-224ae101",
+    "log-1740c8c8",
+    "log-cbb9ae3b",
+    "log-e7adfe05",
+    "log-9426d04f",
+    "log-3b505e4f",
+    "log-2bee595c",
+    "log-0701aad6",
+    "log-5ee217fc",
+    "log-faf40d4c",
+    "log-3bc73456",
+    "log-ca1556fe",
+    "log-9c7f43b2",
+    "log-11e65fc5",
+    "log-ee6a1c0a",
+    "log-4985a0f9",
+    "log-5efe50ca",
+    "log-c190de20",
+    "log-e5d56be8",
+    "log-393f69cd",
+    "log-7b8924a4",
+    "log-886946e7",
+    "log-81850691",
+    "cfg-7f81d14a"
+  ],
+  "key_metric_prefixes": [
+    "met-order-service-timeout_rate"
+  ],
+  "decoy_evidence_ids": [
+    "dep-7cf38f2d"
+  ],
+  "decoy_category": "deployment_regression",
+  "expected_remediation": [
+    "Revert payment_client.timeout_ms to 3000",
+    "Validate timeout ranges in config CI"
+  ]
+}

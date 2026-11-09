@@ -1,0 +1,12 @@
+{
+  "incident_id": "INC-007",
+  "title": "Order checkout failing",
+  "description": "Order checkout error rate above 25%. Payment team says their service is healthy.",
+  "severity": "SEV2",
+  "reported_at": "2026-09-20T15:31:00Z",
+  "symptom_start": "2026-09-20T15:25:00Z",
+  "affected_services": [
+    "order-service"
+  ],
+  "reporter": "on-call"
+}

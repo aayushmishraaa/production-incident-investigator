@@ -1,0 +1,14 @@
+{
+  "incident_id": "INC-002",
+  "title": "Login and checkout failures",
+  "description": "Sharp increase in 5xx errors on login and checkout endpoints. Users being logged out.",
+  "severity": "SEV1",
+  "reported_at": "2026-09-05T09:36:00Z",
+  "symptom_start": "2026-09-05T09:30:00Z",
+  "affected_services": [
+    "api-gateway",
+    "auth-service",
+    "payment-service"
+  ],
+  "reporter": "on-call"
+}

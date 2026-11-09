@@ -1,0 +1,50 @@
+{
+  "incident_id": "INC-004",
+  "root_cause_category": "resource_saturation",
+  "culprit_service": "order-service",
+  "description": "CPU saturation on order-service caused by a reconciliation batch job running on serving nodes.",
+  "expected_behaviour": "Identify CPU saturation as cause of latency; request rate flat so not traffic surge.",
+  "expected_inconclusive": false,
+  "acceptable_inconclusive": false,
+  "key_evidence_ids": [
+    "log-5b27294e",
+    "log-93268339",
+    "log-03898ac9",
+    "log-b56a8c59",
+    "log-10743772",
+    "log-64c998a5",
+    "log-da3dd7ba",
+    "log-98153970",
+    "log-08ebee21",
+    "log-6489829f",
+    "log-200de4d3",
+    "log-c5e07c75",
+    "log-84cc4ab5",
+    "log-c67bdbf9",
+    "log-fac1a5c9",
+    "log-3af0d5e8",
+    "log-e52d4db3",
+    "log-478e082d",
+    "log-5bc6b11c",
+    "log-f3995965",
+    "log-439d92c7",
+    "log-5c3d6c1a",
+    "log-e3972b00",
+    "log-ac4c285f",
+    "log-a9397cf4",
+    "log-68636ca7",
+    "log-6bc8564b"
+  ],
+  "key_metric_prefixes": [
+    "met-order-service-cpu_pct"
+  ],
+  "decoy_evidence_ids": [
+    "dep-bd77b48c"
+  ],
+  "decoy_category": "traffic_surge",
+  "expected_remediation": [
+    "Stop/throttle the reconciliation job",
+    "Move batch jobs to dedicated workers",
+    "Alert on CPU > 85% for 5m"
+  ]
+}

@@ -1,0 +1,297 @@
+{"timestamp": "2026-09-23T11:50:07Z", "service": "order-service", "severity": "INFO", "message": "Created 67 orders in last minute", "log_id": "log-128ea774"}
+{"timestamp": "2026-09-23T11:50:08Z", "service": "postgres", "severity": "INFO", "message": "autovacuum: processing table public.orders", "log_id": "log-fe989c3f"}
+{"timestamp": "2026-09-23T11:50:17Z", "service": "payment-service", "severity": "WARN", "message": "Card network soft decline (code 05) for charge ch_12", "log_id": "log-17477b08"}
+{"timestamp": "2026-09-23T11:50:20Z", "service": "redis", "severity": "INFO", "message": "67 changes in 60 seconds. Saving...", "log_id": "log-be96bb4c"}
+{"timestamp": "2026-09-23T11:50:25Z", "service": "user-service", "severity": "INFO", "message": "GET /v1/users/me 200 21ms", "log_id": "log-8d0148b0"}
+{"timestamp": "2026-09-23T11:50:28Z", "service": "api-gateway", "severity": "INFO", "message": "GET /v1/health 200 3ms", "log_id": "log-aa8a353d"}
+{"timestamp": "2026-09-23T11:50:33Z", "service": "auth-service", "severity": "INFO", "message": "Issued 15 tokens in last minute", "log_id": "log-12e29e2e"}
+{"timestamp": "2026-09-23T11:50:49Z", "service": "notification-service", "severity": "INFO", "message": "Sent 63 emails", "log_id": "log-8cbc229f"}
+{"timestamp": "2026-09-23T11:50:51Z", "service": "message-queue", "severity": "INFO", "message": "Published 15 messages", "log_id": "log-f5a31201"}
+{"timestamp": "2026-09-23T11:52:19Z", "service": "auth-service", "severity": "WARN", "message": "Login rate limit hit for user id u-12", "log_id": "log-d568b25e"}
+{"timestamp": "2026-09-23T11:52:20Z", "service": "user-service", "severity": "INFO", "message": "Served 63 profile reads in last minute", "log_id": "log-0af941ef"}
+{"timestamp": "2026-09-23T11:52:26Z", "service": "redis", "severity": "INFO", "message": "DB saved on disk", "log_id": "log-9a07b220"}
+{"timestamp": "2026-09-23T11:52:32Z", "service": "notification-service", "severity": "WARN", "message": "SMTP provider throttled 1 message", "log_id": "log-f838e74f"}
+{"timestamp": "2026-09-23T11:52:58Z", "service": "api-gateway", "severity": "INFO", "message": "Routed 10 requests in last minute", "log_id": "log-03b10406"}
+{"timestamp": "2026-09-23T11:53:55Z", "service": "order-service", "severity": "INFO", "message": "Created 40 orders in last minute", "log_id": "log-6a103a53"}
+{"timestamp": "2026-09-23T11:54:23Z", "service": "user-service", "severity": "INFO", "message": "GET /v1/users/me 200 21ms", "log_id": "log-0f3ecc68"}
+{"timestamp": "2026-09-23T11:54:36Z", "service": "postgres", "severity": "WARN", "message": "duration: 16302 ms statement: SELECT report_rollup()", "log_id": "log-64ab86be"}
+{"timestamp": "2026-09-23T11:54:47Z", "service": "message-queue", "severity": "INFO", "message": "Queue order-events depth=0", "log_id": "log-fc8a22e7"}
+{"timestamp": "2026-09-23T11:55:24Z", "service": "api-gateway", "severity": "INFO", "message": "GET /v1/health 200 3ms", "log_id": "log-c4c0b97b"}
+{"timestamp": "2026-09-23T11:55:55Z", "service": "payment-service", "severity": "INFO", "message": "Processed 24 charges in last minute", "log_id": "log-2860de8b"}
+{"timestamp": "2026-09-23T11:56:19Z", "service": "redis", "severity": "INFO", "message": "DB saved on disk", "log_id": "log-ac321eba"}
+{"timestamp": "2026-09-23T11:56:47Z", "service": "order-service", "severity": "INFO", "message": "Created 25 orders in last minute", "log_id": "log-475c7c31"}
+{"timestamp": "2026-09-23T11:57:01Z", "service": "api-gateway", "severity": "INFO", "message": "Routed 33 requests in last minute", "log_id": "log-a06bf783"}
+{"timestamp": "2026-09-23T11:57:20Z", "service": "auth-service", "severity": "WARN", "message": "Login rate limit hit for user id u-41", "log_id": "log-5d9191ac"}
+{"timestamp": "2026-09-23T11:57:28Z", "service": "notification-service", "severity": "WARN", "message": "SMTP provider throttled 1 message", "log_id": "log-519d607d"}
+{"timestamp": "2026-09-23T11:57:38Z", "service": "payment-service", "severity": "WARN", "message": "Card network soft decline (code 05) for charge ch_21", "log_id": "log-d9500ecf"}
+{"timestamp": "2026-09-23T11:57:45Z", "service": "postgres", "severity": "INFO", "message": "autovacuum: processing table public.orders", "log_id": "log-e5d86344"}
+{"timestamp": "2026-09-23T11:57:58Z", "service": "user-service", "severity": "INFO", "message": "Served 18 profile reads in last minute", "log_id": "log-374816f6"}
+{"timestamp": "2026-09-23T11:59:04Z", "service": "message-queue", "severity": "INFO", "message": "Consumer group notif-cg rebalanced (members=3)", "log_id": "log-5de2541d"}
+{"timestamp": "2026-09-23T11:59:06Z", "service": "redis", "severity": "INFO", "message": "Background saving terminated with success", "log_id": "log-61c09735"}
+{"timestamp": "2026-09-23T11:59:55Z", "service": "user-service", "severity": "WARN", "message": "Deprecated API /v1/users/legacy called by client web-54", "log_id": "log-70e78eca"}
+{"timestamp": "2026-09-23T11:59:59Z", "service": "payment-service", "severity": "WARN", "message": "Card network soft decline (code 05) for charge ch_95", "log_id": "log-58cac930"}
+{"timestamp": "2026-09-23T12:00:28Z", "service": "api-gateway", "severity": "INFO", "message": "Routed 55 requests in last minute", "log_id": "log-f842f8fe"}
+{"timestamp": "2026-09-23T12:00:34Z", "service": "order-service", "severity": "WARN", "message": "Inventory reservation retry for sku-13", "log_id": "log-3e3023d5"}
+{"timestamp": "2026-09-23T12:01:04Z", "service": "postgres", "severity": "WARN", "message": "duration: 16802 ms statement: SELECT report_rollup()", "log_id": "log-3cbc14fb"}
+{"timestamp": "2026-09-23T12:02:05Z", "service": "user-service", "severity": "INFO", "message": "GET /v1/users/me 200 21ms", "log_id": "log-8e61f1cf"}
+{"timestamp": "2026-09-23T12:02:11Z", "service": "auth-service", "severity": "INFO", "message": "Issued 65 tokens in last minute", "log_id": "log-68e080cd"}
+{"timestamp": "2026-09-23T12:02:22Z", "service": "notification-service", "severity": "INFO", "message": "Consumer lag 0 on topic order-events", "log_id": "log-6d190233"}
+{"timestamp": "2026-09-23T12:02:52Z", "service": "redis", "severity": "INFO", "message": "65 changes in 60 seconds. Saving...", "log_id": "log-b7bf58fe"}
+{"timestamp": "2026-09-23T12:03:40Z", "service": "postgres", "severity": "INFO", "message": "checkpoint complete: wrote 56 buffers", "log_id": "log-810b3a0b"}
+{"timestamp": "2026-09-23T12:03:53Z", "service": "message-queue", "severity": "INFO", "message": "Consumer group notif-cg rebalanced (members=3)", "log_id": "log-3fb3a7f3"}
+{"timestamp": "2026-09-23T12:04:03Z", "service": "order-service", "severity": "INFO", "message": "Created 43 orders in last minute", "log_id": "log-b5061daf"}
+{"timestamp": "2026-09-23T12:04:03Z", "service": "redis", "severity": "INFO", "message": "78 changes in 60 seconds. Saving...", "log_id": "log-ccf52067"}
+{"timestamp": "2026-09-23T12:04:17Z", "service": "api-gateway", "severity": "INFO", "message": "GET /v1/health 200 3ms", "log_id": "log-c15a878f"}
+{"timestamp": "2026-09-23T12:04:19Z", "service": "payment-service", "severity": "INFO", "message": "Settlement batch heartbeat ok", "log_id": "log-5fa520bb"}
+{"timestamp": "2026-09-23T12:05:44Z", "service": "message-queue", "severity": "INFO", "message": "Published 13 messages", "log_id": "log-f277e5ab"}
+{"timestamp": "2026-09-23T12:05:57Z", "service": "postgres", "severity": "INFO", "message": "checkpoint complete: wrote 43 buffers", "log_id": "log-2c3eeee8"}
+{"timestamp": "2026-09-23T12:05:58Z", "service": "auth-service", "severity": "INFO", "message": "Issued 23 tokens in last minute", "log_id": "log-758fbedb"}
+{"timestamp": "2026-09-23T12:06:04Z", "service": "user-service", "severity": "INFO", "message": "Served 30 profile reads in last minute", "log_id": "log-3ae98c98"}
+{"timestamp": "2026-09-23T12:06:12Z", "service": "redis", "severity": "INFO", "message": "Background saving terminated with success", "log_id": "log-fd2467f1"}
+{"timestamp": "2026-09-23T12:06:18Z", "service": "notification-service", "severity": "WARN", "message": "SMTP provider throttled 1 message", "log_id": "log-e5548b7b"}
+{"timestamp": "2026-09-23T12:07:21Z", "service": "postgres", "severity": "INFO", "message": "checkpoint complete: wrote 24 buffers", "log_id": "log-1ae43a67"}
+{"timestamp": "2026-09-23T12:07:48Z", "service": "order-service", "severity": "INFO", "message": "Created 44 orders in last minute", "log_id": "log-573961bf"}
+{"timestamp": "2026-09-23T12:08:08Z", "service": "message-queue", "severity": "INFO", "message": "Consumer group notif-cg rebalanced (members=3)", "log_id": "log-3456d819"}
+{"timestamp": "2026-09-23T12:08:49Z", "service": "notification-service", "severity": "INFO", "message": "Consumer lag 0 on topic order-events", "log_id": "log-380ba04d"}
+{"timestamp": "2026-09-23T12:08:58Z", "service": "api-gateway", "severity": "WARN", "message": "Slow client upload from 10.4.71.12 (1.9MB)", "log_id": "log-dd3c87d8"}
+{"timestamp": "2026-09-23T12:09:21Z", "service": "payment-service", "severity": "INFO", "message": "Processed 26 charges in last minute", "log_id": "log-0d31b9b7"}
+{"timestamp": "2026-09-23T12:10:00Z", "service": "user-service", "severity": "INFO", "message": "Feature flag profile_v2_cache enabled (avg cached payload 4.1x larger)", "log_id": "log-d17c56ec"}
+{"timestamp": "2026-09-23T12:10:38Z", "service": "notification-service", "severity": "INFO", "message": "Consumer lag 0 on topic order-events", "log_id": "log-f60320d6"}
+{"timestamp": "2026-09-23T12:10:44Z", "service": "api-gateway", "severity": "INFO", "message": "Routed 80 requests in last minute", "log_id": "log-055c265c"}
+{"timestamp": "2026-09-23T12:10:47Z", "service": "auth-service", "severity": "INFO", "message": "JWKS cache refreshed (keys=4)", "log_id": "log-98957c6a"}
+{"timestamp": "2026-09-23T12:10:52Z", "service": "message-queue", "severity": "INFO", "message": "Published 82 messages", "log_id": "log-4fdd5222"}
+{"timestamp": "2026-09-23T12:11:13Z", "service": "payment-service", "severity": "INFO", "message": "Processed 10 charges in last minute", "log_id": "log-7f5b1336"}
+{"timestamp": "2026-09-23T12:11:22Z", "service": "order-service", "severity": "INFO", "message": "Outbox relay published 87 events", "log_id": "log-241859a6"}
+{"timestamp": "2026-09-23T12:11:22Z", "service": "postgres", "severity": "INFO", "message": "checkpoint complete: wrote 94 buffers", "log_id": "log-36cf5e70"}
+{"timestamp": "2026-09-23T12:11:25Z", "service": "redis", "severity": "INFO", "message": "DB saved on disk", "log_id": "log-37019cce"}
+{"timestamp": "2026-09-23T12:11:46Z", "service": "user-service", "severity": "INFO", "message": "Served 29 profile reads in last minute", "log_id": "log-e5c0a010"}
+{"timestamp": "2026-09-23T12:12:46Z", "service": "notification-service", "severity": "WARN", "message": "SMTP provider throttled 1 message", "log_id": "log-b2673de8"}
+{"timestamp": "2026-09-23T12:13:24Z", "service": "api-gateway", "severity": "INFO", "message": "GET /v1/health 200 3ms", "log_id": "log-d64192a6"}
+{"timestamp": "2026-09-23T12:13:43Z", "service": "redis", "severity": "INFO", "message": "Background saving terminated with success", "log_id": "log-a6f490f7"}
+{"timestamp": "2026-09-23T12:14:37Z", "service": "payment-service", "severity": "INFO", "message": "Processed 95 charges in last minute", "log_id": "log-669485b7"}
+{"timestamp": "2026-09-23T12:15:29Z", "service": "auth-service", "severity": "WARN", "message": "Login rate limit hit for user id u-71", "log_id": "log-063211f5"}
+{"timestamp": "2026-09-23T12:15:32Z", "service": "order-service", "severity": "WARN", "message": "Inventory reservation retry for sku-75", "log_id": "log-27c0f355"}
+{"timestamp": "2026-09-23T12:15:37Z", "service": "message-queue", "severity": "INFO", "message": "Published 59 messages", "log_id": "log-6099d0a4"}
+{"timestamp": "2026-09-23T12:15:47Z", "service": "notification-service", "severity": "WARN", "message": "SMTP provider throttled 1 message", "log_id": "log-bd3affd1"}
+{"timestamp": "2026-09-23T12:16:03Z", "service": "postgres", "severity": "INFO", "message": "checkpoint complete: wrote 88 buffers", "log_id": "log-eb9c85cc"}
+{"timestamp": "2026-09-23T12:16:45Z", "service": "user-service", "severity": "WARN", "message": "Deprecated API /v1/users/legacy called by client web-97", "log_id": "log-bc7b000e"}
+{"timestamp": "2026-09-23T12:16:49Z", "service": "redis", "severity": "INFO", "message": "66 changes in 60 seconds. Saving...", "log_id": "log-1cde432b"}
+{"timestamp": "2026-09-23T12:17:54Z", "service": "api-gateway", "severity": "INFO", "message": "Routed 73 requests in last minute", "log_id": "log-37719b5f"}
+{"timestamp": "2026-09-23T12:18:14Z", "service": "message-queue", "severity": "INFO", "message": "Published 73 messages", "log_id": "log-471b7e64"}
+{"timestamp": "2026-09-23T12:18:31Z", "service": "postgres", "severity": "INFO", "message": "autovacuum: processing table public.orders", "log_id": "log-863b650d"}
+{"timestamp": "2026-09-23T12:18:51Z", "service": "notification-service", "severity": "WARN", "message": "SMTP provider throttled 1 message", "log_id": "log-eaec8bb3"}
+{"timestamp": "2026-09-23T12:19:51Z", "service": "payment-service", "severity": "WARN", "message": "Card network soft decline (code 05) for charge ch_69", "log_id": "log-4da0a097"}
+{"timestamp": "2026-09-23T12:20:13Z", "service": "message-queue", "severity": "INFO", "message": "Queue order-events depth=0", "log_id": "log-b868d173"}
+{"timestamp": "2026-09-23T12:20:30Z", "service": "api-gateway", "severity": "INFO", "message": "Routed 17 requests in last minute", "log_id": "log-0d6d3159"}
+{"timestamp": "2026-09-23T12:20:31Z", "service": "postgres", "severity": "INFO", "message": "checkpoint complete: wrote 55 buffers", "log_id": "log-888bb842"}
+{"timestamp": "2026-09-23T12:20:40Z", "service": "auth-service", "severity": "INFO", "message": "Issued 63 tokens in last minute", "log_id": "log-9f1d1879"}
+{"timestamp": "2026-09-23T12:20:45Z", "service": "order-service", "severity": "INFO", "message": "Outbox relay published 22 events", "log_id": "log-660ab096"}
+{"timestamp": "2026-09-23T12:21:12Z", "service": "payment-service", "severity": "INFO", "message": "Settlement batch heartbeat ok", "log_id": "log-8bcc058c"}
+{"timestamp": "2026-09-23T12:21:42Z", "service": "user-service", "severity": "INFO", "message": "GET /v1/users/me 200 21ms", "log_id": "log-9634d3ba"}
+{"timestamp": "2026-09-23T12:21:47Z", "service": "redis", "severity": "INFO", "message": "53 changes in 60 seconds. Saving...", "log_id": "log-eb2b293a"}
+{"timestamp": "2026-09-23T12:23:23Z", "service": "message-queue", "severity": "INFO", "message": "Consumer group notif-cg rebalanced (members=3)", "log_id": "log-edcb0218"}
+{"timestamp": "2026-09-23T12:23:40Z", "service": "payment-service", "severity": "WARN", "message": "Card network soft decline (code 05) for charge ch_47", "log_id": "log-8653ee10"}
+{"timestamp": "2026-09-23T12:23:40Z", "service": "user-service", "severity": "WARN", "message": "Deprecated API /v1/users/legacy called by client web-96", "log_id": "log-93d78a8b"}
+{"timestamp": "2026-09-23T12:23:57Z", "service": "notification-service", "severity": "WARN", "message": "SMTP provider throttled 1 message", "log_id": "log-b147dc9e"}
+{"timestamp": "2026-09-23T12:24:57Z", "service": "auth-service", "severity": "INFO", "message": "JWKS cache refreshed (keys=4)", "log_id": "log-bff3fea0"}
+{"timestamp": "2026-09-23T12:25:02Z", "service": "order-service", "severity": "INFO", "message": "Outbox relay published 33 events", "log_id": "log-70ab8ac2"}
+{"timestamp": "2026-09-23T12:25:15Z", "service": "redis", "severity": "INFO", "message": "85 changes in 60 seconds. Saving...", "log_id": "log-d9041b37"}
+{"timestamp": "2026-09-23T12:25:18Z", "service": "notification-service", "severity": "INFO", "message": "Sent 35 emails", "log_id": "log-d0d5c8a0"}
+{"timestamp": "2026-09-23T12:25:25Z", "service": "postgres", "severity": "INFO", "message": "checkpoint complete: wrote 87 buffers", "log_id": "log-0a20e3f8"}
+{"timestamp": "2026-09-23T12:25:50Z", "service": "api-gateway", "severity": "WARN", "message": "Slow client upload from 10.4.20.12 (1.9MB)", "log_id": "log-391fce5f"}
+{"timestamp": "2026-09-23T12:25:52Z", "service": "user-service", "severity": "INFO", "message": "Served 72 profile reads in last minute", "log_id": "log-3c9660d1"}
+{"timestamp": "2026-09-23T12:26:44Z", "service": "auth-service", "severity": "WARN", "message": "Login rate limit hit for user id u-82", "log_id": "log-86c48210"}
+{"timestamp": "2026-09-23T12:26:48Z", "service": "message-queue", "severity": "INFO", "message": "Queue order-events depth=0", "log_id": "log-55ecdedb"}
+{"timestamp": "2026-09-23T12:27:13Z", "service": "order-service", "severity": "INFO", "message": "Outbox relay published 48 events", "log_id": "log-95bad177"}
+{"timestamp": "2026-09-23T12:28:14Z", "service": "payment-service", "severity": "INFO", "message": "Settlement batch heartbeat ok", "log_id": "log-d2d696f0"}
+{"timestamp": "2026-09-23T12:28:19Z", "service": "redis", "severity": "INFO", "message": "Background saving terminated with success", "log_id": "log-3cd7f1b1"}
+{"timestamp": "2026-09-23T12:28:24Z", "service": "api-gateway", "severity": "WARN", "message": "Slow client upload from 10.4.79.12 (1.9MB)", "log_id": "log-457af268"}
+{"timestamp": "2026-09-23T12:29:09Z", "service": "postgres", "severity": "INFO", "message": "autovacuum: processing table public.orders", "log_id": "log-18f67498"}
+{"timestamp": "2026-09-23T12:29:26Z", "service": "notification-service", "severity": "INFO", "message": "Consumer lag 0 on topic order-events", "log_id": "log-a9e2472e"}
+{"timestamp": "2026-09-23T12:29:55Z", "service": "auth-service", "severity": "INFO", "message": "JWKS cache refreshed (keys=4)", "log_id": "log-63da724e"}
+{"timestamp": "2026-09-23T12:30:11Z", "service": "redis", "severity": "INFO", "message": "Background saving terminated with success", "log_id": "log-32c16af2"}
+{"timestamp": "2026-09-23T12:30:23Z", "service": "user-service", "severity": "INFO", "message": "GET /v1/users/me 200 21ms", "log_id": "log-ba4ae0a1"}
+{"timestamp": "2026-09-23T12:30:57Z", "service": "order-service", "severity": "WARN", "message": "Inventory reservation retry for sku-40", "log_id": "log-9956ba51"}
+{"timestamp": "2026-09-23T12:31:09Z", "service": "message-queue", "severity": "INFO", "message": "Queue order-events depth=0", "log_id": "log-0a602565"}
+{"timestamp": "2026-09-23T12:32:44Z", "service": "postgres", "severity": "WARN", "message": "duration: 15902 ms statement: SELECT report_rollup()", "log_id": "log-321d6d3d"}
+{"timestamp": "2026-09-23T12:32:45Z", "service": "notification-service", "severity": "INFO", "message": "Sent 31 emails", "log_id": "log-2cf93b25"}
+{"timestamp": "2026-09-23T12:32:48Z", "service": "api-gateway", "severity": "INFO", "message": "Routed 53 requests in last minute", "log_id": "log-f182665e"}
+{"timestamp": "2026-09-23T12:33:09Z", "service": "auth-service", "severity": "WARN", "message": "Login rate limit hit for user id u-87", "log_id": "log-2f2f739f"}
+{"timestamp": "2026-09-23T12:33:18Z", "service": "payment-service", "severity": "INFO", "message": "Settlement batch heartbeat ok", "log_id": "log-5b233a60"}
+{"timestamp": "2026-09-23T12:34:00Z", "service": "redis", "severity": "INFO", "message": "31 changes in 60 seconds. Saving...", "log_id": "log-ea1c47c9"}
+{"timestamp": "2026-09-23T12:34:39Z", "service": "message-queue", "severity": "INFO", "message": "Consumer group notif-cg rebalanced (members=3)", "log_id": "log-256cd3da"}
+{"timestamp": "2026-09-23T12:35:13Z", "service": "user-service", "severity": "WARN", "message": "Deprecated API /v1/users/legacy called by client web-34", "log_id": "log-2ecc6e68"}
+{"timestamp": "2026-09-23T12:35:14Z", "service": "order-service", "severity": "WARN", "message": "Inventory reservation retry for sku-17", "log_id": "log-617732f8"}
+{"timestamp": "2026-09-23T12:35:26Z", "service": "postgres", "severity": "WARN", "message": "duration: 18802 ms statement: SELECT report_rollup()", "log_id": "log-ae4471cf"}
+{"timestamp": "2026-09-23T12:35:37Z", "service": "api-gateway", "severity": "INFO", "message": "Routed 68 requests in last minute", "log_id": "log-f19473d7"}
+{"timestamp": "2026-09-23T12:36:11Z", "service": "message-queue", "severity": "INFO", "message": "Published 96 messages", "log_id": "log-2384e540"}
+{"timestamp": "2026-09-23T12:36:52Z", "service": "payment-service", "severity": "INFO", "message": "Settlement batch heartbeat ok", "log_id": "log-59bdd760"}
+{"timestamp": "2026-09-23T12:37:29Z", "service": "api-gateway", "severity": "INFO", "message": "GET /v1/health 200 3ms", "log_id": "log-d5818474"}
+{"timestamp": "2026-09-23T12:37:39Z", "service": "notification-service", "severity": "WARN", "message": "SMTP provider throttled 1 message", "log_id": "log-c7141f4c"}
+{"timestamp": "2026-09-23T12:37:58Z", "service": "user-service", "severity": "WARN", "message": "Deprecated API /v1/users/legacy called by client web-88", "log_id": "log-e05136f0"}
+{"timestamp": "2026-09-23T12:38:00Z", "service": "auth-service", "severity": "INFO", "message": "Issued 51 tokens in last minute", "log_id": "log-1eb3968a"}
+{"timestamp": "2026-09-23T12:38:19Z", "service": "order-service", "severity": "INFO", "message": "Created 86 orders in last minute", "log_id": "log-d89f4da9"}
+{"timestamp": "2026-09-23T12:38:20Z", "service": "message-queue", "severity": "INFO", "message": "Queue order-events depth=0", "log_id": "log-f7eb8fbd"}
+{"timestamp": "2026-09-23T12:38:47Z", "service": "payment-service", "severity": "INFO", "message": "Processed 30 charges in last minute", "log_id": "log-6c668266"}
+{"timestamp": "2026-09-23T12:38:57Z", "service": "postgres", "severity": "INFO", "message": "autovacuum: processing table public.orders", "log_id": "log-db21f936"}
+{"timestamp": "2026-09-23T12:39:41Z", "service": "redis", "severity": "INFO", "message": "DB saved on disk", "log_id": "log-e315eb2f"}
+{"timestamp": "2026-09-23T12:40:20Z", "service": "user-service", "severity": "WARN", "message": "Deprecated API /v1/users/legacy called by client web-34", "log_id": "log-cf210998"}
+{"timestamp": "2026-09-23T12:40:34Z", "service": "api-gateway", "severity": "INFO", "message": "GET /v1/health 200 3ms", "log_id": "log-41760451"}
+{"timestamp": "2026-09-23T12:40:52Z", "service": "payment-service", "severity": "INFO", "message": "Processed 10 charges in last minute", "log_id": "log-c6fde5bf"}
+{"timestamp": "2026-09-23T12:41:43Z", "service": "message-queue", "severity": "INFO", "message": "Published 63 messages", "log_id": "log-e9308cd7"}
+{"timestamp": "2026-09-23T12:41:45Z", "service": "notification-service", "severity": "INFO", "message": "Consumer lag 0 on topic order-events", "log_id": "log-b7b87a40"}
+{"timestamp": "2026-09-23T12:42:29Z", "service": "order-service", "severity": "WARN", "message": "Inventory reservation retry for sku-29", "log_id": "log-bfc76485"}
+{"timestamp": "2026-09-23T12:42:31Z", "service": "api-gateway", "severity": "WARN", "message": "Slow client upload from 10.4.79.12 (1.9MB)", "log_id": "log-35455028"}
+{"timestamp": "2026-09-23T12:42:57Z", "service": "auth-service", "severity": "INFO", "message": "Issued 48 tokens in last minute", "log_id": "log-9bc783ec"}
+{"timestamp": "2026-09-23T12:43:04Z", "service": "message-queue", "severity": "INFO", "message": "Published 50 messages", "log_id": "log-594b76bb"}
+{"timestamp": "2026-09-23T12:43:15Z", "service": "redis", "severity": "WARN", "message": "Evicting keys: used_memory 7.970G reached maxmemory 8G (policy allkeys-lru), evicted_keys=1870233", "log_id": "log-de6e5c7a"}
+{"timestamp": "2026-09-23T12:43:43Z", "service": "user-service", "severity": "INFO", "message": "GET /v1/users/me 200 21ms", "log_id": "log-71a7b984"}
+{"timestamp": "2026-09-23T12:43:45Z", "service": "redis", "severity": "INFO", "message": "DB saved on disk", "log_id": "log-99aab0e4"}
+{"timestamp": "2026-09-23T12:43:54Z", "service": "postgres", "severity": "INFO", "message": "checkpoint complete: wrote 94 buffers", "log_id": "log-eeabae39"}
+{"timestamp": "2026-09-23T12:45:01Z", "service": "api-gateway", "severity": "INFO", "message": "Routed 66 requests in last minute", "log_id": "log-ca4d572e"}
+{"timestamp": "2026-09-23T12:45:15Z", "service": "user-service", "severity": "WARN", "message": "Cache miss for user profile u-79, falling back to DB", "log_id": "log-725bab2a"}
+{"timestamp": "2026-09-23T12:45:43Z", "service": "payment-service", "severity": "INFO", "message": "Settlement batch heartbeat ok", "log_id": "log-fabb4f85"}
+{"timestamp": "2026-09-23T12:46:04Z", "service": "postgres", "severity": "WARN", "message": "duration: 26410 ms statement: SELECT * FROM users WHERE id = $1", "log_id": "log-d5a950f3"}
+{"timestamp": "2026-09-23T12:46:05Z", "service": "redis", "severity": "WARN", "message": "Evicting keys: used_memory 7.941G reached maxmemory 8G (policy allkeys-lru), evicted_keys=1841233", "log_id": "log-ae3b78a4"}
+{"timestamp": "2026-09-23T12:46:07Z", "service": "notification-service", "severity": "INFO", "message": "Sent 41 emails", "log_id": "log-75a643d8"}
+{"timestamp": "2026-09-23T12:46:32Z", "service": "user-service", "severity": "WARN", "message": "Cache miss for user profile u-12, falling back to DB", "log_id": "log-225f889a"}
+{"timestamp": "2026-09-23T12:47:12Z", "service": "user-service", "severity": "ERROR", "message": "Query timeout on users table after 2000ms (req 89)", "log_id": "log-236e0bbf"}
+{"timestamp": "2026-09-23T12:47:17Z", "service": "order-service", "severity": "INFO", "message": "Outbox relay published 47 events", "log_id": "log-b9e3d39a"}
+{"timestamp": "2026-09-23T12:47:33Z", "service": "auth-service", "severity": "INFO", "message": "JWKS cache refreshed (keys=4)", "log_id": "log-570e4b6a"}
+{"timestamp": "2026-09-23T12:47:34Z", "service": "message-queue", "severity": "INFO", "message": "Queue order-events depth=0", "log_id": "log-5b420077"}
+{"timestamp": "2026-09-23T12:47:36Z", "service": "api-gateway", "severity": "INFO", "message": "Routed 50 requests in last minute", "log_id": "log-cec3256c"}
+{"timestamp": "2026-09-23T12:47:46Z", "service": "user-service", "severity": "WARN", "message": "Cache miss for user profile u-36, falling back to DB", "log_id": "log-fc279c23"}
+{"timestamp": "2026-09-23T12:48:14Z", "service": "payment-service", "severity": "WARN", "message": "Card network soft decline (code 05) for charge ch_76", "log_id": "log-08d96e12"}
+{"timestamp": "2026-09-23T12:48:19Z", "service": "postgres", "severity": "INFO", "message": "autovacuum: processing table public.orders", "log_id": "log-9ece89c8"}
+{"timestamp": "2026-09-23T12:48:40Z", "service": "redis", "severity": "INFO", "message": "35 changes in 60 seconds. Saving...", "log_id": "log-74f19827"}
+{"timestamp": "2026-09-23T12:48:47Z", "service": "user-service", "severity": "WARN", "message": "Cache miss for user profile u-83, falling back to DB", "log_id": "log-85740b0b"}
+{"timestamp": "2026-09-23T12:48:54Z", "service": "user-service", "severity": "INFO", "message": "Served 82 profile reads in last minute", "log_id": "log-a54f449e"}
+{"timestamp": "2026-09-23T12:48:57Z", "service": "redis", "severity": "WARN", "message": "Evicting keys: used_memory 7.940G reached maxmemory 8G (policy allkeys-lru), evicted_keys=1840233", "log_id": "log-4da49cc8"}
+{"timestamp": "2026-09-23T12:49:03Z", "service": "notification-service", "severity": "INFO", "message": "Consumer lag 0 on topic order-events", "log_id": "log-432bc709"}
+{"timestamp": "2026-09-23T12:49:28Z", "service": "postgres", "severity": "WARN", "message": "duration: 29910 ms statement: SELECT * FROM users WHERE id = $1", "log_id": "log-b2ef86dd"}
+{"timestamp": "2026-09-23T12:49:45Z", "service": "order-service", "severity": "WARN", "message": "Inventory reservation retry for sku-31", "log_id": "log-e8968779"}
+{"timestamp": "2026-09-23T12:50:03Z", "service": "message-queue", "severity": "INFO", "message": "Queue order-events depth=0", "log_id": "log-f4c9fecd"}
+{"timestamp": "2026-09-23T12:50:09Z", "service": "redis", "severity": "INFO", "message": "DB saved on disk", "log_id": "log-2984b9de"}
+{"timestamp": "2026-09-23T12:50:18Z", "service": "user-service", "severity": "WARN", "message": "Cache miss for user profile u-45, falling back to DB", "log_id": "log-4f513353"}
+{"timestamp": "2026-09-23T12:50:31Z", "service": "api-gateway", "severity": "INFO", "message": "GET /v1/health 200 3ms", "log_id": "log-48246ec8"}
+{"timestamp": "2026-09-23T12:51:02Z", "service": "user-service", "severity": "ERROR", "message": "Query timeout on users table after 2000ms (req 41)", "log_id": "log-752eddb9"}
+{"timestamp": "2026-09-23T12:51:30Z", "service": "user-service", "severity": "WARN", "message": "Cache miss for user profile u-84, falling back to DB", "log_id": "log-df0080a1"}
+{"timestamp": "2026-09-23T12:51:54Z", "service": "redis", "severity": "WARN", "message": "Evicting keys: used_memory 7.910G reached maxmemory 8G (policy allkeys-lru), evicted_keys=1810233", "log_id": "log-7aef1872"}
+{"timestamp": "2026-09-23T12:52:29Z", "service": "postgres", "severity": "WARN", "message": "duration: 27010 ms statement: SELECT * FROM users WHERE id = $1", "log_id": "log-cecd90b7"}
+{"timestamp": "2026-09-23T12:52:40Z", "service": "user-service", "severity": "WARN", "message": "Cache miss for user profile u-96, falling back to DB", "log_id": "log-6ddd8933"}
+{"timestamp": "2026-09-23T12:52:45Z", "service": "postgres", "severity": "INFO", "message": "checkpoint complete: wrote 14 buffers", "log_id": "log-55acf7eb"}
+{"timestamp": "2026-09-23T12:52:56Z", "service": "auth-service", "severity": "INFO", "message": "Issued 75 tokens in last minute", "log_id": "log-26d23669"}
+{"timestamp": "2026-09-23T12:52:56Z", "service": "payment-service", "severity": "INFO", "message": "Settlement batch heartbeat ok", "log_id": "log-52c3e465"}
+{"timestamp": "2026-09-23T12:53:00Z", "service": "notification-service", "severity": "INFO", "message": "Consumer lag 0 on topic order-events", "log_id": "log-c849c1a1"}
+{"timestamp": "2026-09-23T12:53:36Z", "service": "redis", "severity": "INFO", "message": "Background saving terminated with success", "log_id": "log-6c01e5c3"}
+{"timestamp": "2026-09-23T12:53:42Z", "service": "user-service", "severity": "INFO", "message": "Served 30 profile reads in last minute", "log_id": "log-2df29805"}
+{"timestamp": "2026-09-23T12:54:00Z", "service": "user-service", "severity": "WARN", "message": "Cache miss for user profile u-99, falling back to DB", "log_id": "log-c57d27cb"}
+{"timestamp": "2026-09-23T12:54:38Z", "service": "order-service", "severity": "INFO", "message": "Created 25 orders in last minute", "log_id": "log-99b0457e"}
+{"timestamp": "2026-09-23T12:54:53Z", "service": "api-gateway", "severity": "WARN", "message": "Slow client upload from 10.4.17.12 (1.9MB)", "log_id": "log-cb089439"}
+{"timestamp": "2026-09-23T12:54:54Z", "service": "message-queue", "severity": "INFO", "message": "Published 95 messages", "log_id": "log-8bfd6155"}
+{"timestamp": "2026-09-23T12:54:55Z", "service": "redis", "severity": "WARN", "message": "Evicting keys: used_memory 7.982G reached maxmemory 8G (policy allkeys-lru), evicted_keys=1882233", "log_id": "log-5e2e82ea"}
+{"timestamp": "2026-09-23T12:55:01Z", "service": "user-service", "severity": "ERROR", "message": "Query timeout on users table after 2000ms (req 87)", "log_id": "log-b0e9f3e0"}
+{"timestamp": "2026-09-23T12:55:05Z", "service": "user-service", "severity": "WARN", "message": "Cache miss for user profile u-20, falling back to DB", "log_id": "log-11635605"}
+{"timestamp": "2026-09-23T12:55:06Z", "service": "payment-service", "severity": "INFO", "message": "Processed 60 charges in last minute", "log_id": "log-035ef10f"}
+{"timestamp": "2026-09-23T12:55:19Z", "service": "auth-service", "severity": "INFO", "message": "JWKS cache refreshed (keys=4)", "log_id": "log-49dfb597"}
+{"timestamp": "2026-09-23T12:55:40Z", "service": "postgres", "severity": "WARN", "message": "duration: 25210 ms statement: SELECT * FROM users WHERE id = $1", "log_id": "log-d7dd8466"}
+{"timestamp": "2026-09-23T12:56:29Z", "service": "postgres", "severity": "INFO", "message": "checkpoint complete: wrote 85 buffers", "log_id": "log-3eba99ca"}
+{"timestamp": "2026-09-23T12:56:34Z", "service": "user-service", "severity": "WARN", "message": "Cache miss for user profile u-62, falling back to DB", "log_id": "log-82a1ac3f"}
+{"timestamp": "2026-09-23T12:57:01Z", "service": "notification-service", "severity": "INFO", "message": "Sent 47 emails", "log_id": "log-a4df199f"}
+{"timestamp": "2026-09-23T12:57:09Z", "service": "api-gateway", "severity": "INFO", "message": "Routed 44 requests in last minute", "log_id": "log-a3d1c622"}
+{"timestamp": "2026-09-23T12:57:11Z", "service": "order-service", "severity": "WARN", "message": "Inventory reservation retry for sku-99", "log_id": "log-228fd2bd"}
+{"timestamp": "2026-09-23T12:57:41Z", "service": "user-service", "severity": "INFO", "message": "Served 64 profile reads in last minute", "log_id": "log-d028df29"}
+{"timestamp": "2026-09-23T12:57:45Z", "service": "user-service", "severity": "WARN", "message": "Cache miss for user profile u-92, falling back to DB", "log_id": "log-91136765"}
+{"timestamp": "2026-09-23T12:57:49Z", "service": "redis", "severity": "WARN", "message": "Evicting keys: used_memory 7.943G reached maxmemory 8G (policy allkeys-lru), evicted_keys=1843233", "log_id": "log-b2d7e867"}
+{"timestamp": "2026-09-23T12:58:14Z", "service": "redis", "severity": "INFO", "message": "10 changes in 60 seconds. Saving...", "log_id": "log-8f31db36"}
+{"timestamp": "2026-09-23T12:58:36Z", "service": "payment-service", "severity": "WARN", "message": "Card network soft decline (code 05) for charge ch_44", "log_id": "log-85a100f8"}
+{"timestamp": "2026-09-23T12:58:49Z", "service": "user-service", "severity": "WARN", "message": "Cache miss for user profile u-52, falling back to DB", "log_id": "log-b8db1435"}
+{"timestamp": "2026-09-23T12:59:11Z", "service": "postgres", "severity": "WARN", "message": "duration: 25910 ms statement: SELECT * FROM users WHERE id = $1", "log_id": "log-63174c5b"}
+{"timestamp": "2026-09-23T12:59:16Z", "service": "user-service", "severity": "ERROR", "message": "Query timeout on users table after 2000ms (req 84)", "log_id": "log-31b43ce8"}
+{"timestamp": "2026-09-23T12:59:19Z", "service": "message-queue", "severity": "INFO", "message": "Consumer group notif-cg rebalanced (members=3)", "log_id": "log-e69be891"}
+{"timestamp": "2026-09-23T12:59:44Z", "service": "user-service", "severity": "WARN", "message": "Deprecated API /v1/users/legacy called by client web-10", "log_id": "log-2e42bb21"}
+{"timestamp": "2026-09-23T13:00:12Z", "service": "user-service", "severity": "WARN", "message": "Cache miss for user profile u-57, falling back to DB", "log_id": "log-e0655b2f"}
+{"timestamp": "2026-09-23T13:00:26Z", "service": "postgres", "severity": "INFO", "message": "checkpoint complete: wrote 43 buffers", "log_id": "log-da62ac71"}
+{"timestamp": "2026-09-23T13:00:27Z", "service": "auth-service", "severity": "INFO", "message": "Issued 91 tokens in last minute", "log_id": "log-506492c7"}
+{"timestamp": "2026-09-23T13:00:36Z", "service": "redis", "severity": "WARN", "message": "Evicting keys: used_memory 7.933G reached maxmemory 8G (policy allkeys-lru), evicted_keys=1833233", "log_id": "log-64caffc5"}
+{"timestamp": "2026-09-23T13:00:53Z", "service": "payment-service", "severity": "WARN", "message": "Card network soft decline (code 05) for charge ch_53", "log_id": "log-a9bc4b9b"}
+{"timestamp": "2026-09-23T13:01:22Z", "service": "notification-service", "severity": "INFO", "message": "Sent 70 emails", "log_id": "log-ea892458"}
+{"timestamp": "2026-09-23T13:01:27Z", "service": "redis", "severity": "INFO", "message": "Background saving terminated with success", "log_id": "log-02a522c6"}
+{"timestamp": "2026-09-23T13:01:27Z", "service": "user-service", "severity": "WARN", "message": "Cache miss for user profile u-11, falling back to DB", "log_id": "log-0c395b59"}
+{"timestamp": "2026-09-23T13:01:48Z", "service": "order-service", "severity": "INFO", "message": "Created 80 orders in last minute", "log_id": "log-11f60142"}
+{"timestamp": "2026-09-23T13:01:55Z", "service": "api-gateway", "severity": "WARN", "message": "Slow client upload from 10.4.72.12 (1.9MB)", "log_id": "log-466def14"}
+{"timestamp": "2026-09-23T13:02:05Z", "service": "user-service", "severity": "WARN", "message": "Deprecated API /v1/users/legacy called by client web-43", "log_id": "log-c49b434b"}
+{"timestamp": "2026-09-23T13:02:10Z", "service": "message-queue", "severity": "INFO", "message": "Published 24 messages", "log_id": "log-d1079117"}
+{"timestamp": "2026-09-23T13:02:22Z", "service": "postgres", "severity": "WARN", "message": "duration: 23710 ms statement: SELECT * FROM users WHERE id = $1", "log_id": "log-580c9471"}
+{"timestamp": "2026-09-23T13:02:31Z", "service": "auth-service", "severity": "INFO", "message": "Issued 45 tokens in last minute", "log_id": "log-b52f0b6c"}
+{"timestamp": "2026-09-23T13:02:45Z", "service": "user-service", "severity": "WARN", "message": "Cache miss for user profile u-54, falling back to DB", "log_id": "log-a498f398"}
+{"timestamp": "2026-09-23T13:03:04Z", "service": "user-service", "severity": "ERROR", "message": "Query timeout on users table after 2000ms (req 20)", "log_id": "log-4b41df3a"}
+{"timestamp": "2026-09-23T13:03:31Z", "service": "redis", "severity": "WARN", "message": "Evicting keys: used_memory 7.916G reached maxmemory 8G (policy allkeys-lru), evicted_keys=1816233", "log_id": "log-27782b9e"}
+{"timestamp": "2026-09-23T13:03:55Z", "service": "user-service", "severity": "WARN", "message": "Cache miss for user profile u-48, falling back to DB", "log_id": "log-0ba31af7"}
+{"timestamp": "2026-09-23T13:05:05Z", "service": "payment-service", "severity": "WARN", "message": "Card network soft decline (code 05) for charge ch_45", "log_id": "log-b639b4b1"}
+{"timestamp": "2026-09-23T13:05:06Z", "service": "notification-service", "severity": "INFO", "message": "Consumer lag 0 on topic order-events", "log_id": "log-d8c3338e"}
+{"timestamp": "2026-09-23T13:05:16Z", "service": "user-service", "severity": "WARN", "message": "Cache miss for user profile u-72, falling back to DB", "log_id": "log-563d9fac"}
+{"timestamp": "2026-09-23T13:05:24Z", "service": "order-service", "severity": "WARN", "message": "Inventory reservation retry for sku-72", "log_id": "log-8c9ba69f"}
+{"timestamp": "2026-09-23T13:05:26Z", "service": "postgres", "severity": "WARN", "message": "duration: 22510 ms statement: SELECT * FROM users WHERE id = $1", "log_id": "log-41ba612e"}
+{"timestamp": "2026-09-23T13:05:30Z", "service": "postgres", "severity": "INFO", "message": "checkpoint complete: wrote 77 buffers", "log_id": "log-40cacc6e"}
+{"timestamp": "2026-09-23T13:06:07Z", "service": "user-service", "severity": "INFO", "message": "Served 55 profile reads in last minute", "log_id": "log-887cbf9f"}
+{"timestamp": "2026-09-23T13:06:17Z", "service": "message-queue", "severity": "INFO", "message": "Consumer group notif-cg rebalanced (members=3)", "log_id": "log-b7d8e6ec"}
+{"timestamp": "2026-09-23T13:06:21Z", "service": "user-service", "severity": "WARN", "message": "Cache miss for user profile u-85, falling back to DB", "log_id": "log-9725e64b"}
+{"timestamp": "2026-09-23T13:06:24Z", "service": "redis", "severity": "WARN", "message": "Evicting keys: used_memory 7.949G reached maxmemory 8G (policy allkeys-lru), evicted_keys=1849233", "log_id": "log-2e86cb08"}
+{"timestamp": "2026-09-23T13:06:32Z", "service": "redis", "severity": "INFO", "message": "DB saved on disk", "log_id": "log-e8ff8e62"}
+{"timestamp": "2026-09-23T13:06:33Z", "service": "api-gateway", "severity": "INFO", "message": "GET /v1/health 200 3ms", "log_id": "log-cce9478b"}
+{"timestamp": "2026-09-23T13:06:33Z", "service": "auth-service", "severity": "INFO", "message": "JWKS cache refreshed (keys=4)", "log_id": "log-eff04e2f"}
+{"timestamp": "2026-09-23T13:07:12Z", "service": "user-service", "severity": "ERROR", "message": "Query timeout on users table after 2000ms (req 23)", "log_id": "log-b9cf3700"}
+{"timestamp": "2026-09-23T13:07:21Z", "service": "payment-service", "severity": "INFO", "message": "Settlement batch heartbeat ok", "log_id": "log-12b43139"}
+{"timestamp": "2026-09-23T13:07:31Z", "service": "user-service", "severity": "WARN", "message": "Cache miss for user profile u-51, falling back to DB", "log_id": "log-996d27c8"}
+{"timestamp": "2026-09-23T13:07:51Z", "service": "postgres", "severity": "INFO", "message": "checkpoint complete: wrote 18 buffers", "log_id": "log-b8a7cae6"}
+{"timestamp": "2026-09-23T13:08:39Z", "service": "postgres", "severity": "WARN", "message": "duration: 27610 ms statement: SELECT * FROM users WHERE id = $1", "log_id": "log-536e0193"}
+{"timestamp": "2026-09-23T13:08:46Z", "service": "order-service", "severity": "WARN", "message": "Inventory reservation retry for sku-79", "log_id": "log-8fd8316c"}
+{"timestamp": "2026-09-23T13:09:02Z", "service": "user-service", "severity": "WARN", "message": "Cache miss for user profile u-30, falling back to DB", "log_id": "log-270fe74c"}
+{"timestamp": "2026-09-23T13:09:12Z", "service": "redis", "severity": "WARN", "message": "Evicting keys: used_memory 7.989G reached maxmemory 8G (policy allkeys-lru), evicted_keys=1889233", "log_id": "log-c93106e0"}
+{"timestamp": "2026-09-23T13:09:16Z", "service": "api-gateway", "severity": "INFO", "message": "Routed 20 requests in last minute", "log_id": "log-545c4ee3"}
+{"timestamp": "2026-09-23T13:09:40Z", "service": "notification-service", "severity": "INFO", "message": "Consumer lag 0 on topic order-events", "log_id": "log-3fd79190"}
+{"timestamp": "2026-09-23T13:10:14Z", "service": "user-service", "severity": "WARN", "message": "Cache miss for user profile u-69, falling back to DB", "log_id": "log-9eedc721"}
+{"timestamp": "2026-09-23T13:10:21Z", "service": "user-service", "severity": "INFO", "message": "GET /v1/users/me 200 21ms", "log_id": "log-7e55149d"}
+{"timestamp": "2026-09-23T13:10:42Z", "service": "payment-service", "severity": "INFO", "message": "Settlement batch heartbeat ok", "log_id": "log-edc7859f"}
+{"timestamp": "2026-09-23T13:10:58Z", "service": "order-service", "severity": "INFO", "message": "Created 61 orders in last minute", "log_id": "log-acdad1f2"}
+{"timestamp": "2026-09-23T13:11:00Z", "service": "postgres", "severity": "INFO", "message": "checkpoint complete: wrote 88 buffers", "log_id": "log-c82baaf0"}
+{"timestamp": "2026-09-23T13:11:10Z", "service": "api-gateway", "severity": "INFO", "message": "Routed 46 requests in last minute", "log_id": "log-af405d21"}
+{"timestamp": "2026-09-23T13:11:20Z", "service": "user-service", "severity": "ERROR", "message": "Query timeout on users table after 2000ms (req 94)", "log_id": "log-4a856663"}
+{"timestamp": "2026-09-23T13:11:23Z", "service": "user-service", "severity": "WARN", "message": "Cache miss for user profile u-54, falling back to DB", "log_id": "log-2712218c"}
+{"timestamp": "2026-09-23T13:11:33Z", "service": "auth-service", "severity": "INFO", "message": "JWKS cache refreshed (keys=4)", "log_id": "log-c8cd6ddb"}
+{"timestamp": "2026-09-23T13:11:50Z", "service": "message-queue", "severity": "INFO", "message": "Consumer group notif-cg rebalanced (members=3)", "log_id": "log-e01667c5"}
+{"timestamp": "2026-09-23T13:11:52Z", "service": "redis", "severity": "INFO", "message": "84 changes in 60 seconds. Saving...", "log_id": "log-ec10da7b"}
+{"timestamp": "2026-09-23T13:12:00Z", "service": "postgres", "severity": "WARN", "message": "duration: 23710 ms statement: SELECT * FROM users WHERE id = $1", "log_id": "log-6f48070e"}
+{"timestamp": "2026-09-23T13:12:10Z", "service": "user-service", "severity": "WARN", "message": "Deprecated API /v1/users/legacy called by client web-79", "log_id": "log-4da1c5a5"}
+{"timestamp": "2026-09-23T13:12:20Z", "service": "redis", "severity": "WARN", "message": "Evicting keys: used_memory 7.921G reached maxmemory 8G (policy allkeys-lru), evicted_keys=1821233", "log_id": "log-5058b37a"}
+{"timestamp": "2026-09-23T13:12:25Z", "service": "order-service", "severity": "INFO", "message": "Created 84 orders in last minute", "log_id": "log-d6eb8974"}
+{"timestamp": "2026-09-23T13:12:27Z", "service": "notification-service", "severity": "WARN", "message": "SMTP provider throttled 1 message", "log_id": "log-5489413b"}
+{"timestamp": "2026-09-23T13:12:28Z", "service": "payment-service", "severity": "INFO", "message": "Settlement batch heartbeat ok", "log_id": "log-d2e4067e"}
+{"timestamp": "2026-09-23T13:12:45Z", "service": "user-service", "severity": "WARN", "message": "Cache miss for user profile u-30, falling back to DB", "log_id": "log-e13393ea"}
+{"timestamp": "2026-09-23T13:13:55Z", "service": "user-service", "severity": "WARN", "message": "Cache miss for user profile u-52, falling back to DB", "log_id": "log-d1139167"}
+{"timestamp": "2026-09-23T13:14:29Z", "service": "order-service", "severity": "WARN", "message": "Inventory reservation retry for sku-61", "log_id": "log-48dafa8a"}
+{"timestamp": "2026-09-23T13:14:56Z", "service": "message-queue", "severity": "INFO", "message": "Published 51 messages", "log_id": "log-3eaecbd8"}
+{"timestamp": "2026-09-23T13:15:01Z", "service": "redis", "severity": "WARN", "message": "Evicting keys: used_memory 7.965G reached maxmemory 8G (policy allkeys-lru), evicted_keys=1865233", "log_id": "log-edfd7149"}
+{"timestamp": "2026-09-23T13:15:01Z", "service": "user-service", "severity": "ERROR", "message": "Query timeout on users table after 2000ms (req 78)", "log_id": "log-d5318e2c"}
+{"timestamp": "2026-09-23T13:15:03Z", "service": "redis", "severity": "INFO", "message": "DB saved on disk", "log_id": "log-f6fcd4f5"}
+{"timestamp": "2026-09-23T13:15:06Z", "service": "user-service", "severity": "WARN", "message": "Cache miss for user profile u-79, falling back to DB", "log_id": "log-3d92cd32"}
+{"timestamp": "2026-09-23T13:15:13Z", "service": "postgres", "severity": "WARN", "message": "duration: 24110 ms statement: SELECT * FROM users WHERE id = $1", "log_id": "log-ec2604d4"}
+{"timestamp": "2026-09-23T13:15:21Z", "service": "postgres", "severity": "INFO", "message": "autovacuum: processing table public.orders", "log_id": "log-2434584c"}
+{"timestamp": "2026-09-23T13:15:34Z", "service": "payment-service", "severity": "INFO", "message": "Processed 56 charges in last minute", "log_id": "log-45b9034c"}
+{"timestamp": "2026-09-23T13:15:48Z", "service": "auth-service", "severity": "WARN", "message": "Login rate limit hit for user id u-62", "log_id": "log-9f4e4d37"}
+{"timestamp": "2026-09-23T13:16:05Z", "service": "order-service", "severity": "INFO", "message": "Created 47 orders in last minute", "log_id": "log-1e4aad53"}
+{"timestamp": "2026-09-23T13:16:13Z", "service": "api-gateway", "severity": "INFO", "message": "Routed 59 requests in last minute", "log_id": "log-9f671ba9"}
+{"timestamp": "2026-09-23T13:17:05Z", "service": "redis", "severity": "INFO", "message": "77 changes in 60 seconds. Saving...", "log_id": "log-fffd5634"}
+{"timestamp": "2026-09-23T13:17:13Z", "service": "user-service", "severity": "INFO", "message": "Served 16 profile reads in last minute", "log_id": "log-d6c364fc"}
+{"timestamp": "2026-09-23T13:17:15Z", "service": "postgres", "severity": "WARN", "message": "duration: 11102 ms statement: SELECT report_rollup()", "log_id": "log-5d49f679"}
+{"timestamp": "2026-09-23T13:17:35Z", "service": "notification-service", "severity": "WARN", "message": "SMTP provider throttled 1 message", "log_id": "log-5b366b61"}
+{"timestamp": "2026-09-23T13:18:31Z", "service": "payment-service", "severity": "INFO", "message": "Processed 72 charges in last minute", "log_id": "log-cb33350d"}
+{"timestamp": "2026-09-23T13:18:38Z", "service": "message-queue", "severity": "INFO", "message": "Queue order-events depth=0", "log_id": "log-c073ba25"}
+{"timestamp": "2026-09-23T13:19:33Z", "service": "auth-service", "severity": "INFO", "message": "JWKS cache refreshed (keys=4)", "log_id": "log-de5991e7"}
+{"timestamp": "2026-09-23T13:19:33Z", "service": "notification-service", "severity": "INFO", "message": "Sent 77 emails", "log_id": "log-d8376a1f"}
+{"timestamp": "2026-09-23T13:19:35Z", "service": "user-service", "severity": "INFO", "message": "Served 58 profile reads in last minute", "log_id": "log-27d588bf"}
+{"timestamp": "2026-09-23T13:20:02Z", "service": "order-service", "severity": "WARN", "message": "Inventory reservation retry for sku-92", "log_id": "log-6bc5d9c6"}
+{"timestamp": "2026-09-23T13:20:24Z", "service": "postgres", "severity": "WARN", "message": "duration: 14502 ms statement: SELECT report_rollup()", "log_id": "log-07d2de75"}
+{"timestamp": "2026-09-23T13:20:42Z", "service": "api-gateway", "severity": "WARN", "message": "Slow client upload from 10.4.20.12 (1.9MB)", "log_id": "log-1ca93269"}
+{"timestamp": "2026-09-23T13:20:46Z", "service": "redis", "severity": "INFO", "message": "Background saving terminated with success", "log_id": "log-4f4dc5b3"}

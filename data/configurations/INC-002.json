@@ -1,0 +1,12 @@
+[
+  {
+    "change_id": "cfg-cc6f8080",
+    "service": "user-service",
+    "timestamp": "2026-09-05T09:10:00Z",
+    "key": "feature.profile_badges",
+    "old_value": "false",
+    "new_value": "true",
+    "author": "config-bot",
+    "ticket": "OPS-2306"
+  }
+]

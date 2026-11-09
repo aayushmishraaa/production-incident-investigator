@@ -1,0 +1,46 @@
+{
+  "incident_id": "INC-009",
+  "root_cause_category": "deployment_regression",
+  "culprit_service": "user-service",
+  "description": "user-service v7.2.0 introduced NPE in ProfileBatchLoader.",
+  "expected_behaviour": "Retry failed tools, preserve partial findings, report uncertainty from partial logs.",
+  "expected_inconclusive": false,
+  "acceptable_inconclusive": false,
+  "key_evidence_ids": [
+    "log-f71d77ca",
+    "log-47ccff14",
+    "log-02f0c910",
+    "log-a52c3c27",
+    "log-60142989",
+    "log-2d0469ee",
+    "log-ff4c79bc",
+    "log-8360c864",
+    "log-a37e7368",
+    "log-ac2161a5",
+    "log-03f2e040",
+    "log-54fc5746",
+    "log-4b49e376",
+    "log-371ef0d7",
+    "log-58847f3c",
+    "log-c2aba8ac",
+    "log-69da7abf",
+    "log-ecf70db2",
+    "log-2975c0f2",
+    "log-ecdd55ec",
+    "log-6a0518ce",
+    "log-841ee939",
+    "log-74d5baf9",
+    "log-500260ae",
+    "log-19d4c42b",
+    "dep-c02e51b7"
+  ],
+  "key_metric_prefixes": [
+    "met-user-service-error_rate"
+  ],
+  "decoy_evidence_ids": [],
+  "decoy_category": null,
+  "expected_remediation": [
+    "Roll back user-service to 7.1.3",
+    "Add null-safety tests for batch loader"
+  ]
+}

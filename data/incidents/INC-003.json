@@ -1,0 +1,12 @@
+{
+  "incident_id": "INC-003",
+  "title": "Payment service slow responses",
+  "description": "Payment service latency elevated for 10+ minutes. Payment pods look healthy in the dashboard.",
+  "severity": "SEV2",
+  "reported_at": "2026-09-08T18:16:00Z",
+  "symptom_start": "2026-09-08T18:10:00Z",
+  "affected_services": [
+    "payment-service"
+  ],
+  "reporter": "on-call"
+}

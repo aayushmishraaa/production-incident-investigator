@@ -1,0 +1,17 @@
+{
+  "incident_id": "INC-010",
+  "root_cause_category": "unknown",
+  "culprit_service": null,
+  "description": "No determinable root cause in available data; telemetry incomplete.",
+  "expected_behaviour": "Return INCONCLUSIVE rather than inventing a root cause.",
+  "expected_inconclusive": true,
+  "acceptable_inconclusive": true,
+  "key_evidence_ids": [],
+  "key_metric_prefixes": [],
+  "decoy_evidence_ids": [],
+  "decoy_category": null,
+  "expected_remediation": [
+    "Restore missing telemetry",
+    "Add gateway latency breakdown tracing"
+  ]
+}

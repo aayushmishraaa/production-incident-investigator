@@ -1,0 +1,12 @@
+[
+  {
+    "deployment_id": "dep-4ac1aa96",
+    "service": "order-service",
+    "timestamp": "2026-09-08T11:30:00Z",
+    "from_version": "4.2.0",
+    "to_version": "4.2.1",
+    "status": "SUCCEEDED",
+    "changes": "Fix rounding in tax calc",
+    "deployed_by": "ci-pipeline"
+  }
+]

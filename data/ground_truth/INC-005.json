@@ -1,0 +1,38 @@
+{
+  "incident_id": "INC-005",
+  "root_cause_category": "infrastructure_degradation",
+  "culprit_service": "postgres",
+  "description": "Postgres storage volume latency degraded ~10 min before the payment deployment; all DB clients slowed.",
+  "expected_behaviour": "Reject the deployment hypothesis because degradation started before deploy and affects services not deployed.",
+  "expected_inconclusive": false,
+  "acceptable_inconclusive": false,
+  "key_evidence_ids": [
+    "log-77fdc9ea",
+    "log-37614211",
+    "log-eb139aa9",
+    "log-7aabd08c",
+    "log-cdfc858a",
+    "log-1cfc3698",
+    "log-c523c49c",
+    "log-b8dd98a3",
+    "log-f2e8c8da",
+    "log-799f9602",
+    "log-65e51a53",
+    "log-85fdfd00",
+    "log-8199b341",
+    "log-1c89fe56"
+  ],
+  "key_metric_prefixes": [
+    "met-postgres-disk_io_wait_ms",
+    "met-postgres-p95_latency_ms"
+  ],
+  "decoy_evidence_ids": [
+    "dep-31448d11"
+  ],
+  "decoy_category": "deployment_regression",
+  "expected_remediation": [
+    "Fail over postgres to healthy replica/volume",
+    "Engage cloud provider",
+    "Alert on disk IO wait"
+  ]
+}

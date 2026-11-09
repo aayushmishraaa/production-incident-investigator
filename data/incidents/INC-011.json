@@ -1,0 +1,14 @@
+{
+  "incident_id": "INC-011",
+  "title": "Platform-wide slowness and 429s",
+  "description": "Widespread latency and HTTP 429 errors. A user-service release went out shortly before.",
+  "severity": "SEV2",
+  "reported_at": "2026-10-02T20:06:00Z",
+  "symptom_start": "2026-10-02T20:00:00Z",
+  "affected_services": [
+    "api-gateway",
+    "auth-service",
+    "user-service"
+  ],
+  "reporter": "on-call"
+}

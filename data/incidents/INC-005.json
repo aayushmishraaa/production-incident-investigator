@@ -1,0 +1,13 @@
+{
+  "incident_id": "INC-005",
+  "title": "Payments slow right after release",
+  "description": "Payment and order latency degraded shortly after the payment-service 5.8.0 release. Team suspects the release.",
+  "severity": "SEV1",
+  "reported_at": "2026-09-14T11:46:00Z",
+  "symptom_start": "2026-09-14T11:40:00Z",
+  "affected_services": [
+    "payment-service",
+    "order-service"
+  ],
+  "reporter": "on-call"
+}

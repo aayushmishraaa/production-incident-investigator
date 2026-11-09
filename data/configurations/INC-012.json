@@ -1,0 +1,12 @@
+[
+  {
+    "change_id": "cfg-56d39584",
+    "service": "payment-service",
+    "timestamp": "2026-10-05T10:04:00Z",
+    "key": "db.pool.max_size",
+    "old_value": "50",
+    "new_value": "10",
+    "author": "config-bot",
+    "ticket": "OPS-2669"
+  }
+]

@@ -1,0 +1,12 @@
+[
+  {
+    "deployment_id": "dep-cbc63772",
+    "service": "auth-service",
+    "timestamp": "2026-09-05T09:28:00Z",
+    "from_version": "2.13.4",
+    "to_version": "2.14.0",
+    "status": "SUCCEEDED",
+    "changes": "Migrate JWT validation to jose-4.2; refactor token cache",
+    "deployed_by": "ci-pipeline"
+  }
+]

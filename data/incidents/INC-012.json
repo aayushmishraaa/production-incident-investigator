@@ -1,0 +1,12 @@
+{
+  "incident_id": "INC-012",
+  "title": "Payment connection pool timeouts",
+  "description": "Payment API latency and errors; logs full of connection pool timeouts. Looks like the pool exhaustion we had last year.",
+  "severity": "SEV2",
+  "reported_at": "2026-10-05T10:16:00Z",
+  "symptom_start": "2026-10-05T10:10:00Z",
+  "affected_services": [
+    "payment-service"
+  ],
+  "reporter": "on-call"
+}

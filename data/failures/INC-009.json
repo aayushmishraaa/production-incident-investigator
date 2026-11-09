@@ -1,0 +1,14 @@
+{
+  "query_metrics": {
+    "fail_first_n": 2,
+    "error": "TOOL_TIMEOUT"
+  },
+  "query_logs": {
+    "partial": true,
+    "drop_fraction": 0.5
+  },
+  "get_deployments": {
+    "fail_first_n": 1,
+    "error": "SERVICE_UNAVAILABLE"
+  }
+}

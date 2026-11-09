@@ -1,0 +1,13 @@
+{
+  "incident_id": "INC-001",
+  "title": "Payment API latency spike",
+  "description": "Customers report checkout taking 3-5 seconds; payment API P95 latency alarm fired. Some payments failing with 5xx.",
+  "severity": "SEV2",
+  "reported_at": "2026-09-02T14:06:00Z",
+  "symptom_start": "2026-09-02T14:00:00Z",
+  "affected_services": [
+    "payment-service",
+    "api-gateway"
+  ],
+  "reporter": "on-call"
+}

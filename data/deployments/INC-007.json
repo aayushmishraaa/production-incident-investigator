@@ -1,0 +1,12 @@
+[
+  {
+    "deployment_id": "dep-7cf38f2d",
+    "service": "payment-service",
+    "timestamp": "2026-09-20T14:40:00Z",
+    "from_version": "5.8.0",
+    "to_version": "5.8.1",
+    "status": "SUCCEEDED",
+    "changes": "Improve charge idempotency",
+    "deployed_by": "ci-pipeline"
+  }
+]

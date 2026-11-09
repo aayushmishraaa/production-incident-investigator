@@ -1,0 +1,6 @@
+{
+  "query_logs": {
+    "partial": true,
+    "drop_fraction": 0.7
+  }
+}

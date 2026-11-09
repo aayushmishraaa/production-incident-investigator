@@ -1,0 +1,12 @@
+{
+  "incident_id": "INC-010",
+  "title": "Intermittent gateway latency",
+  "description": "Some customers report occasional slowness. No clear alarm; P99 looks a bit higher than usual.",
+  "severity": "SEV3",
+  "reported_at": "2026-09-29T19:51:00Z",
+  "symptom_start": "2026-09-29T19:45:00Z",
+  "affected_services": [
+    "api-gateway"
+  ],
+  "reporter": "on-call"
+}

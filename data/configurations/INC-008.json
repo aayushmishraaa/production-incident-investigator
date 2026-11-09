@@ -1,0 +1,12 @@
+[
+  {
+    "change_id": "cfg-b6fe4aaf",
+    "service": "user-service",
+    "timestamp": "2026-09-23T12:10:00Z",
+    "key": "feature.profile_v2_cache",
+    "old_value": "false",
+    "new_value": "true",
+    "author": "config-bot",
+    "ticket": "OPS-2229"
+  }
+]

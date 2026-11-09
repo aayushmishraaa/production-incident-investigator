@@ -1,0 +1,52 @@
+{
+  "incident_id": "INC-012",
+  "root_cause_category": "configuration_regression",
+  "culprit_service": "payment-service",
+  "description": "db.pool.max_size reduced 50->10 by config change; pool saturates at normal load (no leak).",
+  "expected_behaviour": "Identify the config change as the cause of pool exhaustion rather than stopping at the symptom or historical analogy.",
+  "expected_inconclusive": false,
+  "acceptable_inconclusive": false,
+  "key_evidence_ids": [
+    "log-ee6807ff",
+    "log-945fe4b3",
+    "log-c2630173",
+    "log-41cefacf",
+    "log-2d0edbad",
+    "log-148db91c",
+    "log-28e3fa9a",
+    "log-eaa111fa",
+    "log-ec051927",
+    "log-c88da99b",
+    "log-a06e70cf",
+    "log-94c3defa",
+    "log-db7582b8",
+    "log-baa0ab67",
+    "log-cfb37d96",
+    "log-ce7c22be",
+    "log-91aab363",
+    "log-f7c50767",
+    "log-727ed849",
+    "log-ca79f51b",
+    "log-4a838d41",
+    "log-36508eaf",
+    "log-8861f2c4",
+    "log-7add28b7",
+    "log-29af68ac",
+    "log-618a76fc",
+    "log-aa9ff666",
+    "log-613e3ad7",
+    "log-a554acac",
+    "log-99ef562a",
+    "log-0d87c890",
+    "cfg-56d39584"
+  ],
+  "key_metric_prefixes": [
+    "met-payment-service-db_conn_util_pct"
+  ],
+  "decoy_evidence_ids": [],
+  "decoy_category": "db_connection_pool_exhaustion",
+  "expected_remediation": [
+    "Revert db.pool.max_size to 50",
+    "Add config guardrails for pool sizes"
+  ]
+}

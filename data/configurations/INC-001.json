@@ -1,0 +1,12 @@
+[
+  {
+    "change_id": "cfg-fbdeed15",
+    "service": "api-gateway",
+    "timestamp": "2026-09-02T11:00:00Z",
+    "key": "routes.cache_ttl_s",
+    "old_value": "30",
+    "new_value": "60",
+    "author": "config-bot",
+    "ticket": "OPS-2497"
+  }
+]

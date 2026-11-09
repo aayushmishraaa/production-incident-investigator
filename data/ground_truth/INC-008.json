@@ -1,0 +1,36 @@
+{
+  "incident_id": "INC-008",
+  "root_cause_category": "cache_degradation",
+  "culprit_service": "redis",
+  "description": "Redis hit maxmemory (larger cached payloads); evictions dropped hit rate, shifting load to postgres.",
+  "expected_behaviour": "Identify postgres CPU as a symptom of cache degradation (hit rate drop precedes DB load).",
+  "expected_inconclusive": false,
+  "acceptable_inconclusive": false,
+  "key_evidence_ids": [
+    "log-d17c56ec",
+    "log-de6e5c7a",
+    "log-ae3b78a4",
+    "log-4da49cc8",
+    "log-7aef1872",
+    "log-5e2e82ea",
+    "log-b2d7e867",
+    "log-64caffc5",
+    "log-27782b9e",
+    "log-2e86cb08",
+    "log-c93106e0",
+    "log-5058b37a",
+    "log-edfd7149",
+    "cfg-b6fe4aaf"
+  ],
+  "key_metric_prefixes": [
+    "met-redis-cache_hit_rate",
+    "met-redis-memory_pct"
+  ],
+  "decoy_evidence_ids": [],
+  "decoy_category": "resource_saturation",
+  "expected_remediation": [
+    "Increase Redis maxmemory / shard",
+    "Disable profile_v2_cache or shrink payload",
+    "Alert on hit rate and evictions"
+  ]
+}

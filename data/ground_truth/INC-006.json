@@ -1,0 +1,51 @@
+{
+  "incident_id": "INC-006",
+  "root_cause_category": "infrastructure_degradation",
+  "culprit_service": "user-service",
+  "description": "Network (conntrack) exhaustion on user-service node dropped DB connections; postgres itself healthy, its telemetry was delayed.",
+  "expected_behaviour": "Recognise contradiction (DB error logs vs healthy/missing DB metrics, other DB clients healthy) and lower confidence; INCONCLUSIVE acceptable.",
+  "expected_inconclusive": false,
+  "acceptable_inconclusive": true,
+  "key_evidence_ids": [
+    "log-b27e25ff",
+    "log-e9dd6ec0",
+    "log-3b1c2533",
+    "log-5213cf3b",
+    "log-fd1dfaa9",
+    "log-62da92cc",
+    "log-c5c33ad3",
+    "log-ef71b294",
+    "log-ab72aae1",
+    "log-b9cbc905",
+    "log-bb1dedf7",
+    "log-5e5189e9",
+    "log-3ea64c37",
+    "log-1942bdd3",
+    "log-a72990f4",
+    "log-fe78b6f7",
+    "log-83a7adbc",
+    "log-3cb111f5",
+    "log-a40cbb48",
+    "log-f5034b87",
+    "log-ec4ee96f",
+    "log-b71875c0",
+    "log-d778b576",
+    "log-9de50fd1",
+    "log-9fa96a48",
+    "log-07541b25",
+    "log-fb4981ed",
+    "log-aef846c2",
+    "log-026dc0ba",
+    "log-f5f8955e",
+    "log-5837ed4a"
+  ],
+  "key_metric_prefixes": [
+    "met-user-service-error_rate"
+  ],
+  "decoy_evidence_ids": [],
+  "decoy_category": "db_connection_pool_exhaustion",
+  "expected_remediation": [
+    "Raise conntrack limits / reschedule user-service pods",
+    "Fix postgres telemetry export lag"
+  ]
+}

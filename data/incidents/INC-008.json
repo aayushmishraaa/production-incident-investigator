@@ -1,0 +1,13 @@
+{
+  "incident_id": "INC-008",
+  "title": "Database CPU high and slow user pages",
+  "description": "Postgres CPU alarm firing and user profile pages slow. DBA suspects a bad query.",
+  "severity": "SEV2",
+  "reported_at": "2026-09-23T12:56:00Z",
+  "symptom_start": "2026-09-23T12:50:00Z",
+  "affected_services": [
+    "user-service",
+    "postgres"
+  ],
+  "reporter": "on-call"
+}

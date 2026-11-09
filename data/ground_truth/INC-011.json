@@ -1,0 +1,38 @@
+{
+  "incident_id": "INC-011",
+  "root_cause_category": "traffic_surge",
+  "culprit_service": "api-gateway",
+  "description": "Retry storm from mobile-ios-7.4.0 tripled gateway traffic and saturated downstream services.",
+  "expected_behaviour": "Identify traffic surge (request rate tripled) as cause; user-service deploy is a decoy.",
+  "expected_inconclusive": false,
+  "acceptable_inconclusive": false,
+  "key_evidence_ids": [
+    "log-43defc9f",
+    "log-4f0d5232",
+    "log-23204515",
+    "log-bed2ea7a",
+    "log-3d059618",
+    "log-a057aff5",
+    "log-a9745a3b",
+    "log-f3cbb35e",
+    "log-4ea9ca9e",
+    "log-ebfd0ee7",
+    "log-5d99f12f",
+    "log-1ff8e4e2",
+    "log-3cf6889a",
+    "log-20ab9977",
+    "log-201dcbf5",
+    "log-06e26434"
+  ],
+  "key_metric_prefixes": [
+    "met-api-gateway-request_rate"
+  ],
+  "decoy_evidence_ids": [
+    "dep-78c036fc"
+  ],
+  "decoy_category": "deployment_regression",
+  "expected_remediation": [
+    "Rate limit / block mobile-ios-7.4.0 retries",
+    "Ship client fix honouring Retry-After"
+  ]
+}

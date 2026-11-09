@@ -1,0 +1,22 @@
+[
+  {
+    "deployment_id": "dep-d757f128",
+    "service": "notification-service",
+    "timestamp": "2026-09-02T13:54:00Z",
+    "from_version": "3.4.0",
+    "to_version": "3.4.1",
+    "status": "SUCCEEDED",
+    "changes": "Update email templates for receipts",
+    "deployed_by": "ci-pipeline"
+  },
+  {
+    "deployment_id": "dep-732df814",
+    "service": "user-service",
+    "timestamp": "2026-09-02T09:00:00Z",
+    "from_version": "7.0.9",
+    "to_version": "7.1.0",
+    "status": "SUCCEEDED",
+    "changes": "Profile avatar resizing",
+    "deployed_by": "ci-pipeline"
+  }
+]

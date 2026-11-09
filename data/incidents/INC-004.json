@@ -1,0 +1,12 @@
+{
+  "incident_id": "INC-004",
+  "title": "Order API timeouts overnight",
+  "description": "Order creation latency high and intermittent timeouts during overnight window.",
+  "severity": "SEV2",
+  "reported_at": "2026-09-11T02:21:00Z",
+  "symptom_start": "2026-09-11T02:15:00Z",
+  "affected_services": [
+    "order-service"
+  ],
+  "reporter": "on-call"
+}

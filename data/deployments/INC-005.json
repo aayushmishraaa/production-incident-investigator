@@ -1,0 +1,12 @@
+[
+  {
+    "deployment_id": "dep-31448d11",
+    "service": "payment-service",
+    "timestamp": "2026-09-14T11:32:00Z",
+    "from_version": "5.7.3",
+    "to_version": "5.8.0",
+    "status": "SUCCEEDED",
+    "changes": "Add idempotency-key header logging",
+    "deployed_by": "ci-pipeline"
+  }
+]

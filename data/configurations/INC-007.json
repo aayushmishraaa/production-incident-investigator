@@ -1,0 +1,12 @@
+[
+  {
+    "change_id": "cfg-7f81d14a",
+    "service": "order-service",
+    "timestamp": "2026-09-20T15:22:00Z",
+    "key": "payment_client.timeout_ms",
+    "old_value": "3000",
+    "new_value": "300",
+    "author": "config-bot",
+    "ticket": "OPS-2375"
+  }
+]

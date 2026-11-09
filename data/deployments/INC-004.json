@@ -1,0 +1,12 @@
+[
+  {
+    "deployment_id": "dep-bd77b48c",
+    "service": "payment-service",
+    "timestamp": "2026-09-10T22:15:00Z",
+    "from_version": "5.7.2",
+    "to_version": "5.7.3",
+    "status": "SUCCEEDED",
+    "changes": "Dependency bumps",
+    "deployed_by": "ci-pipeline"
+  }
+]

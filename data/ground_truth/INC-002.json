@@ -1,0 +1,53 @@
+{
+  "incident_id": "INC-002",
+  "root_cause_category": "deployment_regression",
+  "culprit_service": "auth-service",
+  "description": "auth-service v2.14.0 broke EC JWKS key validation causing token verification errors.",
+  "expected_behaviour": "Link the error onset (1 minute after deploy) and TokenValidationException to the auth-service release.",
+  "expected_inconclusive": false,
+  "acceptable_inconclusive": false,
+  "key_evidence_ids": [
+    "log-89eb5da6",
+    "log-75321b43",
+    "log-6201a078",
+    "log-90d59037",
+    "log-75024ea0",
+    "log-6b7ac6de",
+    "log-21aa51b1",
+    "log-a9e5e49e",
+    "log-0d7f7bb4",
+    "log-391075b3",
+    "log-f16166ef",
+    "log-030c01b1",
+    "log-33dcc699",
+    "log-feaee6a3",
+    "log-491b857c",
+    "log-21274c7b",
+    "log-e26029ea",
+    "log-591fcbd9",
+    "log-02913c56",
+    "log-5849b7fd",
+    "log-f2c2abe6",
+    "log-46ed11ec",
+    "log-a20a11e7",
+    "log-ecda8bc3",
+    "log-f1132f14",
+    "log-de6a1780",
+    "log-bc1149bf",
+    "log-a79525b0",
+    "log-b1b4c2ed",
+    "dep-cbc63772"
+  ],
+  "key_metric_prefixes": [
+    "met-auth-service-error_rate"
+  ],
+  "decoy_evidence_ids": [
+    "cfg-cc6f8080"
+  ],
+  "decoy_category": "configuration_regression",
+  "expected_remediation": [
+    "Roll back auth-service to 2.13.4",
+    "Add JWKS key-type contract tests",
+    "Canary deployments with error-rate gates"
+  ]
+}

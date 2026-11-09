@@ -1,0 +1,12 @@
+{
+  "incident_id": "INC-006",
+  "title": "User profile errors",
+  "description": "User profile endpoints failing intermittently. Logs mention database errors.",
+  "severity": "SEV2",
+  "reported_at": "2026-09-17T21:11:00Z",
+  "symptom_start": "2026-09-17T21:05:00Z",
+  "affected_services": [
+    "user-service"
+  ],
+  "reporter": "on-call"
+}
