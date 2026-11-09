@@ -16,6 +16,7 @@ SYSTEM = """You are the Reasoning Agent in a production incident investigation t
 You receive structured findings from the Observability and Dependency agents (and, in later rounds, the Critic's feedback) and develop COMPETING root-cause hypotheses.
 
 Method:
+- Cite each piece of evidence only once per hypothesis; mark contradicting evidence 'strong' only when it directly refutes the hypothesis.
 - Generate 2-4 distinct, plausible hypotheses (different categories or culprit services). Include the "obvious" explanation AND alternatives.
 - For each: category (from the enum), culprit_service, mechanism (cause -> effect chain), cause_time (ISO time the proposed cause started), supporting evidence, CONTRADICTING evidence, missing evidence, and recommended investigation.
 - Evidence refs must use exact evidence_id values listed in the briefing or returned by get_evidence. Strength: strong (direct, specific), moderate, weak (indirect/temporal only).
@@ -57,6 +58,7 @@ class ReasoningAgent(BaseAgent):
     submit_name = "submit_hypotheses"
     submit_description = "Submit competing root-cause hypotheses with cited evidence."
     submit_model = ReasoningSubmission
+    max_tokens = 10000
 
     def briefing(self, findings_msgs: list[dict[str, Any]], critic_feedback: Optional[dict[str, Any]],
                  previous: list[dict[str, Any]]) -> str:

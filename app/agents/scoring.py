@@ -58,7 +58,7 @@ def score_hypothesis(h: Hypothesis, state: InvestigationState, critic_adjustment
         source_types.add(rec.source_type)
         if rec.reliability != Reliability.HIGH:
             sb.reliability_penalty += SUPPORT_W[ref.strength] - w if rec.source_type != SourceType.HISTORICAL else 0
-    sb.support = min(sb.support, 0.6)
+    sb.support = min(sb.support, 0.7)
     if len(source_types - {SourceType.HISTORICAL}) >= 2:
         sb.support += 0.08
         expl.append("+0.08 corroboration across >=2 independent source types")
@@ -70,8 +70,9 @@ def score_hypothesis(h: Hypothesis, state: InvestigationState, critic_adjustment
             invalid += 1
             continue
         sb.contradiction_penalty += CONTRA_W[ref.strength] * REL_F[rec.reliability]
+    sb.contradiction_penalty = min(sb.contradiction_penalty, 0.45)
     if sb.contradiction_penalty:
-        expl.append(f"-{sb.contradiction_penalty:.2f} contradicting evidence ({len(h.contradicting_evidence)} refs)")
+        expl.append(f"-{sb.contradiction_penalty:.2f} contradicting evidence ({len(h.contradicting_evidence)} refs, capped 0.45)")
 
     onset = observed_onset(state)
     cause = parse_optional(h.cause_time)
@@ -85,7 +86,7 @@ def score_hypothesis(h: Hypothesis, state: InvestigationState, critic_adjustment
     elif not cause:
         expl.append("+0.00 no cause time given; temporal precedence unverified")
 
-    sb.gap_penalty = min(0.03 * len(h.missing_evidence), 0.12) + 0.05 * invalid
+    sb.gap_penalty = min(0.02 * len(h.missing_evidence), 0.08) + 0.05 * invalid
     failed_on_culprit = [c for c in state.tool_calls if (not c.success or c.is_partial)
                          and h.culprit_service and c.arguments.get("service") == h.culprit_service]
     if failed_on_culprit:
@@ -94,7 +95,7 @@ def score_hypothesis(h: Hypothesis, state: InvestigationState, critic_adjustment
     if invalid:
         expl.append(f"-{0.05 * invalid:.2f} {invalid} cited evidence id(s) do not exist")
     if h.missing_evidence:
-        expl.append(f"-{min(0.03 * len(h.missing_evidence), 0.12):.2f} {len(h.missing_evidence)} acknowledged evidence gaps")
+        expl.append(f"-{min(0.02 * len(h.missing_evidence), 0.08):.2f} {len(h.missing_evidence)} acknowledged evidence gaps")
     if sb.reliability_penalty:
         expl.append(f"(reliability discount already applied: {sb.reliability_penalty:.2f})")
     if critic_adjustment:

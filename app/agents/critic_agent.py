@@ -39,6 +39,10 @@ Decide per hypothesis: accept | reject | needs_evidence. Then an overall verdict
 - NEEDS_MORE_EVIDENCE: a specific, obtainable piece of evidence would settle it. Give precise evidence_requests (target_agent observability or dependency, what to query, which services).
 - REJECTED: all current hypotheses are unsupported or contradicted.
 - INCONCLUSIVE: evidence is insufficient or contradictory and further queries are unlikely to resolve it.
+
+Scope: the goal is the root-cause CATEGORY and the culprit service/component (e.g. "storage degradation on the database", "config change on service X"), not the ultimate trigger behind it (e.g. why a cloud volume degraded). Unexplained deeper triggers are limitations to note, not reasons to withhold approval.
+Only request evidence that the team's tools can actually obtain: application logs, service metrics (cpu, memory, request rate, error rate, latency percentiles, db connection utilisation, timeout rate, cache hit rate, disk io wait), deployments, configuration changes, the dependency graph. Never request cloud-provider events, traces, per-endpoint breakdowns, database internals or other data the tools do not expose.
+If the leading hypothesis is consistent in time, supported by multiple independent sources, and the alternatives are contradicted, APPROVE it even if minor unexplained details remain. Do not ask again for evidence that was already requested in earlier rounds.
 You do not see confidence scores; judge the evidence itself. Finish by calling submit_verdict."""
 
 
@@ -106,6 +110,7 @@ class CriticAgent(BaseAgent):
     submit_name = "submit_verdict"
     submit_description = "Submit the structured critic verdict."
     submit_model = CriticSubmission
+    max_tokens = 8000
 
     def briefing(self, hypotheses_payload: list[dict], issues: list[PrecheckIssue]) -> str:
         inc = self.state.incident

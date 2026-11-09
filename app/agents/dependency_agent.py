@@ -18,7 +18,7 @@ Rules:
 - Classify findings: observed_fact, derived_observation, possible_explanation, missing_evidence, contradiction. Do not declare a root cause.
 - A failed or partial tool result is NOT evidence that nothing changed; report it as missing_evidence.
 - Cite exact evidence_id values from tool results (deployment_id / change_id / topo-... / met-...). Never invent ids.
-- Be efficient: aim for <= 5 tool rounds, then call submit_findings."""
+- Be efficient: aim for <= 3 tool rounds, then call submit_findings."""
 
 
 class DependencyAgent(SpecialistAgent):

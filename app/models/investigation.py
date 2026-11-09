@@ -28,7 +28,7 @@ class InvestigationConfig(BaseModel):
     max_tool_calls: int = Field(default=60, ge=1, le=1000)
     max_tool_retries: int = Field(default=2, ge=0, le=5)
     max_agent_retries: int = Field(default=1, ge=0, le=5)
-    max_agent_steps: int = Field(default=8, ge=2, le=30)
+    max_agent_steps: int = Field(default=6, ge=2, le=30)
     tool_timeout_s: float = Field(default=2.0, gt=0)
     investigation_timeout_s: float = Field(default=300.0, gt=0)
     max_llm_calls: int = Field(default=80, ge=1)

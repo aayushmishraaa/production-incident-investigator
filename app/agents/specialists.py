@@ -37,10 +37,6 @@ class SpecialistAgent(BaseAgent):
         bad = unknown_ids(self.state, cited)
         if bad:
             problems.append(f"these evidence_ids do not exist in collected evidence: {bad[:8]} (cite only ids returned by tools)")
-        uncited = [f.statement[:60] for f in output.findings
-                   if f.kind in (FindingKind.OBSERVED_FACT, FindingKind.DERIVED_OBSERVATION) and not f.evidence_ids]
-        if uncited:
-            problems.append(f"facts/derived observations without evidence_ids: {uncited[:3]}")
         return "; ".join(problems) or None
 
     def windows(self) -> str:
@@ -53,7 +49,10 @@ class SpecialistAgent(BaseAgent):
         findings = []
         for f in sub.findings:
             valid = [i for i in f.evidence_ids if i in self.state.evidence]  # strip any residual unknown ids
-            findings.append(AgentFinding(agent=self.name, task_id=task.task_id, kind=f.kind, statement=f.statement,
+            kind = f.kind
+            if kind == FindingKind.OBSERVED_FACT and not valid:
+                kind = FindingKind.DERIVED_OBSERVATION   # uncited "facts" (e.g. negative results) are downgraded
+            findings.append(AgentFinding(agent=self.name, task_id=task.task_id, kind=kind, statement=f.statement,
                                          service=f.service, timestamp=f.timestamp, round=task.round,
                                          evidence=[EvidenceRef(evidence_id=i) for i in valid]))
         return AgentOutput(findings=findings, earliest_symptom=sub.earliest_symptom, summary=sub.summary,

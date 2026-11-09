@@ -39,7 +39,7 @@ class ToolResult(BaseModel):
     attempts: int = 1
     evidence_ids: list[str] = Field(default_factory=list)
 
-    def to_llm_payload(self, max_items: int = 40) -> dict[str, Any]:
+    def to_llm_payload(self, max_items: int = 25) -> dict[str, Any]:
         """Compact representation handed back to an LLM agent."""
         payload: dict[str, Any] = {
             "success": self.success,
@@ -84,7 +84,7 @@ class LogQueryInput(BaseModel):
     start: Optional[datetime] = None
     end: Optional[datetime] = None
     keyword: Optional[str] = None
-    limit: int = Field(default=30, ge=1, le=200)
+    limit: int = Field(default=15, ge=1, le=200)
 
 
 MetricName = Literal[

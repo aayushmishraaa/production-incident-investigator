@@ -19,7 +19,7 @@ Rules:
 - A symptom (e.g. high latency, high DB CPU) is NOT automatically a root cause. Do not declare root causes.
 - A failed or partial tool result is NOT evidence that a system is healthy; report it as missing_evidence.
 - Cite exact evidence_id values from tool results. Never invent ids or numbers.
-- Be efficient: aim for <= 5 tool rounds, then call submit_findings."""
+- Be efficient: aim for <= 4 tool rounds, then call submit_findings."""
 
 
 class ObservabilityAgent(SpecialistAgent):
